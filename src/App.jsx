@@ -466,6 +466,7 @@ export default function App() {
       XLSX.writeFile(wb, "Automation Savings.xlsx");
     } catch (e) {
       console.error(e);
+      alert("Failed to generate Excel file.");
     }
     setIsExportingXLSX(false);
   };
@@ -478,107 +479,147 @@ export default function App() {
       const pptxgen = window.pptxgen || await loadScript('https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js', 'PptxGenJS');
 
       const pptx = new pptxgen();
-      pptx.layout = 'LAYOUT_WIDE'; // 13.33 x 7.5 inches
+      pptx.layout = 'LAYOUT_WIDE'; // 13.33 x 7.5
       const slide = pptx.addSlide();
 
-      // Original Infographic Color Theme
-      const cBg = 'FAF1E6';
-      const cTextDark = '4A2322';
-      const cRust = 'EB716D';
+      // Executive Theme Colors based on Automation Score
+      let accentColor = '10B981'; // Emerald (Strong)
+      if (results.automationScore < 80 && results.automationScore >= 60) accentColor = '3B82F6'; // Blue (Good)
+      if (results.automationScore < 60 && results.automationScore >= 40) accentColor = 'F59E0B'; // Amber (Marginal)
+      if (results.automationScore < 40) accentColor = 'EF4444'; // Red (Risk)
+
+      const cBg = 'F8FAFC'; // Slate 50
       const cCardBg = 'FFFFFF';
-      const cBorder = '4A2322';
+      const cTextDark = '0F172A'; // Slate 900
+      const cTextMuted = '64748B'; // Slate 500
+      const cBorder = 'E2E8F0'; // Slate 200
 
       slide.background = { color: cBg };
 
-      // ==========================================
-      // 1. Header Section
-      // ==========================================
-      const titleText = `${toolName || 'Proposed Automation'} Business Case`;
-      slide.addText(titleText.toUpperCase(), { 
-        x: 0.5, y: 0.4, w: 12.33, h: 0.6, fontSize: 32, bold: true, color: cRust, fontFace: 'Arial Black' 
-      });
+      // --- 1. HEADER (Top Strip & Title) ---
+      slide.addShape(pptx.shapes.RECTANGLE, { x: 0, y: 0, w: 13.33, h: 0.1, fill: { color: accentColor } });
       
-      const scenarioLabel = scenario.charAt(0).toUpperCase() + scenario.slice(1);
-      slide.addText(`Use Case: ${useCase || 'N/A'} | Scenario: ${scenarioLabel}`, { 
-        x: 0.5, y: 1.0, w: 12.33, h: 0.4, fontSize: 14, color: cTextDark, italic: true 
+      slide.addText((toolName || 'Proposed Automation').toUpperCase(), { 
+        x: 0.5, y: 0.3, w: 8.5, h: 0.6, fontSize: 28, bold: true, color: cTextDark, fontFace: 'Arial Black' 
+      });
+      slide.addText(`Business Case & ROI Strategy | Scenario: ${scenario.charAt(0).toUpperCase() + scenario.slice(1)}`, { 
+        x: 0.5, y: 0.9, w: 8.5, h: 0.3, fontSize: 12, color: cTextMuted, bold: true 
+      });
+      slide.addText(useCase || 'N/A', { 
+        x: 0.5, y: 1.2, w: 8.5, h: 0.4, fontSize: 11, color: cTextMuted, italic: true, valign: 'top' 
       });
 
-      // ==========================================
-      // 2. Middle Left Box (Strategic Value)
-      // ==========================================
+      // Viability Score Badge
       slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, { 
-        x: 0.5, y: 1.6, w: 6.0, h: 3.5, fill: { color: cCardBg }, line: { color: cBorder, width: 2 }, rectRadius: 0.05 
+        x: 9.5, y: 0.4, w: 3.3, h: 0.9, fill: { color: accentColor }, rectRadius: 0.1 
       });
-      slide.addText('Strategic Value', { 
-        x: 0.8, y: 1.8, w: 5.4, h: 0.4, fontSize: 20, bold: true, color: cRust, fontFace: 'Arial Black' 
+      slide.addText(`VIABILITY SCORE: ${results.automationScore}/100`, { 
+        x: 9.5, y: 0.5, w: 3.3, h: 0.3, fontSize: 10, bold: true, color: 'FFFFFF', align: 'center', opacity: 0.9
+      });
+      slide.addText(results.scoreLabel.toUpperCase(), { 
+        x: 9.5, y: 0.8, w: 3.3, h: 0.4, fontSize: 16, bold: true, color: 'FFFFFF', align: 'center', fontFace: 'Arial Black' 
       });
 
-      // KPIs
-      slide.addText('KPIs:', { x: 0.8, y: 2.3, w: 2.6, h: 0.3, fontSize: 12, bold: true, color: cTextDark });
-      const kpiArr = kpis ? kpis.split('\n').filter(k=>k.trim()!=='').map(k => ({ text: k.replace('•','').trim(), options: { bullet: true } })) : [{ text: "None specified", options: { bullet: true } }];
-      slide.addText(kpiArr, { x: 0.8, y: 2.6, w: 2.6, h: 2.2, fontSize: 11, color: cTextDark, valign: 'top' });
 
-      // Challenges Solved
-      slide.addText('Challenges Solved:', { x: 3.6, y: 2.3, w: 2.6, h: 0.3, fontSize: 12, bold: true, color: cTextDark });
-      const chalArr = challenges ? challenges.split('\n').filter(k=>k.trim()!=='').map(c => ({ text: c.replace('•','').trim(), options: { bullet: true } })) : [{ text: "None specified", options: { bullet: true } }];
-      slide.addText(chalArr, { x: 3.6, y: 2.6, w: 2.6, h: 2.2, fontSize: 11, color: cTextDark, valign: 'top' });
+      // --- Column Setup ---
+      const colY = 1.8;
+      const colH = 5.2;
 
-      // ==========================================
-      // 3. Middle Right Box (Current vs Future)
-      // ==========================================
+      // --- 2. LEFT COLUMN: THE CONTEXT ---
+      const col1X = 0.5;
+      const col1W = 3.9;
       slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, { 
-        x: 6.8, y: 1.6, w: 6.0, h: 3.5, fill: { color: cCardBg }, line: { color: cBorder, width: 2 }, rectRadius: 0.05 
+        x: col1X, y: colY, w: col1W, h: colH, fill: { color: cCardBg }, line: { color: cBorder, width: 1 }, rectRadius: 0.05 
       });
-      slide.addText('Current vs. Future State', { 
-        x: 7.1, y: 1.8, w: 5.4, h: 0.4, fontSize: 20, bold: true, color: cRust, fontFace: 'Arial Black' 
+      slide.addText('01 / THE CONTEXT', { 
+        x: col1X + 0.2, y: colY + 0.2, w: col1W - 0.4, h: 0.3, fontSize: 12, bold: true, color: accentColor, fontFace: 'Arial Black' 
       });
 
-      // Current State Block
-      slide.addText(
-        `Current Monthly Cost: ${formatCurrency(results.currentMonthlyCost)}\n\nCurrent Manual Effort: ${Math.round(results.totalManualHoursMonthly)} hrs (${results.currentFte.toFixed(1)} FTEs)`, 
-        { x: 7.1, y: 2.5, w: 2.7, h: 2.0, fontSize: 14, color: cTextDark, valign: 'middle' }
-      );
+      slide.addText('Challenges Addressed', { x: col1X + 0.2, y: colY + 0.7, w: col1W - 0.4, h: 0.3, fontSize: 12, bold: true, color: cTextDark });
+      const chalArr = challenges ? challenges.split('\n').filter(k=>k.trim()!=='').map(c => ({ text: c.replace('•','').trim(), options: { bullet: true, color: cTextMuted } })) : [{ text: "None specified", options: { bullet: true, color: cTextMuted } }];
+      slide.addText(chalArr, { x: col1X + 0.3, y: colY + 1.0, w: col1W - 0.6, h: 1.8, fontSize: 11, valign: 'top' });
 
-      // Future State Block
-      slide.addText(
-        `Future Monthly Cost: ${formatCurrency(results.futureMonthlyCostAvg)}\n\nResidual Effort: ${Math.round(results.remainingManualHoursMonthly)} hrs (${results.toBeFte.toFixed(1)} FTEs)`, 
-        { x: 10.0, y: 2.5, w: 2.7, h: 2.0, fontSize: 14, color: cTextDark, valign: 'middle' }
-      );
+      slide.addShape(pptx.shapes.LINE, { x: col1X + 0.2, y: colY + 3.0, w: col1W - 0.4, h: 0, line: { color: cBorder, width: 1 } });
 
-      // ==========================================
-      // 4. Bottom 4 Metric Cards
-      // ==========================================
-      const cardY = 5.4;
-      const cardH = 1.6;
-      const cardW = 2.85;
-      const positions = [0.5, 3.66, 6.82, 9.98]; // Evenly spaced across 13.33 slide width
-      
-      const addBottomCard = (xPos, title, value) => {
-        slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, { 
-          x: xPos, y: cardY, w: cardW, h: cardH, fill: { color: cCardBg }, line: { color: cBorder, width: 2 }, rectRadius: 0.05 
-        });
-        slide.addText(title, { 
-          x: xPos, y: cardY + 0.25, w: cardW, h: 0.4, align: 'center', fontSize: 11, bold: true, color: cTextDark, fontFace: 'Arial Black' 
-        });
-        slide.addText(value, { 
-          x: xPos, y: cardY + 0.65, w: cardW, h: 0.7, align: 'center', fontSize: 32, bold: true, color: cRust, fontFace: 'Arial Black' 
-        });
-      };
+      slide.addText('Target KPIs', { x: col1X + 0.2, y: colY + 3.2, w: col1W - 0.4, h: 0.3, fontSize: 12, bold: true, color: cTextDark });
+      const kpiArr = kpis ? kpis.split('\n').filter(k=>k.trim()!=='').map(k => ({ text: k.replace('•','').trim(), options: { bullet: true, color: cTextMuted } })) : [{ text: "None specified", options: { bullet: true, color: cTextMuted } }];
+      slide.addText(kpiArr, { x: col1X + 0.3, y: colY + 3.5, w: col1W - 0.6, h: 1.5, fontSize: 11, valign: 'top' });
 
-      addBottomCard(positions[0], "LIFETIME NET SAVINGS", formatCurrency(results.netSavings));
-      
-      const finalRoi = results.roi === Infinity ? '>1000%' : `${Math.round(results.roi)}%`;
-      addBottomCard(positions[1], "ROI", finalRoi);
-      
-      const paybackText = results.paybackPeriod === Infinity ? 'Never' : `${results.paybackPeriod.toFixed(1)} mo`;
-      addBottomCard(positions[2], "PAYBACK PERIOD", paybackText);
-      
-      addBottomCard(positions[3], "FTE CAPACITY SAVED", `${results.fteSavings.toFixed(1)} FTEs/mo`);
 
-      // 5. Final Export
+      // --- 3. MIDDLE COLUMN: THE SOLUTION ---
+      const col2X = 4.6;
+      const col2W = 4.2;
+      slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, { 
+        x: col2X, y: colY, w: col2W, h: colH, fill: { color: cCardBg }, line: { color: cBorder, width: 1 }, rectRadius: 0.05 
+      });
+      slide.addText('02 / THE SOLUTION', { 
+        x: col2X + 0.2, y: colY + 0.2, w: col2W - 0.4, h: 0.3, fontSize: 12, bold: true, color: accentColor, fontFace: 'Arial Black' 
+      });
+
+      // Automation Donut Chart
+      slide.addText('Effort Automation Shift', { x: col2X, y: colY + 0.7, w: col2W, h: 0.3, fontSize: 12, bold: true, color: cTextDark, align: 'center' });
+      slide.addChart(pptx.charts.DOUGHNUT, [{
+        name: "Effort", labels: ["Automated", "Manual"], values: [Number(automationPercent), 100 - Number(automationPercent)]
+      }], {
+        x: col2X + 0.85, y: colY + 1.1, w: 2.5, h: 2.0, holeSize: 65, showLegend: true, legendPos: 'b', legendFontSize: 10, showLabel: false, chartColors: [accentColor, 'CBD5E1'], dataBorder: { pt: 0 }
+      });
+      slide.addText(`${automationPercent}%`, { x: col2X + 0.85, y: colY + 1.1, w: 2.5, h: 1.7, align: 'center', valign: 'middle', fontSize: 24, bold: true, color: cTextDark, fontFace: 'Arial Black' });
+
+      slide.addShape(pptx.shapes.LINE, { x: col2X + 0.2, y: colY + 3.3, w: col2W - 0.4, h: 0, line: { color: cBorder, width: 1 } });
+
+      // Cost & FTE Shift Visuals
+      slide.addText('Monthly Cost Reduction', { x: col2X + 0.2, y: colY + 3.5, w: col2W - 0.4, h: 0.3, fontSize: 11, bold: true, color: cTextMuted });
+      slide.addText(`${formatCurrency(results.currentMonthlyCost)}  →  ${formatCurrency(results.futureMonthlyCostAvg)}`, { 
+        x: col2X + 0.2, y: colY + 3.8, w: col2W - 0.4, h: 0.4, fontSize: 18, bold: true, color: cTextDark 
+      });
+
+      slide.addText('Capacity Shift (FTEs)', { x: col2X + 0.2, y: colY + 4.3, w: col2W - 0.4, h: 0.3, fontSize: 11, bold: true, color: cTextMuted });
+      
+      // Horizontal bar for FTE
+      const maxFteW = col2W - 0.6;
+      const currentFte = results.currentFte || 1;
+      const futureFte = results.toBeFte;
+      const futureFteW = (futureFte / currentFte) * maxFteW;
+      
+      // Background bar (Current)
+      slide.addShape(pptx.shapes.RECTANGLE, { x: col2X + 0.3, y: colY + 4.7, w: maxFteW, h: 0.3, fill: { color: 'E2E8F0' } });
+      // Foreground bar (Future)
+      slide.addShape(pptx.shapes.RECTANGLE, { x: col2X + 0.3, y: colY + 4.7, w: Math.max(futureFteW, 0.05), h: 0.3, fill: { color: accentColor } });
+      slide.addText(`${results.currentFte.toFixed(1)} FTEs As-Is`, { x: col2X + 0.3, y: colY + 4.7, w: maxFteW, h: 0.3, fontSize: 9, color: cTextMuted, align: 'right', valign: 'middle', pr: 0.1 });
+
+
+      // --- 4. RIGHT COLUMN: THE IMPACT ---
+      const col3X = 9.0;
+      const col3W = 3.8;
+      slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, { 
+        x: col3X, y: colY, w: col3W, h: colH, fill: { color: accentColor, transparency: 95 }, line: { color: accentColor, width: 2 }, rectRadius: 0.05 
+      });
+      slide.addText('03 / FINANCIAL IMPACT', { 
+        x: col3X + 0.2, y: colY + 0.2, w: col3W - 0.4, h: 0.3, fontSize: 12, bold: true, color: accentColor, fontFace: 'Arial Black' 
+      });
+
+      const impactMetrics = [
+        { label: "LIFETIME NET SAVINGS", value: formatCurrency(results.netSavings) },
+        { label: "RETURN ON INVESTMENT (ROI)", value: results.roi === Infinity ? '>1000%' : `${Math.round(results.roi).toLocaleString()}%` },
+        { label: "PAYBACK PERIOD", value: results.paybackPeriod === Infinity ? 'Never' : `${results.paybackPeriod.toFixed(1)} months` },
+        { label: "CAPACITY RECAPTURED", value: `${results.fteSavings.toFixed(1)} FTEs/mo` }
+      ];
+
+      let currentY = colY + 0.8;
+      impactMetrics.forEach((metric, i) => {
+        slide.addText(metric.label, { x: col3X + 0.3, y: currentY, w: col3W - 0.6, h: 0.3, fontSize: 11, bold: true, color: cTextMuted });
+        slide.addText(metric.value, { x: col3X + 0.3, y: currentY + 0.3, w: col3W - 0.6, h: 0.6, fontSize: 28, bold: true, color: cTextDark, fontFace: 'Arial Black' });
+        
+        if (i < 3) {
+          slide.addShape(pptx.shapes.LINE, { x: col3X + 0.3, y: currentY + 1.0, w: col3W - 0.6, h: 0, line: { color: accentColor, width: 1, transparency: 80 } });
+          currentY += 1.15;
+        }
+      });
+
       await pptx.writeFile({ fileName: `${toolName || 'Automation'} Automation 1 Slider.pptx` });
     } catch (e) {
       console.error(e);
+      alert("Failed to generate PPTX file. Check console.");
     }
     setIsExportingPPTX(false);
   };
@@ -931,7 +972,7 @@ export default function App() {
                   </label>
                   <div className="flex space-x-3">
                     <div className="relative flex-1">
-                      <input type="number" value={effortHours !== '' ? Math.round(effortHours * 60) : ''} onChange={handleMinutesChange} placeholder="0" className={`${effortHours !== '' && effortHours < 0 ? inputErrorStyle : inputStyle} pr-12 font-mono text-lg`} />
+                      <input type="number" value={effortHours !== '' ? effortHours * 60 : ''} onChange={handleMinutesChange} placeholder="0" className={`${effortHours !== '' && effortHours < 0 ? inputErrorStyle : inputStyle} pr-12 font-mono text-lg`} />
                       <span className={`absolute inset-y-0 right-0 pr-4 flex items-center ${textSub} font-bold text-xs pointer-events-none`}>MIN</span>
                     </div>
                     <div className="relative flex-1">
@@ -1366,9 +1407,9 @@ export default function App() {
                   <div><h3 className={`text-sm font-bold ${textHeading} uppercase tracking-wider mb-2`}>SRE / Maintenance Ramp-Down</h3><p className={`text-sm ${textSub} leading-relaxed font-medium`}>Complex automations usually require heavier support when they are first launched, which tapers off as the system stabilizes. The advanced cost settings allow you to accurately forecast this ramp-down.</p></div>
                 </div>
                 <div className="space-y-6">
-                  <div><h3 className={`text-sm font-bold ${textSub} uppercase tracking-wider mb-2`}>FTE Savings</h3><p className={`text-sm ${textSub} leading-relaxed font-medium`}>FTE stands for "Full-Time Equivalent". In this tool, we assume a standard work month has roughly 160 hours. If your automation saves 160 hours, it is effectively doing the work of 1 full-time employee.</p></div>
-                  <div><h3 className={`text-sm font-bold ${textSub} uppercase tracking-wider mb-2`}>Return on Investment (ROI)</h3><p className={`text-sm ${textSub} leading-relaxed font-medium`}>Measures profitability. An ROI of 100% means the automation paid for its total investment and generated that same amount in pure savings.</p></div>
-                  <div><h3 className={`text-sm font-bold ${textSub} uppercase tracking-wider mb-2`}>Live Currency Conversion</h3><p className={`text-sm ${textSub} leading-relaxed font-medium`}>Currency switching automatically recalculates all monetary inputs and results using real-time exchange rates fetched securely from <strong>open.er-api.com</strong>. A small green dot on the currency selector indicates live rates are active. If you are offline, it seamlessly falls back to standard default rates.</p></div>
+                  <div><h3 className={`text-sm font-bold ${textHeading} uppercase tracking-wider mb-2`}>FTE Savings</h3><p className={`text-sm ${textSub} leading-relaxed font-medium`}>FTE stands for "Full-Time Equivalent". In this tool, we assume a standard work month has roughly 160 hours. If your automation saves 160 hours, it is effectively doing the work of 1 full-time employee.</p></div>
+                  <div><h3 className={`text-sm font-bold ${textHeading} uppercase tracking-wider mb-2`}>Return on Investment (ROI)</h3><p className={`text-sm ${textSub} leading-relaxed font-medium`}>Measures profitability. An ROI of 100% means the automation paid for its total investment and generated that same amount in pure savings.</p></div>
+                  <div><h3 className={`text-sm font-bold ${textHeading} uppercase tracking-wider mb-2`}>Live Currency Conversion</h3><p className={`text-sm ${textSub} leading-relaxed font-medium`}>Currency switching automatically recalculates all monetary inputs and results using real-time exchange rates fetched securely from <strong>open.er-api.com</strong>. A small green dot on the currency selector indicates live rates are active. If you are offline, it seamlessly falls back to standard default rates.</p></div>
                   <div className={`${isDarkMode ? 'bg-blue-950/20 border-blue-900/30' : 'bg-blue-50/80 border-blue-100'} border rounded-2xl p-6 mt-4`}>
                     <h3 className={`text-sm font-bold ${isDarkMode ? 'text-blue-400' : 'text-blue-900'} uppercase tracking-wider mb-2 flex items-center`}><Settings size={16} className={`mr-2 ${isDarkMode ? 'text-blue-500' : 'text-blue-600'}`} /> What AI powers these insights?</h3>
                     <p className={`text-sm ${isDarkMode ? 'text-blue-200' : 'text-blue-800'} leading-relaxed font-medium`}>By default, this calculator securely integrates <strong>Pollinations.ai</strong> for free, seamless text generation. You can click the <strong className={`inline-flex items-center ${isDarkMode ? 'text-blue-300 bg-blue-950/50 border border-blue-900' : 'text-blue-900 bg-white shadow-sm'} px-2 py-0.5 rounded mx-1 hover:opacity-80 transition-colors`}><Settings size={12} className="mr-1"/> AI Config</strong> button at the top to optionally switch to other high-quality models using your own API keys.</p>
