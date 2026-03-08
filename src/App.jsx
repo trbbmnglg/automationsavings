@@ -31,7 +31,9 @@ import {
   EyeOff,
   Trash2,
   Moon,
-  Sun
+  Sun,
+  FlaskConical,
+  AlertTriangle
 } from 'lucide-react';
 
 // --- Global Constants & Configurations ---
@@ -166,6 +168,7 @@ export default function App() {
   const [roiInsights, setRoiInsights] = useStickyState('', 'as_roiInsights');
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
   const [showScore, setShowScore] = useStickyState(true, 'as_showScore');
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   
   // Export states
   const [isExportingXLSX, setIsExportingXLSX] = useState(false);
@@ -206,30 +209,51 @@ export default function App() {
     setCurrency(newCurrency);
   };
 
+  const handleGenerateMockData = () => {
+    setToolName('GenWizard Batch Automation');
+    setUseCase('Automate manual monitoring of 5000 Control M jobs to resolve delays and missed SLAs.');
+    setChallenges('• Scalability for 5000+ jobs\n• Operator fatigue from manual checks\n• Reactive instead of proactive response');
+    setQualitativeBenefits('• Improved SLA adherence\n• Team transition to proactive operations\n• Reduced alert flood noise');
+    setKpis('• Job Completion Rate\n• SLA Compliance %\n• Mean Time to Resolve (MTTR)');
+    setExecutionsPerMonth(1200);
+    setVolumePeriod('monthly');
+    setWorkingDays(22);
+    setEffortHours(0.5); // 30 mins
+    setResourceCost(30);
+    setAutomationPercent(90);
+    setDurationMonths(36);
+    setImplementationCost(5000);
+    setMonthlyRunCost(250);
+    setRunCostInflation(5);
+    setSreCostY1(1500);
+    setSreCostY2(500);
+    setAiPitch('');
+    setRoiInsights('');
+  };
+
   const handleClearAll = () => {
-    if (window.confirm("Are you sure you want to clear all project data? Your AI configurations and Theme settings will be saved.")) {
-      setToolName('');
-      setUseCase('');
-      setChallenges('');
-      setQualitativeBenefits('');
-      setKpis('');
-      setExecutionsPerMonth('');
-      setVolumePeriod('monthly');
-      setWorkingDays(22);
-      setEffortHours('');
-      setResourceCost('');
-      setAutomationPercent(0);
-      setDurationMonths('');
-      setImplementationCost('');
-      setMonthlyRunCost('');
-      setRunCostInflation('');
-      setSreCostY1('');
-      setSreCostY2('');
-      setCurrency('USD');
-      setScenario('realistic');
-      setAiPitch('');
-      setRoiInsights('');
-    }
+    setToolName('');
+    setUseCase('');
+    setChallenges('');
+    setQualitativeBenefits('');
+    setKpis('');
+    setExecutionsPerMonth('');
+    setVolumePeriod('monthly');
+    setWorkingDays(22);
+    setEffortHours('');
+    setResourceCost('');
+    setAutomationPercent(0);
+    setDurationMonths('');
+    setImplementationCost('');
+    setMonthlyRunCost('');
+    setRunCostInflation('');
+    setSreCostY1('');
+    setSreCostY2('');
+    setCurrency('USD');
+    setScenario('realistic');
+    setAiPitch('');
+    setRoiInsights('');
+    setShowClearConfirm(false);
   };
 
   // --- Complex Month-by-Month Calculations ---
@@ -442,7 +466,6 @@ export default function App() {
       XLSX.writeFile(wb, "Automation Savings.xlsx");
     } catch (e) {
       console.error(e);
-      alert("Failed to generate Excel file.");
     }
     setIsExportingXLSX(false);
   };
@@ -453,49 +476,109 @@ export default function App() {
     try {
       await loadScript('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js', 'JSZip');
       const pptxgen = window.pptxgen || await loadScript('https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js', 'PptxGenJS');
-      
+
       const pptx = new pptxgen();
-      pptx.layout = 'LAYOUT_WIDE';
+      pptx.layout = 'LAYOUT_WIDE'; // 13.33 x 7.5 inches
       const slide = pptx.addSlide();
 
-      const brandColor = '1E3A8A';
+      // Original Infographic Color Theme
+      const cBg = 'FAF1E6';
+      const cTextDark = '4A2322';
+      const cRust = 'EB716D';
+      const cCardBg = 'FFFFFF';
+      const cBorder = '4A2322';
+
+      slide.background = { color: cBg };
+
+      // ==========================================
+      // 1. Header Section
+      // ==========================================
+      const titleText = `${toolName || 'Proposed Automation'} Business Case`;
+      slide.addText(titleText.toUpperCase(), { 
+        x: 0.5, y: 0.4, w: 12.33, h: 0.6, fontSize: 32, bold: true, color: cRust, fontFace: 'Arial Black' 
+      });
+      
       const scenarioLabel = scenario.charAt(0).toUpperCase() + scenario.slice(1);
+      slide.addText(`Use Case: ${useCase || 'N/A'} | Scenario: ${scenarioLabel}`, { 
+        x: 0.5, y: 1.0, w: 12.33, h: 0.4, fontSize: 14, color: cTextDark, italic: true 
+      });
 
-      slide.addText(`${toolName || 'Proposed Automation'} Business Case`, { x: 0.5, y: 0.5, w: 12, h: 0.8, fontSize: 32, bold: true, color: brandColor });
-      slide.addText(`Use Case: ${useCase || 'N/A'} | Scenario: ${scenarioLabel}`, { x: 0.5, y: 1.2, w: 12, h: 0.4, fontSize: 16, color: '64748B', italic: true });
+      // ==========================================
+      // 2. Middle Left Box (Strategic Value)
+      // ==========================================
+      slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, { 
+        x: 0.5, y: 1.6, w: 6.0, h: 3.5, fill: { color: cCardBg }, line: { color: cBorder, width: 2 }, rectRadius: 0.05 
+      });
+      slide.addText('Strategic Value', { 
+        x: 0.8, y: 1.8, w: 5.4, h: 0.4, fontSize: 20, bold: true, color: cRust, fontFace: 'Arial Black' 
+      });
 
-      slide.addShape(pptx.ShapeType.rect, { x: 0.5, y: 1.8, w: 5, h: 2.8, fill: { color: 'F8FAFC' }, line: { color: 'E2E8F0', width: 1 } });
-      slide.addText([{ text: "Strategic Value", options: { bold: true, fontSize: 18, color: brandColor, breakLine: true } },
-                     { text: `\nKPIs:\n${kpis || 'None specified'}\n\nChallenges Solved:\n${challenges || 'None specified'}`, options: { fontSize: 12, color: '333333' } }], 
-                     { x: 0.7, y: 2.0, w: 4.6, h: 2.4, align: 'left', valign: 'top' });
+      // KPIs
+      slide.addText('KPIs:', { x: 0.8, y: 2.3, w: 2.6, h: 0.3, fontSize: 12, bold: true, color: cTextDark });
+      const kpiArr = kpis ? kpis.split('\n').filter(k=>k.trim()!=='').map(k => ({ text: k.replace('•','').trim(), options: { bullet: true } })) : [{ text: "None specified", options: { bullet: true } }];
+      slide.addText(kpiArr, { x: 0.8, y: 2.6, w: 2.6, h: 2.2, fontSize: 11, color: cTextDark, valign: 'top' });
 
-      slide.addShape(pptx.ShapeType.rect, { x: 5.8, y: 1.8, w: 6.8, h: 2.8, fill: { color: 'EFF6FF' }, line: { color: 'BFDBFE', width: 1 } });
-      slide.addText("Current vs. Future State", { x: 6.0, y: 2.0, w: 6.4, h: 0.4, bold: true, fontSize: 18, color: '1D4ED8' });
+      // Challenges Solved
+      slide.addText('Challenges Solved:', { x: 3.6, y: 2.3, w: 2.6, h: 0.3, fontSize: 12, bold: true, color: cTextDark });
+      const chalArr = challenges ? challenges.split('\n').filter(k=>k.trim()!=='').map(c => ({ text: c.replace('•','').trim(), options: { bullet: true } })) : [{ text: "None specified", options: { bullet: true } }];
+      slide.addText(chalArr, { x: 3.6, y: 2.6, w: 2.6, h: 2.2, fontSize: 11, color: cTextDark, valign: 'top' });
+
+      // ==========================================
+      // 3. Middle Right Box (Current vs Future)
+      // ==========================================
+      slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, { 
+        x: 6.8, y: 1.6, w: 6.0, h: 3.5, fill: { color: cCardBg }, line: { color: cBorder, width: 2 }, rectRadius: 0.05 
+      });
+      slide.addText('Current vs. Future State', { 
+        x: 7.1, y: 1.8, w: 5.4, h: 0.4, fontSize: 20, bold: true, color: cRust, fontFace: 'Arial Black' 
+      });
+
+      // Current State Block
+      slide.addText(
+        `Current Monthly Cost: ${formatCurrency(results.currentMonthlyCost)}\n\nCurrent Manual Effort: ${Math.round(results.totalManualHoursMonthly)} hrs (${results.currentFte.toFixed(1)} FTEs)`, 
+        { x: 7.1, y: 2.5, w: 2.7, h: 2.0, fontSize: 14, color: cTextDark, valign: 'middle' }
+      );
+
+      // Future State Block
+      slide.addText(
+        `Future Monthly Cost: ${formatCurrency(results.futureMonthlyCostAvg)}\n\nResidual Effort: ${Math.round(results.remainingManualHoursMonthly)} hrs (${results.toBeFte.toFixed(1)} FTEs)`, 
+        { x: 10.0, y: 2.5, w: 2.7, h: 2.0, fontSize: 14, color: cTextDark, valign: 'middle' }
+      );
+
+      // ==========================================
+      // 4. Bottom 4 Metric Cards
+      // ==========================================
+      const cardY = 5.4;
+      const cardH = 1.6;
+      const cardW = 2.85;
+      const positions = [0.5, 3.66, 6.82, 9.98]; // Evenly spaced across 13.33 slide width
       
-      slide.addText(`Current Monthly Cost: ${formatCurrency(results.currentMonthlyCost)}\nCurrent Manual Effort: ${Math.round(results.totalManualHoursMonthly)} hrs (${results.currentFte.toFixed(1)} FTEs)`, 
-        { x: 6.0, y: 2.5, w: 3, h: 1.5, fontSize: 14, color: '333333' });
-      
-      slide.addText(`Future Monthly Cost: ${formatCurrency(results.futureMonthlyCostAvg)}\nResidual Effort: ${Math.round(results.remainingManualHoursMonthly)} hrs (${results.toBeFte.toFixed(1)} FTEs)`, 
-        { x: 9.2, y: 2.5, w: 3, h: 1.5, fontSize: 14, color: '333333' });
-
-      const metricY = 5.0;
-      const cardW = 2.8;
-      
-      const addMetricCard = (xPos, title, value, bgColor, valueColor) => {
-        slide.addShape(pptx.ShapeType.roundRect, { x: xPos, y: metricY, w: cardW, h: 1.5, fill: { color: bgColor }, rectRadius: 0.1 });
-        slide.addText(title, { x: xPos, y: metricY + 0.2, w: cardW, h: 0.4, align: 'center', fontSize: 12, bold: true, color: '64748B' });
-        slide.addText(value, { x: xPos, y: metricY + 0.6, w: cardW, h: 0.7, align: 'center', fontSize: 24, bold: true, color: valueColor });
+      const addBottomCard = (xPos, title, value) => {
+        slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, { 
+          x: xPos, y: cardY, w: cardW, h: cardH, fill: { color: cCardBg }, line: { color: cBorder, width: 2 }, rectRadius: 0.05 
+        });
+        slide.addText(title, { 
+          x: xPos, y: cardY + 0.25, w: cardW, h: 0.4, align: 'center', fontSize: 11, bold: true, color: cTextDark, fontFace: 'Arial Black' 
+        });
+        slide.addText(value, { 
+          x: xPos, y: cardY + 0.65, w: cardW, h: 0.7, align: 'center', fontSize: 32, bold: true, color: cRust, fontFace: 'Arial Black' 
+        });
       };
 
-      addMetricCard(0.5, "LIFETIME NET SAVINGS", formatCurrency(results.netSavings), 'F1F5F9', '0F172A');
-      addMetricCard(3.6, "ROI", results.roi === Infinity ? '∞' : `${Math.round(results.roi)}%`, 'F1F5F9', '059669');
-      addMetricCard(6.7, "PAYBACK PERIOD", results.paybackPeriod === Infinity ? 'Never' : `${results.paybackPeriod.toFixed(1)} mo`, 'F1F5F9', '0F172A');
-      addMetricCard(9.8, "FTE CAPACITY SAVED", `${results.fteSavings.toFixed(1)} FTEs/mo`, 'F1F5F9', '4338CA');
+      addBottomCard(positions[0], "LIFETIME NET SAVINGS", formatCurrency(results.netSavings));
+      
+      const finalRoi = results.roi === Infinity ? '>1000%' : `${Math.round(results.roi)}%`;
+      addBottomCard(positions[1], "ROI", finalRoi);
+      
+      const paybackText = results.paybackPeriod === Infinity ? 'Never' : `${results.paybackPeriod.toFixed(1)} mo`;
+      addBottomCard(positions[2], "PAYBACK PERIOD", paybackText);
+      
+      addBottomCard(positions[3], "FTE CAPACITY SAVED", `${results.fteSavings.toFixed(1)} FTEs/mo`);
 
-      await pptx.writeFile({ fileName: `${toolName || 'Automation'} 1 slider.pptx` });
+      // 5. Final Export
+      await pptx.writeFile({ fileName: `${toolName || 'Automation'} Automation 1 Slider.pptx` });
     } catch (e) {
       console.error(e);
-      alert("Failed to generate PPTX file.");
     }
     setIsExportingPPTX(false);
   };
@@ -546,7 +629,7 @@ export default function App() {
   };
 
   const generateSuggestions = async () => {
-    if (!toolName && !useCase) { alert("Please enter a Tool Name and Use Case to enable Auto-Fill."); return; }
+    if (!toolName && !useCase) { return; }
     setIsGeneratingSuggestions(true);
     const prompt = `Based on Tool Name: ${sanitizeStr(toolName)} and Use Case: ${sanitizeStr(useCase)}, return ONLY a valid JSON object: {"kpis": ["..."], "challenges": ["..."], "benefits": ["..."]}`;
     try {
@@ -670,8 +753,14 @@ export default function App() {
                  </button>
                </Tooltip>
 
+               <Tooltip text="Generate Mock Data (Quick Test)">
+                 <button onClick={handleGenerateMockData} className={`flex items-center text-sm font-bold ${isDarkMode ? 'text-emerald-400 hover:bg-[#1E293B]' : 'text-slate-600 hover:text-emerald-600 hover:bg-white shadow-sm'} p-2.5 rounded-[14px] transition-all`}>
+                   <FlaskConical size={18} />
+                 </button>
+               </Tooltip>
+
                <Tooltip text="Clear Project Data">
-                 <button onClick={handleClearAll} className={`flex items-center text-sm font-bold ${isDarkMode ? 'text-slate-400 hover:text-red-400 hover:bg-[#1E293B]' : 'text-slate-600 hover:text-red-600 hover:bg-white shadow-sm'} p-2.5 rounded-[14px] transition-all`}>
+                 <button onClick={() => setShowClearConfirm(true)} className={`flex items-center text-sm font-bold ${isDarkMode ? 'text-slate-400 hover:text-red-400 hover:bg-[#1E293B]' : 'text-slate-600 hover:text-red-600 hover:bg-white shadow-sm'} p-2.5 rounded-[14px] transition-all`}>
                    <Trash2 size={18} />
                  </button>
                </Tooltip>
@@ -684,6 +773,23 @@ export default function App() {
             </div>
           </div>
         </header>
+
+        {/* --- Custom Clear Confirmation Modal --- */}
+        {showClearConfirm && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[250] p-4 animate-in fade-in duration-200">
+            <div className={`${isDarkMode ? 'bg-[#1E293B] border-slate-700' : 'bg-white border-slate-100'} rounded-[32px] shadow-2xl w-full max-w-sm overflow-hidden border p-8 text-center`}>
+              <div className="mx-auto w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 mb-6">
+                <AlertTriangle size={32} />
+              </div>
+              <h2 className={`text-2xl font-bold ${textHeading} mb-2`}>Clear all data?</h2>
+              <p className={`${textSub} text-sm mb-8`}>This will reset all your project inputs back to a clean slate. This action cannot be undone.</p>
+              <div className="flex flex-col space-y-3">
+                <button onClick={handleClearAll} className="bg-red-600 hover:bg-red-700 text-white py-3 rounded-2xl font-bold transition-all shadow-lg shadow-red-500/20">Yes, clear data</button>
+                <button onClick={() => setShowClearConfirm(false)} className={`${isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'} py-3 rounded-2xl font-bold transition-all`}>Cancel</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* --- AI Config Modal --- */}
         {isAiConfigOpen && (
@@ -825,7 +931,7 @@ export default function App() {
                   </label>
                   <div className="flex space-x-3">
                     <div className="relative flex-1">
-                      <input type="number" value={effortHours !== '' ? effortHours * 60 : ''} onChange={handleMinutesChange} placeholder="0" className={`${effortHours !== '' && effortHours < 0 ? inputErrorStyle : inputStyle} pr-12 font-mono text-lg`} />
+                      <input type="number" value={effortHours !== '' ? Math.round(effortHours * 60) : ''} onChange={handleMinutesChange} placeholder="0" className={`${effortHours !== '' && effortHours < 0 ? inputErrorStyle : inputStyle} pr-12 font-mono text-lg`} />
                       <span className={`absolute inset-y-0 right-0 pr-4 flex items-center ${textSub} font-bold text-xs pointer-events-none`}>MIN</span>
                     </div>
                     <div className="relative flex-1">
@@ -1260,9 +1366,9 @@ export default function App() {
                   <div><h3 className={`text-sm font-bold ${textHeading} uppercase tracking-wider mb-2`}>SRE / Maintenance Ramp-Down</h3><p className={`text-sm ${textSub} leading-relaxed font-medium`}>Complex automations usually require heavier support when they are first launched, which tapers off as the system stabilizes. The advanced cost settings allow you to accurately forecast this ramp-down.</p></div>
                 </div>
                 <div className="space-y-6">
-                  <div><h3 className={`text-sm font-bold ${textHeading} uppercase tracking-wider mb-2`}>FTE Savings</h3><p className={`text-sm ${textSub} leading-relaxed font-medium`}>FTE stands for "Full-Time Equivalent". In this tool, we assume a standard work month has roughly 160 hours. If your automation saves 160 hours, it is effectively doing the work of 1 full-time employee.</p></div>
-                  <div><h3 className={`text-sm font-bold ${textHeading} uppercase tracking-wider mb-2`}>Return on Investment (ROI)</h3><p className={`text-sm ${textSub} leading-relaxed font-medium`}>Measures profitability. An ROI of 100% means the automation paid for its total investment and generated that same amount in pure savings.</p></div>
-                  <div><h3 className={`text-sm font-bold ${textHeading} uppercase tracking-wider mb-2`}>Live Currency Conversion</h3><p className={`text-sm ${textSub} leading-relaxed font-medium`}>Currency switching automatically recalculates all monetary inputs and results using real-time exchange rates fetched securely from <strong>open.er-api.com</strong>. A small green dot on the currency selector indicates live rates are active. If you are offline, it seamlessly falls back to standard default rates.</p></div>
+                  <div><h3 className={`text-sm font-bold ${textSub} uppercase tracking-wider mb-2`}>FTE Savings</h3><p className={`text-sm ${textSub} leading-relaxed font-medium`}>FTE stands for "Full-Time Equivalent". In this tool, we assume a standard work month has roughly 160 hours. If your automation saves 160 hours, it is effectively doing the work of 1 full-time employee.</p></div>
+                  <div><h3 className={`text-sm font-bold ${textSub} uppercase tracking-wider mb-2`}>Return on Investment (ROI)</h3><p className={`text-sm ${textSub} leading-relaxed font-medium`}>Measures profitability. An ROI of 100% means the automation paid for its total investment and generated that same amount in pure savings.</p></div>
+                  <div><h3 className={`text-sm font-bold ${textSub} uppercase tracking-wider mb-2`}>Live Currency Conversion</h3><p className={`text-sm ${textSub} leading-relaxed font-medium`}>Currency switching automatically recalculates all monetary inputs and results using real-time exchange rates fetched securely from <strong>open.er-api.com</strong>. A small green dot on the currency selector indicates live rates are active. If you are offline, it seamlessly falls back to standard default rates.</p></div>
                   <div className={`${isDarkMode ? 'bg-blue-950/20 border-blue-900/30' : 'bg-blue-50/80 border-blue-100'} border rounded-2xl p-6 mt-4`}>
                     <h3 className={`text-sm font-bold ${isDarkMode ? 'text-blue-400' : 'text-blue-900'} uppercase tracking-wider mb-2 flex items-center`}><Settings size={16} className={`mr-2 ${isDarkMode ? 'text-blue-500' : 'text-blue-600'}`} /> What AI powers these insights?</h3>
                     <p className={`text-sm ${isDarkMode ? 'text-blue-200' : 'text-blue-800'} leading-relaxed font-medium`}>By default, this calculator securely integrates <strong>Pollinations.ai</strong> for free, seamless text generation. You can click the <strong className={`inline-flex items-center ${isDarkMode ? 'text-blue-300 bg-blue-950/50 border border-blue-900' : 'text-blue-900 bg-white shadow-sm'} px-2 py-0.5 rounded mx-1 hover:opacity-80 transition-colors`}><Settings size={12} className="mr-1"/> AI Config</strong> button at the top to optionally switch to other high-quality models using your own API keys.</p>
