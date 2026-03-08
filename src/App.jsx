@@ -19,12 +19,25 @@ import {
   Sparkles, 
   Loader2, 
   ChevronDown, 
-  ChevronUp, 
   Settings, 
   X, 
   ExternalLink, 
-  ArrowRightLeft
+  ArrowRightLeft,
+  Coins,
+  Wrench,
+  Download
 } from 'lucide-react';
+
+// --- Custom Tooltip Component ---
+const Tooltip = ({ text, children }) => (
+  <div className="relative group inline-flex items-center cursor-help">
+    {children}
+    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[200px] sm:max-w-xs p-2.5 bg-slate-800 text-white text-[11px] font-medium rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 text-center shadow-xl leading-relaxed">
+      {text}
+      <div className="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-slate-800"></div>
+    </div>
+  </div>
+);
 
 export default function App() {
   // --- Qualitative State ---
@@ -41,9 +54,33 @@ export default function App() {
   const [effortHours, setEffortHours] = useState(0.333333); // 20 mins default
   const [resourceCost, setResourceCost] = useState(30);
   const [automationPercent, setAutomationPercent] = useState(80);
-  const [durationMonths, setDurationMonths] = useState(24);
+  const [durationMonths, setDurationMonths] = useState(36);
+  
+  // Base Costs
   const [implementationCost, setImplementationCost] = useState(5000);
   const [monthlyRunCost, setMonthlyRunCost] = useState(250); 
+  
+  // Advanced Ongoing Costs
+  const [runCostInflation, setRunCostInflation] = useState(5); // 5% YOY increase default
+  const [sreCostY1, setSreCostY1] = useState(1500); // Higher cost year 1
+  const [sreCostY2, setSreCostY2] = useState(500); // Tapered cost year 2+
+
+  const [currency, setCurrency] = useState('USD');
+
+  // Approximate exchange rates relative to USD
+  const exchangeRates = {
+    USD: 1,
+    PHP: 56.5,
+    EUR: 0.92,
+    JPY: 150.5
+  };
+
+  const currencyConfig = {
+    USD: { locale: 'en-US', code: 'USD' },
+    PHP: { locale: 'en-PH', code: 'PHP' },
+    EUR: { locale: 'de-DE', code: 'EUR' },
+    JPY: { locale: 'ja-JP', code: 'JPY' }
+  };
 
   // --- UI State ---
   const [copied, setCopied] = useState(false);
@@ -105,64 +142,140 @@ export default function App() {
     </div>
   );
 
-  // --- Calculations ---
+  const handleCurrencyChange = (newCurrency) => {
+    if (newCurrency === currency) return;
+    
+    // Calculate the conversion multiplier between the old and new currency
+    const multiplier = exchangeRates[newCurrency] / exchangeRates[currency];
+    
+    // Convert and update the quantitative inputs so they reflect the new currency value
+    setResourceCost(prev => Number((prev * multiplier).toFixed(2)));
+    setImplementationCost(prev => Number((prev * multiplier).toFixed(0)));
+    setMonthlyRunCost(prev => Number((prev * multiplier).toFixed(2)));
+    setSreCostY1(prev => Number((prev * multiplier).toFixed(2)));
+    setSreCostY2(prev => Number((prev * multiplier).toFixed(2)));
+    
+    setCurrency(newCurrency);
+  };
+
+  // --- Complex Month-by-Month Calculations ---
   const results = useMemo(() => {
     const exactEffort = Math.max(0, Number(effortHours));
     const rawExecutions = Math.max(0, Number(executionsPerMonth));
     const effectiveExecutions = volumePeriod === 'daily' ? rawExecutions * Math.max(1, Number(workingDays)) : rawExecutions;
-    const executions = effectiveExecutions;
     const cost = Math.max(0, Number(resourceCost));
     const autoRatio = Math.max(0, Math.min(100, Number(automationPercent))) / 100;
     const months = Math.max(0, Number(durationMonths));
     const implCost = Math.max(0, Number(implementationCost));
-    const runCostMonthly = Math.max(0, Number(monthlyRunCost));
+    
+    const baseRunCost = Math.max(0, Number(monthlyRunCost));
+    const inflationRate = Math.max(0, Number(runCostInflation)) / 100;
+    const sreY1 = Math.max(0, Number(sreCostY1));
+    const sreY2 = Math.max(0, Number(sreCostY2));
 
-    const hoursMonthlyCurrent = executions * exactEffort;
+    const hoursMonthlyCurrent = effectiveExecutions * exactEffort;
     const hoursMonthlySaved = hoursMonthlyCurrent * autoRatio;
     const hoursSavedTotal = hoursMonthlySaved * months;
     
     const currentMonthlyCost = hoursMonthlyCurrent * cost;
     const grossMonthlySave = hoursMonthlySaved * cost;
-    const netMonthlySave = grossMonthlySave - runCostMonthly;
     
-    // Safety Guard: Ensure future cost is never negative
-    const futureMonthlyCost = Math.max(0, (currentMonthlyCost - grossMonthlySave) + runCostMonthly);
+    // Month-by-month forecasting engine
+    let totalRunCost = 0;
+    let totalSreCost = 0;
+    let totalGrossSave = 0;
     
-    const totalGrossSave = grossMonthlySave * months;
-    const totalRunCost = runCostMonthly * months;
-    const totalInvestment = implCost + totalRunCost;
+    let cumulativeNet = -implCost;
+    let paybackMonth = Infinity;
+    
+    const monthlyData = [];
+
+    // Month 0 (Initial Investment)
+    monthlyData.push({
+      month: 0,
+      year: 0,
+      implementationCost: implCost,
+      runCost: 0,
+      sreCost: 0,
+      grossSavings: 0,
+      netCashFlow: -implCost,
+      cumulativeNet: cumulativeNet
+    });
+
+    for (let m = 1; m <= months; m++) {
+      let currentYear = Math.ceil(m / 12);
+      
+      // Calculate this month's dynamic costs
+      let currentRunCost = baseRunCost * Math.pow(1 + inflationRate, currentYear - 1);
+      let currentSreCost = currentYear === 1 ? sreY1 : sreY2;
+      
+      totalRunCost += currentRunCost;
+      totalSreCost += currentSreCost;
+      totalGrossSave += grossMonthlySave;
+
+      let monthlyNet = grossMonthlySave - currentRunCost - currentSreCost;
+      cumulativeNet += monthlyNet;
+
+      monthlyData.push({
+        month: m,
+        year: currentYear,
+        implementationCost: 0,
+        runCost: currentRunCost,
+        sreCost: currentSreCost,
+        grossSavings: grossMonthlySave,
+        netCashFlow: monthlyNet,
+        cumulativeNet: cumulativeNet
+      });
+
+      // Track payback period precision
+      if (paybackMonth === Infinity && cumulativeNet >= 0) {
+        let remainder = cumulativeNet; // Overshoot amount
+        let fraction = 1 - (remainder / monthlyNet); // Reverse calculate fraction of the month
+        paybackMonth = m - 1 + fraction;
+      }
+    }
+
+    // Safety fallback for immediate ROI
+    if (paybackMonth === Infinity && months === 0 && implCost === 0) paybackMonth = 0;
+
+    const totalInvestment = implCost + totalRunCost + totalSreCost;
     const netSave = totalGrossSave - totalInvestment;
-    
     const roi = totalInvestment > 0 ? (netSave / totalInvestment) * 100 : (netSave > 0 ? Infinity : 0);
     
-    // Safety Guard: If savings don't cover run costs, payback is Infinity (Never)
-    const payback = netMonthlySave > 0 ? implCost / netMonthlySave : (implCost === 0 ? 0 : Infinity);
+    // Average Monthly Net (For high-level display)
+    const avgNetMonthlySave = months > 0 ? (totalGrossSave - totalRunCost - totalSreCost) / months : 0;
+    const futureMonthlyCostAvg = months > 0 ? ((currentMonthlyCost * months) - totalGrossSave + totalRunCost + totalSreCost) / months : currentMonthlyCost;
+
     const fte = hoursMonthlySaved / 160; 
 
     return {
       effectiveExecutions,
       currentMonthlyCost,
-      futureMonthlyCost,
+      futureMonthlyCostAvg,
       grossMonthlySave,
-      netMonthlySave,
-      annualSavings: netMonthlySave * 12,
+      avgNetMonthlySave,
+      annualSavings: avgNetMonthlySave * 12,
       totalGrossSavings: totalGrossSave,
       totalInvestment,
+      totalRunCost,
+      totalSreCost,
       netSavings: netSave,
       roi,
-      paybackPeriod: payback,
+      paybackPeriod: paybackMonth,
       hoursSavedMonthly: hoursMonthlySaved,
       hoursSavedTotal: hoursSavedTotal,
       fteSavings: fte,
       totalManualHoursMonthly: hoursMonthlyCurrent,
-      remainingManualHoursMonthly: Math.max(0, hoursMonthlyCurrent - hoursMonthlySaved)
+      remainingManualHoursMonthly: Math.max(0, hoursMonthlyCurrent - hoursMonthlySaved),
+      monthlyData
     };
-  }, [executionsPerMonth, effortHours, resourceCost, automationPercent, durationMonths, implementationCost, monthlyRunCost, volumePeriod, workingDays]);
+  }, [executionsPerMonth, effortHours, resourceCost, automationPercent, durationMonths, implementationCost, monthlyRunCost, runCostInflation, sreCostY1, sreCostY2, volumePeriod, workingDays]);
 
   const formatCurrency = (value) => {
-    return new Intl.NumberFormat('en-US', {
+    const config = currencyConfig[currency];
+    return new Intl.NumberFormat(config.locale, {
       style: 'currency',
-      currency: 'USD',
+      currency: config.code,
       maximumFractionDigits: 0
     }).format(value);
   };
@@ -172,11 +285,167 @@ export default function App() {
     setEffortHours(mins / 60);
   };
 
-  const pitchText = `By implementing ${toolName || "the proposed automation"}${useCase ? ` to ${useCase}` : ''}, we anticipate automating ${automationPercent}% of the targeted workload. Currently, this task requires ${Number(results.effectiveExecutions).toLocaleString()} executions per month, taking approximately ${Math.round(effortHours * 60)} minutes each.
+  // --- Export to CSV Logic (Pivoted Table Format) ---
+  const handleExport = () => {
+    const escapeCSV = (str) => {
+      if (str === null || str === undefined) return '""';
+      const stringified = String(str);
+      // Escape double quotes by doubling them, wrap field in quotes
+      return `"${stringified.replace(/"/g, '""')}"`;
+    };
 
-${(challenges || kpis || qualitativeBenefits) ? 'Strategic Value & Pain Points Addressed:\n' : ''}${challenges ? `Challenges:\n${challenges}\n\n` : ''}${kpis ? `Target KPIs:\n${kpis}\n\n` : ''}${qualitativeBenefits ? `Expected Benefits:\n${qualitativeBenefits}\n\n` : ''}Financially, this requires an initial investment of ${formatCurrency(implementationCost)} and an ongoing run cost of ${formatCurrency(monthlyRunCost)}/month. It yields a gross labor cost avoidance of ${formatCurrency(results.grossMonthlySave)} per month. After factoring in run costs, this amounts to a Net Savings of ${formatCurrency(results.netSavings)} over the remaining ${durationMonths}-month project duration. The estimated payback period is ${results.paybackPeriod === Infinity ? 'Never' : results.paybackPeriod.toFixed(1) + ' months'}, delivering an ROI of ${results.roi === Infinity ? 'Infinite' : `${Math.round(results.roi)}%`}.
+    let csv = '';
+    const addRow = (rowArr) => { csv += rowArr.map(escapeCSV).join(',') + '\r\n'; };
 
-Operationally, the automation recaptures ${Math.round(results.hoursSavedTotal).toLocaleString()} resource hours over the project life. This represents an ongoing monthly savings of ${results.fteSavings.toFixed(1)} FTEs (Full-Time Equivalents) that can be redirected toward higher-value, strategic initiatives.`;
+    // 1. Report Header
+    addRow(['AUTOMATION SAVINGS & ROI REPORT']);
+    addRow(['Generated on', new Date().toLocaleDateString()]);
+    addRow([]);
+
+    // 2. Qualitative Info
+    addRow(['PROJECT DETAILS', '']);
+    addRow(['Automation Name', toolName || 'N/A']);
+    addRow(['Use Case', useCase || 'N/A']);
+    addRow(['Target KPIs', kpis || 'N/A']);
+    addRow(['Challenges Addressed', challenges || 'N/A']);
+    addRow(['Strategic Benefits', qualitativeBenefits || 'N/A']);
+    addRow([]);
+
+    // 3. Quantitative Inputs
+    addRow(['QUANTITATIVE INPUTS', '']);
+    addRow(['Currency', currency]);
+    addRow(['Executions', `${executionsPerMonth} per ${volumePeriod}`]);
+    if (volumePeriod === 'daily') addRow(['Working Days/Mo', workingDays]);
+    addRow(['Time per Task (Mins)', (effortHours * 60).toFixed(2)]);
+    addRow(['Resource Cost / Hour', formatCurrency(resourceCost)]);
+    addRow(['Percentage Automated', `${automationPercent}%`]);
+    addRow(['Project Duration (Months)', durationMonths]);
+    addRow(['Implementation Cost', formatCurrency(implementationCost)]);
+    addRow(['Base Monthly Run Cost', formatCurrency(monthlyRunCost)]);
+    addRow(['Run Cost YOY Inflation (%)', `${runCostInflation}%`]);
+    addRow(['SRE Cost (Year 1 / Monthly)', formatCurrency(sreCostY1)]);
+    addRow(['SRE Cost (Year 2+ / Monthly)', formatCurrency(sreCostY2)]);
+    addRow([]);
+
+    // 4. Financial Summary
+    addRow(['EXECUTIVE SUMMARY', '']);
+    addRow(['Total Lifetime Net Savings', formatCurrency(results.netSavings)]);
+    addRow(['Return on Investment (ROI)', results.roi === Infinity ? 'Infinite' : `${Math.round(results.roi)}%`]);
+    addRow(['Payback Period (Months)', results.paybackPeriod === Infinity ? 'Never' : results.paybackPeriod.toFixed(1)]);
+    addRow(['Total Investment', formatCurrency(results.totalInvestment)]);
+    addRow(['FTEs Reallocated / Month', results.fteSavings.toFixed(1)]);
+    addRow(['Total Hours Saved', Math.round(results.hoursSavedTotal)]);
+    addRow([]);
+
+    // ---------------------------------------------------------
+    // 5. YEARLY PROJECTION TABLE (Pivoted horizontally)
+    // ---------------------------------------------------------
+    addRow(['YEARLY PROJECTION TABLE']);
+    
+    // Group monthly data into Yearly Buckets
+    const yearlyData = {};
+    // Seed Year 0
+    yearlyData[0] = { impl: implementationCost, run: 0, sre: 0, gross: 0, net: -implementationCost, cum: -implementationCost };
+    
+    results.monthlyData.forEach(d => {
+      if (d.month === 0) return; // Skip month 0, already seeded
+      if (!yearlyData[d.year]) {
+        yearlyData[d.year] = { impl: 0, run: 0, sre: 0, gross: 0, net: 0, cum: 0 };
+      }
+      yearlyData[d.year].impl += d.implementationCost;
+      yearlyData[d.year].run += d.runCost;
+      yearlyData[d.year].sre += d.sreCost;
+      yearlyData[d.year].gross += d.grossSavings;
+      yearlyData[d.year].net += d.netCashFlow;
+      yearlyData[d.year].cum = d.cumulativeNet; // End of year cumulative
+    });
+
+    const maxYear = Math.max(...Object.keys(yearlyData).map(Number));
+    
+    // Header Row: Metric | Year 0 | Year 1 ...
+    const yearHeaderRow = ['Metric', 'Year 0 (Initial)'];
+    for(let y=1; y<=maxYear; y++) yearHeaderRow.push(`Year ${y}`);
+    addRow(yearHeaderRow);
+
+    const yrImplRow = ['Implementation Cost'];
+    const yrRunRow = ['Run Cost (Licenses/Infra)'];
+    const yrSreRow = ['SRE & Maintenance'];
+    const yrGrossRow = ['Gross Labor Savings'];
+    const yrNetRow = ['Net Cash Flow'];
+    const yrCumRow = ['Cumulative Cash Flow'];
+
+    for(let y=0; y<=maxYear; y++) {
+      const yd = yearlyData[y] || { impl: 0, run: 0, sre: 0, gross: 0, net: 0, cum: 0 };
+      // Make costs negative for standard accounting formats
+      yrImplRow.push(formatCurrency(-yd.impl));
+      yrRunRow.push(formatCurrency(-yd.run));
+      yrSreRow.push(formatCurrency(-yd.sre));
+      yrGrossRow.push(formatCurrency(yd.gross));
+      yrNetRow.push(formatCurrency(yd.net));
+      yrCumRow.push(formatCurrency(yd.cum));
+    }
+
+    addRow(yrGrossRow);
+    addRow(yrImplRow);
+    addRow(yrRunRow);
+    addRow(yrSreRow);
+    addRow(yrNetRow);
+    addRow(yrCumRow);
+    addRow([]);
+
+    // ---------------------------------------------------------
+    // 6. MONTH-BY-MONTH PROJECTION TABLE (Pivoted horizontally)
+    // ---------------------------------------------------------
+    addRow(['MONTH-BY-MONTH PROJECTION TABLE']);
+    
+    // Header Row: Metric | Month 0 | Month 1 ...
+    const monthHeaderRow = ['Metric'];
+    for(let m=0; m<=durationMonths; m++) monthHeaderRow.push(m === 0 ? 'Month 0' : `Month ${m}`);
+    addRow(monthHeaderRow);
+
+    const moImplRow = ['Implementation Cost'];
+    const moRunRow = ['Run Cost (Licenses/Infra)'];
+    const moSreRow = ['SRE & Maintenance'];
+    const moGrossRow = ['Gross Labor Savings'];
+    const moNetRow = ['Net Cash Flow'];
+    const moCumRow = ['Cumulative Cash Flow'];
+
+    results.monthlyData.forEach(d => {
+      // Make costs negative for standard accounting formats
+      moImplRow.push(formatCurrency(-d.implementationCost));
+      moRunRow.push(formatCurrency(-d.runCost));
+      moSreRow.push(formatCurrency(-d.sreCost));
+      moGrossRow.push(formatCurrency(d.grossSavings));
+      moNetRow.push(formatCurrency(d.netCashFlow));
+      moCumRow.push(formatCurrency(d.cumulativeNet));
+    });
+
+    addRow(moGrossRow);
+    addRow(moImplRow);
+    addRow(moRunRow);
+    addRow(moSreRow);
+    addRow(moNetRow);
+    addRow(moCumRow);
+    addRow([]);
+
+    // 7. Methodology Appended Below Tables
+    addRow(['METHODOLOGY & CALCULATIONS']);
+    addRow(['Month-By-Month Engine', 'This calculator loops through every month of the project\'s duration to accurately compound Run Cost Inflation and dynamically switch between Y1 vs Y2+ SRE/Maintenance costs. This guarantees a mathematically precise Payback Period and ROI.']);
+    addRow(['Net Savings', 'The actual financial gain. Projects the gross savings over the lifetime of the project and subtracts the initial implementation cost, the inflating monthly run costs, and the variable monthly maintenance costs.']);
+    addRow(['SRE / Maintenance Ramp-Down', 'Complex automations usually require heavier support when they are first launched, which tapers off as the system stabilizes. The advanced cost settings allow you to accurately forecast this ramp-down.']);
+    addRow(['FTE Savings', 'FTE stands for "Full-Time Equivalent". In this tool, we assume a standard work month has roughly 160 hours (40 hours/week × 4 weeks). If your automation saves 160 hours, it is effectively doing the work of 1 full-time employee.']);
+    addRow(['Return on Investment (ROI)', 'Measures profitability. An ROI of 100% means the automation paid for its total investment (Implementation + Run Costs + Maintenance) and generated that same amount in pure savings.']);
+
+    // Trigger download
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }); // \uFEFF for Excel UTF-8 BOM
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${(toolName || 'Automation').replace(/[^a-z0-9]/gi, '_').toLowerCase()}_roi_report.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const fetchWithRetry = async (url, options) => {
     const delays = [1000, 2000, 4000, 8000, 16000];
@@ -254,11 +523,13 @@ Details:
 - Qualitative Benefits: ${qualitativeBenefits || 'N/A'}
 - Total Executions: ${Number(results.effectiveExecutions).toLocaleString()} per month
 
-Financials:
+Financials (Currency: ${currency}):
 - Implementation Cost: ${formatCurrency(implementationCost)}
-- Monthly Run Cost: ${formatCurrency(monthlyRunCost)}
+- Base Monthly Run Cost: ${formatCurrency(monthlyRunCost)} (Inflating ${runCostInflation}% Yearly)
+- SRE/Maintenance Cost Year 1: ${formatCurrency(sreCostY1)}/month
+- SRE/Maintenance Cost Year 2+: ${formatCurrency(sreCostY2)}/month
 - Gross Monthly Labor Savings: ${formatCurrency(results.grossMonthlySave)}
-- Net Monthly Savings (after run cost): ${formatCurrency(results.netMonthlySave)}
+- Avg Net Monthly Savings (after run & SRE costs): ${formatCurrency(results.avgNetMonthlySave)}
 - Net Savings (Lifetime): ${formatCurrency(results.netSavings)} over ${durationMonths} months
 - Payback Period: ${results.paybackPeriod === Infinity ? 'Never' : results.paybackPeriod.toFixed(1) + ' months'}
 - ROI: ${results.roi === Infinity ? 'Infinite' : `${Math.round(results.roi)}%`}
@@ -266,7 +537,7 @@ Financials:
 
 Tone: Professional and general business case.
 
-Write a compelling executive summary (2-3 paragraphs). This is a formal business document section, NOT an email or letter. Do NOT include any greetings (e.g., "Dear X") or sign-offs (e.g., "Best regards", "Sincerely"). Avoid markdown formatting like asterisks (**), use plain text with clear paragraph breaks. Highlight strategic value, financial return, and operational impact.`;
+Write a compelling executive summary (2-3 paragraphs). This is a formal business document section, NOT an email or letter. Do NOT include any greetings (e.g., "Dear X") or sign-offs (e.g., "Best regards", "Sincerely"). Avoid markdown formatting like asterisks (**), use plain text with clear paragraph breaks. Highlight strategic value, financial return (factoring in maintenance and inflation), and operational impact.`;
 
     try {
       const text = await callAI(prompt);
@@ -325,14 +596,15 @@ Return ONLY a valid JSON object matching this exact schema, with no additional t
     const prompt = `Act as an expert financial strategist. Analyze the following automation project metrics and provide 2-3 brief, actionable bullet points on how to improve the ROI or reduce the payback period.
 
 - Implementation Cost: ${formatCurrency(implementationCost)}
-- Monthly Run Cost: ${formatCurrency(monthlyRunCost)}
-- Net Monthly Savings: ${formatCurrency(results.netMonthlySave)}
+- Monthly Run Cost: ${formatCurrency(monthlyRunCost)} (Inflating ${runCostInflation}% YOY)
+- Maintenance Cost (Y1 vs Y2+): ${formatCurrency(sreCostY1)} vs ${formatCurrency(sreCostY2)}
+- Average Net Monthly Savings: ${formatCurrency(results.avgNetMonthlySave)}
 - Expected Lifetime Net Savings: ${formatCurrency(results.netSavings)}
 - Automation Percentage: ${automationPercent}%
 - Current ROI: ${results.roi === Infinity ? 'Infinite' : `${Math.round(results.roi)}%`}
 - Payback Period: ${results.paybackPeriod === Infinity ? 'Never' : results.paybackPeriod.toFixed(1) + ' months'}
 
-Keep the advice specific to these numbers, practical, and highly concise. Do not use markdown asterisks (*), use standard dashes for bullets.`;
+Keep the advice specific to these numbers (focusing on license inflation and maintenance ramp-down), practical, and highly concise. Do not use markdown asterisks (*), use standard dashes for bullets.`;
 
     try {
       const text = await callAI(prompt);
@@ -347,7 +619,9 @@ Keep the advice specific to these numbers, practical, and highly concise. Do not
   };
 
   const handleCopy = () => {
-    const textToCopy = aiPitch || pitchText;
+    const textToCopy = aiPitch;
+    if (!textToCopy) return;
+    
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(textToCopy);
     } else {
@@ -379,18 +653,61 @@ Keep the advice specific to these numbers, practical, and highly concise. Do not
             </div>
             <div>
               <h1 className="text-xl md:text-2xl font-extrabold text-slate-900 tracking-tight">Automation Savings</h1>
-              <p className="text-slate-500 text-sm font-medium hidden sm:block">Quantify financial ROI, time recaptured, and operational impact.</p>
+              <p className="text-slate-500 text-sm font-medium hidden sm:block">Quantify ROI, time recaptured, and dynamic operational impact.</p>
             </div>
           </div>
           
-          <button 
-            onClick={() => setIsAiConfigOpen(true)}
-            className="flex items-center space-x-2 text-sm font-bold text-slate-600 hover:text-blue-700 bg-slate-100 hover:bg-blue-50 px-4 py-3 rounded-2xl transition-all border border-transparent hover:border-blue-100"
-            title="Configure AI Settings"
-          >
-            <Settings size={18} />
-            <span className="hidden sm:inline">AI Config</span>
-          </button>
+          <div className="flex items-center space-x-3">
+            {/* Currency Switcher */}
+            <div className="hidden md:flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200/50 mr-2">
+              {Object.keys(currencyConfig).map((curr) => (
+                <button
+                  key={curr}
+                  onClick={() => handleCurrencyChange(curr)}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all ${
+                    currency === curr 
+                      ? 'bg-white text-blue-600 shadow-sm' 
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  {curr}
+                </button>
+              ))}
+            </div>
+
+            {/* Mobile Currency Dropdown */}
+            <div className="md:hidden relative mr-2">
+              <select 
+                value={currency} 
+                onChange={(e) => handleCurrencyChange(e.target.value)}
+                className="appearance-none bg-slate-100 border border-slate-200/50 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-2xl outline-none"
+              >
+                {Object.keys(currencyConfig).map(curr => (
+                  <option key={curr} value={curr}>{curr}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Export Button */}
+            <button 
+              onClick={handleExport}
+              className="flex items-center space-x-2 text-sm font-bold text-slate-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/60 px-4 py-3 rounded-2xl transition-all"
+              title="Export Report to Excel (CSV)"
+            >
+              <Download size={18} />
+              <span className="hidden sm:inline">Export</span>
+            </button>
+
+            {/* Settings Button */}
+            <button 
+              onClick={() => setIsAiConfigOpen(true)}
+              className="flex items-center space-x-2 text-sm font-bold text-slate-600 hover:text-blue-700 bg-slate-100 hover:bg-blue-50 px-4 py-3 rounded-2xl transition-all border border-transparent hover:border-blue-100"
+              title="Configure AI Settings"
+            >
+              <Settings size={18} />
+              <span className="hidden lg:inline">AI Config</span>
+            </button>
+          </div>
         </header>
 
         {/* --- AI Config Modal --- */}
@@ -621,7 +938,7 @@ Keep the advice specific to these numbers, practical, and highly concise. Do not
                   <label className="block text-sm font-bold text-slate-700 mb-2">Resource Cost (Hourly)</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                      <DollarSign size={18} />
+                      <Coins size={18} />
                     </div>
                     <input 
                       type="number" value={resourceCost} onChange={(e) => setResourceCost(e.target.value)}
@@ -629,7 +946,7 @@ Keep the advice specific to these numbers, practical, and highly concise. Do not
                       className={`${resourceCost < 0 ? inputErrorStyle : inputStyle} pl-10 font-mono text-lg`}
                     />
                   </div>
-                  {renderHint('cost', 'The fully loaded hourly wage of the employee currently doing this task manually.')}
+                  {renderHint('cost', `The fully loaded hourly wage of the employee currently doing this task manually (in ${currency}).`)}
                 </div>
 
                 {/* Duration */}
@@ -669,38 +986,97 @@ Keep the advice specific to these numbers, practical, and highly concise. Do not
                   {renderHint('automation', 'What percentage of the manual work is being completely eliminated by the bot?')}
                 </div>
 
-                {/* Cost Inputs */}
-                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-200/60">
-                  <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-1">Implementation Cost</label>
-                    <p className="text-xs font-medium text-slate-500 mb-2">One-time cost to build/procure.</p>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                        <DollarSign size={18} />
-                      </div>
-                      <input 
-                        type="number" min="0" value={implementationCost} onChange={(e) => setImplementationCost(e.target.value)}
-                        onFocus={() => setActiveField('implementation')} onBlur={() => setActiveField(null)}
-                        className={`${implementationCost < 0 ? inputErrorStyle : inputStyle} pl-10 font-mono text-lg`}
-                      />
-                    </div>
-                    {renderHint('implementation', 'Total upfront investment required (e.g., developer salaries, software licenses, vendor fees).')}
+                {/* --- Unified Investment & Ongoing Costs Section --- */}
+                <div className="md:col-span-2 pt-5 border-t border-slate-200/60 mt-2">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Wrench size={18} className="text-blue-600" />
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Investment & Ongoing Costs</h3>
                   </div>
-                  
-                  <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-1">Monthly Run Cost</label>
-                    <p className="text-xs font-medium text-slate-500 mb-2">Ongoing infrastructure & licenses.</p>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                        <DollarSign size={18} />
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    
+                    {/* Implementation (One-Time) */}
+                    <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">One-Time Implementation</label>
+                        <p className="text-[10px] text-slate-500 mb-3 leading-tight">Upfront investment cost to build or procure.</p>
                       </div>
-                      <input 
-                        type="number" min="0" value={monthlyRunCost} onChange={(e) => setMonthlyRunCost(e.target.value)}
-                        onFocus={() => setActiveField('runCost')} onBlur={() => setActiveField(null)}
-                        className={`${monthlyRunCost < 0 ? inputErrorStyle : inputStyle} pl-10 font-mono text-lg`}
-                      />
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400"><Coins size={14} /></div>
+                        <input 
+                          type="number" min="0" value={implementationCost} onChange={(e) => setImplementationCost(e.target.value)}
+                          onFocus={() => setActiveField('implementation')} onBlur={() => setActiveField(null)}
+                          className={`w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono pl-8`}
+                        />
+                      </div>
+                      {renderHint('implementation', 'Total upfront investment required (e.g., developer salaries, software licenses, vendor fees).')}
                     </div>
-                    {renderHint('runCost', 'Monthly recurring costs to keep the automation running (e.g., SaaS licenses, API fees, cloud hosting).')}
+
+                    {/* Run Cost / Licenses */}
+                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">Base Monthly Run Cost</label>
+                        <p className="text-[10px] text-slate-500 mb-2 leading-tight">Ongoing recurring licenses/infra.</p>
+                      </div>
+                      <div className="space-y-3">
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400"><Coins size={14} /></div>
+                          <input 
+                            type="number" min="0" value={monthlyRunCost} onChange={(e) => setMonthlyRunCost(e.target.value)}
+                            onFocus={() => setActiveField('runCost')} onBlur={() => setActiveField(null)}
+                            className={`w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono pl-8`}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">YOY Inflation Increase</label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400"><TrendingUp size={14} /></div>
+                            <input 
+                              type="number" min="0" value={runCostInflation} onChange={(e) => setRunCostInflation(e.target.value)}
+                              onFocus={() => setActiveField('runCost')} onBlur={() => setActiveField(null)}
+                              className={`w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono pl-8 pr-8`}
+                            />
+                            <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 font-bold text-xs">%</span>
+                          </div>
+                        </div>
+                      </div>
+                      {renderHint('runCost', 'Base recurring costs (licenses, cloud) and their projected Annual Percentage Increase.')}
+                    </div>
+
+                    {/* SRE Y1 */}
+                    <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100/50 flex flex-col justify-between">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">Y1 SRE Maint. (Monthly)</label>
+                        <p className="text-[10px] text-slate-500 mb-3 leading-tight">First 12 months heavier support cost.</p>
+                      </div>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400"><Users size={14} /></div>
+                        <input 
+                          type="number" min="0" value={sreCostY1} onChange={(e) => setSreCostY1(e.target.value)}
+                          onFocus={() => setActiveField('sreY1')} onBlur={() => setActiveField(null)}
+                          className={`w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono pl-8`}
+                        />
+                      </div>
+                      {renderHint('sreY1', 'Monthly cost of SREs/Maintenance needed specifically for the first year (e.g., handling heavy onboarding).')}
+                    </div>
+
+                    {/* SRE Y2+ */}
+                    <div className="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100/50 flex flex-col justify-between">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">Y2+ SRE Maint. (Monthly)</label>
+                        <p className="text-[10px] text-slate-500 mb-3 leading-tight">Ongoing tapered support cost for remaining years.</p>
+                      </div>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400"><Users size={14} /></div>
+                        <input 
+                          type="number" min="0" value={sreCostY2} onChange={(e) => setSreCostY2(e.target.value)}
+                          onFocus={() => setActiveField('sreY2')} onBlur={() => setActiveField(null)}
+                          className={`w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono pl-8`}
+                        />
+                      </div>
+                      {renderHint('sreY2', 'Reduced monthly SRE cost for Year 2 and beyond, after the system stabilizes.')}
+                    </div>
+
                   </div>
                 </div>
 
@@ -722,11 +1098,13 @@ Keep the advice specific to these numbers, practical, and highly concise. Do not
               
               <div className="relative z-10">
                 <div className="flex items-center space-x-3 mb-3">
-                  <span className="bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl text-xs font-bold uppercase tracking-widest text-blue-100 border border-white/10 shadow-sm">
-                    Est. Net Savings
-                  </span>
+                  <Tooltip text="Net Savings = (Gross Monthly Save × Duration) - Total Dynamic Run/SRE Costs - Implementation Cost">
+                    <span className="bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl text-xs font-bold uppercase tracking-widest text-blue-100 border border-white/10 shadow-sm flex items-center cursor-help">
+                      Est. Lifetime Net Savings <Info size={14} className="ml-1.5 opacity-70" />
+                    </span>
+                  </Tooltip>
                   <span className="text-blue-200 text-sm font-semibold flex items-center">
-                    <Clock size={14} className="mr-1.5 opacity-70"/> {durationMonths} Mo Lifetime
+                    <Clock size={14} className="mr-1.5 opacity-70"/> {durationMonths} Mo Project
                   </span>
                 </div>
                 
@@ -737,11 +1115,15 @@ Keep the advice specific to these numbers, practical, and highly concise. Do not
               
               <div className="grid grid-cols-2 gap-4 relative z-10 mb-6">
                 <div>
-                  <p className="text-blue-300 text-xs mb-1.5 uppercase tracking-wider font-bold">Net Monthly Save</p>
-                  <p className="text-2xl font-bold tracking-tight text-white">{formatCurrency(results.netMonthlySave)}</p>
+                  <Tooltip text="Average Monthly Net Savings (factors in strict month-by-month run cost inflation and variable SRE costs).">
+                    <p className="text-blue-300 text-xs mb-1.5 uppercase tracking-wider font-bold flex items-center cursor-help w-max">Avg Net Monthly <Info size={12} className="ml-1 opacity-70"/></p>
+                  </Tooltip>
+                  <p className="text-2xl font-bold tracking-tight text-white">{formatCurrency(results.avgNetMonthlySave)}</p>
                 </div>
                 <div>
-                  <p className="text-blue-300 text-xs mb-1.5 uppercase tracking-wider font-bold">Total Investment</p>
+                  <Tooltip text="Implementation Cost + Total Lifetime Run Costs + Total Lifetime SRE Costs">
+                    <p className="text-blue-300 text-xs mb-1.5 uppercase tracking-wider font-bold flex items-center cursor-help w-max">Total Investment <Info size={12} className="ml-1 opacity-70"/></p>
+                  </Tooltip>
                   <p className="text-2xl font-bold tracking-tight text-white">{formatCurrency(results.totalInvestment)}</p>
                 </div>
               </div>
@@ -749,13 +1131,17 @@ Keep the advice specific to these numbers, practical, and highly concise. Do not
               {/* ROI & Payback - Glass Cards */}
               <div className="grid grid-cols-2 gap-4 relative z-10">
                  <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/10 shadow-inner">
-                  <p className="text-blue-300/80 text-xs mb-1 uppercase tracking-wider font-bold">ROI</p>
+                  <Tooltip text="(Net Savings / Total Investment) × 100">
+                    <p className="text-blue-300/80 text-xs mb-1 uppercase tracking-wider font-bold flex items-center cursor-help w-max">ROI <Info size={12} className="ml-1 opacity-70"/></p>
+                  </Tooltip>
                   <p className={`text-2xl font-extrabold tracking-tight ${results.roi < 0 ? 'text-red-400' : results.roi >= 100 ? 'text-[#34D399]' : 'text-white'}`}>
                     {results.roi === Infinity ? '∞' : `${Math.round(results.roi).toLocaleString()}%`}
                   </p>
                 </div>
                 <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/10 shadow-inner">
-                  <p className="text-blue-300/80 text-xs mb-1 uppercase tracking-wider font-bold">Payback Period</p>
+                  <Tooltip text="Exact month where cumulative savings exceeds cumulative implementation, run, and maintenance costs.">
+                    <p className="text-blue-300/80 text-xs mb-1 uppercase tracking-wider font-bold flex items-center cursor-help w-max">Payback Period <Info size={12} className="ml-1 opacity-70"/></p>
+                  </Tooltip>
                   <p className="text-2xl font-extrabold tracking-tight text-white">
                     {results.paybackPeriod === Infinity ? 'Never' : results.paybackPeriod === 0 ? 'Immediate' : `${results.paybackPeriod.toFixed(1)} mo`}
                   </p>
@@ -771,12 +1157,13 @@ Keep the advice specific to these numbers, practical, and highly concise. Do not
                   Current vs. Future State
                 </h3>
                 
-                <div className="space-y-4">
+                <div className="space-y-6">
+                  {/* Current State (As-Is) Column */}
                   <div className="bg-slate-50 p-5 rounded-[20px] border border-slate-200/60 shadow-[inset_0_1px_3px_rgba(0,0,0,0.02)]">
                     <div className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-4">Current State (As-Is)</div>
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center mb-4">
                       <div>
-                         <div className="text-[11px] font-bold text-slate-400 uppercase mb-1">Monthly Cost</div>
+                         <div className="text-[11px] font-bold text-slate-400 uppercase mb-1">Monthly Labor Cost</div>
                          <div className="text-xl font-extrabold text-slate-800 tracking-tight">{formatCurrency(results.currentMonthlyCost)}</div>
                       </div>
                       <div className="text-right">
@@ -784,20 +1171,59 @@ Keep the advice specific to these numbers, practical, and highly concise. Do not
                          <div className="text-xl font-extrabold text-slate-800 tracking-tight">{new Intl.NumberFormat().format(Math.round(results.totalManualHoursMonthly))} <span className="text-sm font-medium text-slate-500">hrs/mo</span></div>
                       </div>
                     </div>
+                    
+                    {challenges && (
+                      <div className="border-t border-slate-200 pt-3">
+                        <div className="text-[10px] font-bold text-red-500 uppercase mb-2 flex items-center">
+                          <Activity size={12} className="mr-1.5" /> Existing Challenges
+                        </div>
+                        <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap font-medium">
+                          {challenges}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
+                  {/* Future State (To-Be) Column */}
                   <div className="bg-blue-50/50 p-5 rounded-[20px] border border-blue-100/60 shadow-[inset_0_1px_3px_rgba(59,130,246,0.05)]">
                     <div className="text-[11px] font-extrabold text-blue-600 uppercase tracking-widest mb-4 flex items-center"><Sparkles size={14} className="mr-1.5"/> Future State (To-Be)</div>
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center mb-4">
                       <div>
-                         <div className="text-[11px] font-bold text-blue-400 uppercase mb-1">Monthly Cost</div>
-                         <div className="text-xl font-extrabold text-blue-900 tracking-tight">{formatCurrency(results.futureMonthlyCost)}</div>
+                         <Tooltip text="Average future monthly cost (Remaining manual labor + Average monthly run cost + Average monthly SRE cost).">
+                           <div className="text-[11px] font-bold text-blue-400 uppercase mb-1 flex items-center cursor-help">Avg Total Cost/Mo <Info size={10} className="ml-1 opacity-80" /></div>
+                         </Tooltip>
+                         <div className="text-xl font-extrabold text-blue-900 tracking-tight">{formatCurrency(results.futureMonthlyCostAvg)}</div>
                       </div>
                       <div className="text-right">
-                         <div className="text-[11px] font-bold text-blue-400 uppercase mb-1">Manual Effort</div>
+                         <div className="text-[11px] font-bold text-blue-400 uppercase mb-1">Residual Effort</div>
                          <div className="text-xl font-extrabold text-blue-900 tracking-tight">{new Intl.NumberFormat().format(Math.round(results.remainingManualHoursMonthly))} <span className="text-sm font-medium text-blue-600/70">hrs/mo</span></div>
                       </div>
                     </div>
+
+                    {(kpis || qualitativeBenefits) && (
+                      <div className="border-t border-blue-100 pt-3 space-y-3">
+                        {kpis && (
+                          <div>
+                            <div className="text-[10px] font-bold text-purple-600 uppercase mb-1 flex items-center">
+                              <BarChart3 size={12} className="mr-1.5" /> Target KPIs
+                            </div>
+                            <p className="text-xs text-blue-800 leading-relaxed whitespace-pre-wrap font-medium">
+                              {kpis}
+                            </p>
+                          </div>
+                        )}
+                        {qualitativeBenefits && (
+                          <div>
+                            <div className="text-[10px] font-bold text-emerald-600 uppercase mb-1 flex items-center">
+                              <Award size={12} className="mr-1.5" /> Strategic Benefits
+                            </div>
+                            <p className="text-xs text-emerald-800 leading-relaxed whitespace-pre-wrap font-medium">
+                              {qualitativeBenefits}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -824,9 +1250,11 @@ Keep the advice specific to these numbers, practical, and highly concise. Do not
             {/* Operational Impact (Hours & FTEs) */}
             <div className={`${cardStyle} p-6 md:p-8 grid grid-cols-2 gap-6`}>
               <div>
-                <div className="flex items-center space-x-2 text-emerald-700 mb-3 bg-emerald-50 w-max px-3 py-1.5 rounded-xl font-bold text-sm">
-                  <Clock size={16} /><span>Time Recaptured</span>
-                </div>
+                <Tooltip text="Total manual hours saved over the project duration.">
+                  <div className="flex items-center space-x-2 text-emerald-700 mb-3 bg-emerald-50 w-max px-3 py-1.5 rounded-xl font-bold text-sm cursor-help">
+                    <Clock size={16} /><span>Time Recaptured</span><Info size={14} className="opacity-70" />
+                  </div>
+                </Tooltip>
                 <div className="text-3xl font-extrabold text-slate-800 tracking-tight">
                   {new Intl.NumberFormat().format(Math.round(results.hoursSavedMonthly))} <span className="text-base text-slate-500 font-medium">hrs/mo</span>
                 </div>
@@ -836,9 +1264,11 @@ Keep the advice specific to these numbers, practical, and highly concise. Do not
               </div>
 
               <div className="border-l border-slate-100 pl-6">
-                <div className="flex items-center space-x-2 text-indigo-700 mb-3 bg-indigo-50 w-max px-3 py-1.5 rounded-xl font-bold text-sm">
-                  <Users size={16} /><span>FTE Savings</span>
-                </div>
+                <Tooltip text="Full-Time Equivalents (Assumes 160 hours/month per employee).">
+                  <div className="flex items-center space-x-2 text-indigo-700 mb-3 bg-indigo-50 w-max px-3 py-1.5 rounded-xl font-bold text-sm cursor-help">
+                    <Users size={16} /><span>FTE Savings</span><Info size={14} className="opacity-70" />
+                  </div>
+                </Tooltip>
                 <div className="text-3xl font-extrabold text-slate-800 tracking-tight">
                   {results.fteSavings.toFixed(1)} <span className="text-base text-slate-500 font-medium">FTEs</span>
                 </div>
@@ -858,7 +1288,7 @@ Keep the advice specific to these numbers, practical, and highly concise. Do not
                   <h3 className="text-lg font-bold text-white tracking-tight">Business Case Pitch</h3>
                 </div>
                 
-                {(toolName || useCase) && (
+                {(toolName || useCase || aiPitch) && (
                   <button 
                     onClick={handleCopy}
                     className="flex items-center space-x-2 text-sm font-bold bg-white text-slate-900 hover:bg-slate-200 px-5 py-2.5 rounded-2xl transition-all shadow-sm"
@@ -920,9 +1350,9 @@ Keep the advice specific to these numbers, practical, and highly concise. Do not
                       )}
                       
                       <p className="mb-4 text-[15px]">
-                        Financially, this requires an initial investment of {formatCurrency(implementationCost)} and an ongoing run cost of {formatCurrency(monthlyRunCost)}/month. It yields a gross labor cost avoidance of <strong className="text-emerald-400">{formatCurrency(results.grossMonthlySave)} per month</strong>. 
-                        After factoring in run costs, this amounts to a <strong>Net Savings of <span className="text-emerald-400">{formatCurrency(results.netSavings)}</span></strong> over the remaining {durationMonths}-month project duration. 
-                        The estimated payback period is <strong>{results.paybackPeriod === Infinity ? 'Never' : results.paybackPeriod.toFixed(1) + ' months'}</strong>, delivering an ROI of <strong>{results.roi === Infinity ? 'Infinite' : `${Math.round(results.roi)}%`}</strong>.
+                        Financially, this requires an initial investment of {formatCurrency(implementationCost)}. Over the {durationMonths}-month lifecycle, total maintenance and inflated run costs are projected at {formatCurrency(results.totalRunCost + results.totalSreCost)}. The automation yields a gross labor cost avoidance of <strong className="text-emerald-400">{formatCurrency(results.grossMonthlySave)} per month</strong>. 
+                        After factoring in these dynamic operational costs, this amounts to a <strong>Lifetime Net Savings of <span className="text-emerald-400">{formatCurrency(results.netSavings)}</span></strong>. 
+                        The precise payback period is <strong>{results.paybackPeriod === Infinity ? 'Never' : results.paybackPeriod.toFixed(1) + ' months'}</strong>, delivering an ROI of <strong>{results.roi === Infinity ? 'Infinite' : `${Math.round(results.roi)}%`}</strong>.
                       </p>
 
                       <p className="text-[15px]">
@@ -968,20 +1398,21 @@ Keep the advice specific to these numbers, practical, and highly concise. Do not
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6">
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">Gross Monthly Savings</h3>
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">Month-By-Month Engine</h3>
                     <p className="text-sm text-slate-600 leading-relaxed font-medium">
-                      First, calculate manual hours: <strong>(Total Tasks) × (Time per Task)</strong>. 
-                      Multiply those hours by your <strong>% Automated</strong> and the <strong>Resource Cost/Hour</strong> to find the monetary value of labor saved monthly.
+                      This calculator doesn't just multiply static numbers. It loops through every month of the project's duration to accurately compound <strong>Run Cost Inflation</strong> and dynamically switch between <strong>Y1 vs Y2+ SRE/Maintenance costs</strong>. This guarantees a mathematically precise Payback Period and ROI.
                     </p>
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">Net Savings</h3>
                     <p className="text-sm text-slate-600 leading-relaxed font-medium">
-                      The actual financial gain. Projects the gross savings over the lifetime of the project and subtracts both the initial implementation cost and ongoing monthly run costs.
-                      <br /><br />
-                      <span className="font-mono text-xs bg-slate-100 p-3 rounded-xl block mt-2 border border-slate-200 shadow-inner leading-relaxed">
-                        Net Savings = (Gross Monthly Save × Duration) - (Monthly Run Cost × Duration) - Implementation Cost
-                      </span>
+                      The actual financial gain. Projects the gross savings over the lifetime of the project and subtracts the initial implementation cost, the inflating monthly run costs, and the variable monthly maintenance costs.
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">SRE / Maintenance Ramp-Down</h3>
+                    <p className="text-sm text-slate-600 leading-relaxed font-medium">
+                      Complex automations usually require heavier support when they are first launched (e.g., 5 SREs), which tapers off as the system stabilizes (e.g., 2 SREs). The advanced cost settings allow you to accurately forecast this ramp-down.
                     </p>
                   </div>
                 </div>
@@ -996,20 +1427,20 @@ Keep the advice specific to these numbers, practical, and highly concise. Do not
                   <div>
                     <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">Return on Investment (ROI)</h3>
                     <p className="text-sm text-slate-600 leading-relaxed font-medium">
-                      Measures profitability. An ROI of 100% means the automation paid for its total investment (Implementation + Run Costs) and generated that same amount in pure savings. 
+                      Measures profitability. An ROI of 100% means the automation paid for its total investment (Implementation + Run Costs + Maintenance) and generated that same amount in pure savings. 
+                    </p>
+                  </div>
+                  <div className="bg-blue-50/80 border border-blue-100 rounded-2xl p-6 mt-4">
+                    <h3 className="text-sm font-bold text-blue-900 uppercase tracking-wider mb-2 flex items-center">
+                      <Settings size={16} className="mr-2 text-blue-600" />
+                      What AI powers these insights?
+                    </h3>
+                    <p className="text-sm text-blue-800 leading-relaxed font-medium">
+                      By default, this calculator integrates Google's advanced <strong>Gemini 2.5 Flash</strong> model. 
+                      However, you can click the <strong className="inline-flex items-center text-blue-900 bg-white px-2 py-0.5 rounded shadow-sm mx-1 hover:bg-slate-50 transition-colors"><Settings size={12} className="mr-1"/> AI Config</strong> button at the top of the screen to switch to other high-quality free models.
                     </p>
                   </div>
                 </div>
-              </div>
-              <div className="mt-8 bg-blue-50/80 border border-blue-100 rounded-2xl p-6">
-                <h3 className="text-sm font-bold text-blue-900 uppercase tracking-wider mb-2 flex items-center">
-                  <Settings size={16} className="mr-2 text-blue-600" />
-                  What AI powers these insights?
-                </h3>
-                <p className="text-sm text-blue-800 leading-relaxed font-medium">
-                  By default, this calculator integrates Google's advanced <strong>Gemini 2.5 Flash</strong> model. 
-                  However, you can click the <strong className="inline-flex items-center text-blue-900 bg-white px-2 py-0.5 rounded shadow-sm mx-1 hover:bg-slate-50 transition-colors"><Settings size={12} className="mr-1"/> AI Config</strong> button at the top of the screen to switch to other high-quality free models.
-                </p>
               </div>
             </div>
           </div>
