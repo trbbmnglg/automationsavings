@@ -234,79 +234,90 @@ export default function App() {
   const handleExportXLSX = async () => {
     setIsExportingXLSX(true);
     try {
-      // Dynamically load SheetJS
-      const XLSX = await loadScript('https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js', 'XLSX');
+      // Dynamically load xlsx-js-style for styling support (replaces standard SheetJS)
+      const XLSX = await loadScript('https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js', 'XLSX');
       const wb = XLSX.utils.book_new();
 
-      // Helper to generate Year/Month pivoted tables
-      const generatePivotedData = (isYearly) => {
-        const aoa = [];
-        aoa.push(['Automation Savings & ROI Report']);
-        aoa.push(['Generated on', new Date().toLocaleDateString(), '', 'Currency', currency]);
-        aoa.push([]);
+      // Setup the exact requested table structure
+      const ws_data = [
+        ["", "", "", "", "Quantitative Benefits", "", "", "", "", ""],
+        [
+          "Tool", 
+          "Use Case Description", 
+          "Challenges Addressed", 
+          "Qualitative Benefits", 
+          "# of executions per month", 
+          "average effort per execution in hours", 
+          "average resource cost per hour", 
+          "% of task automated", 
+          "remaining contract/project duration in months", 
+          "Cost Benefit"
+        ],
+        [
+          toolName || 'N/A',
+          useCase || 'N/A',
+          challenges || 'N/A',
+          qualitativeBenefits || 'N/A',
+          results.effectiveExecutions,
+          Number(effortHours).toFixed(2),
+          formatCurrency(resourceCost),
+          `${automationPercent}%`,
+          durationMonths,
+          formatCurrency(results.netSavings)
+        ]
+      ];
 
-        const maxUnits = isYearly ? Math.ceil(durationMonths / 12) : durationMonths;
-        const headerRow = ['Metric', isYearly ? 'Year 0 (Initial)' : 'Month 0 (Initial)'];
-        for(let u = 1; u <= maxUnits; u++) headerRow.push(isYearly ? `Year ${u}` : `Month ${u}`);
-        aoa.push(headerRow);
+      const ws = XLSX.utils.aoa_to_sheet(ws_data);
 
-        const dataBuckets = {};
-        dataBuckets[0] = { impl: implementationCost, run: 0, sre: 0, gross: 0, net: -implementationCost, cum: -implementationCost };
-        
-        results.monthlyData.forEach(d => {
-          if (d.month === 0) return;
-          const key = isYearly ? d.year : d.month;
-          if (!dataBuckets[key]) dataBuckets[key] = { impl: 0, run: 0, sre: 0, gross: 0, net: 0, cum: 0 };
-          dataBuckets[key].impl += d.implementationCost;
-          dataBuckets[key].run += d.runCost;
-          dataBuckets[key].sre += d.sreCost;
-          dataBuckets[key].gross += d.grossSavings;
-          dataBuckets[key].net += d.netCashFlow;
-          dataBuckets[key].cum = d.cumulativeNet;
-        });
+      // Merge Cells: E1 to J1
+      ws['!merges'] = [
+        { s: { r: 0, c: 4 }, e: { r: 0, c: 9 } }
+      ];
 
-        const rows = {
-          impl: ['Implementation Cost'],
-          run: ['Run Cost (Licenses/Infra)'],
-          sre: ['SRE & Maintenance Cost'],
-          gross: ['Gross Labor Savings'],
-          net: ['Net Cash Flow'],
-          cum: ['Cumulative Cash Flow']
-        };
-
-        for(let u = 0; u <= maxUnits; u++) {
-          const b = dataBuckets[u] || { impl: 0, run: 0, sre: 0, gross: 0, net: 0, cum: 0 };
-          rows.impl.push(-b.impl);
-          rows.run.push(-b.run);
-          rows.sre.push(-b.sre);
-          rows.gross.push(b.gross);
-          rows.net.push(b.net);
-          rows.cum.push(b.cum);
-        }
-
-        aoa.push(rows.gross);
-        aoa.push(rows.impl);
-        aoa.push(rows.run);
-        aoa.push(rows.sre);
-        aoa.push(rows.net);
-        aoa.push(rows.cum);
-        aoa.push([]);
-
-        // Append Methodology
-        aoa.push(['Methodology & Calculations']);
-        aoa.push(['Month-By-Month Engine', 'Calculates exact compounding inflation and dynamic Y1 vs Y2+ maintenance costs per month.']);
-        aoa.push(['Net Savings', 'Gross monthly savings over project duration minus all implementation, run, and maintenance costs.']);
-        aoa.push(['FTE Savings', 'Assumes 160 hours/month = 1 Full-Time Equivalent employee.']);
-        
-        return aoa;
+      // Styling Definition for Headers (Blue bg, White text, Bold, Centered)
+      const headerStyle = {
+        fill: { fgColor: { rgb: "1E40AF" } }, // Tailwind blue-800
+        font: { color: { rgb: "FFFFFF" }, bold: true },
+        alignment: { wrapText: true, vertical: "center", horizontal: "center" }
       };
 
-      const wsYearly = XLSX.utils.aoa_to_sheet(generatePivotedData(true));
-      const wsMonthly = XLSX.utils.aoa_to_sheet(generatePivotedData(false));
-      
-      XLSX.utils.book_append_sheet(wb, wsYearly, "Yearly Summary");
-      XLSX.utils.book_append_sheet(wb, wsMonthly, "Month-by-Month");
-      
+      // Styling Definition for Data (Top-aligned, wrapped)
+      const dataStyle = {
+        alignment: { wrapText: true, vertical: "top", horizontal: "left" }
+      };
+
+      // Apply Header Styles to Quantitative Benefits
+      if (ws['E1']) ws['E1'].s = headerStyle;
+
+      // Apply Styles to Column Headers (Row 2) and Data (Row 3)
+      const cols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+      cols.forEach(col => {
+        if (ws[`${col}2`]) ws[`${col}2`].s = headerStyle;
+        if (ws[`${col}3`]) ws[`${col}3`].s = dataStyle; 
+      });
+
+      // Adjust column widths to provide "good padding"
+      ws['!cols'] = [
+        { wch: 25 }, // A: Tool
+        { wch: 40 }, // B: Use Case
+        { wch: 40 }, // C: Challenges
+        { wch: 40 }, // D: Benefits
+        { wch: 20 }, // E: Executions
+        { wch: 20 }, // F: Effort
+        { wch: 20 }, // G: Cost
+        { wch: 15 }, // H: % Auto
+        { wch: 20 }, // I: Duration
+        { wch: 20 }  // J: Cost Benefit
+      ];
+
+      // Adjust row heights to provide vertical padding
+      ws['!rows'] = [
+        { hpt: 30 }, // Row 1 (Header Group)
+        { hpt: 60 }, // Row 2 (Column Headers)
+        { hpt: 80 }  // Row 3 (Data row - taller for wrapping text)
+      ];
+
+      XLSX.utils.book_append_sheet(wb, ws, "Automation Savings");
       XLSX.writeFile(wb, "Automation Savings.xlsx");
     } catch (e) {
       console.error(e);
