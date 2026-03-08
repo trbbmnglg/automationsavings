@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Calculator, 
   DollarSign, 
@@ -29,21 +29,35 @@ import {
   Presentation
 } from 'lucide-react';
 
-// --- Script Loader Utility for External Libraries (Excel & PPTX) ---
+// --- Global Constants & Configurations ---
+const HOURS_PER_FTE_MONTH = 160;
+
+const providerOptions = {
+  'builtin': { name: 'Built-in Gemini', models: ['gemini-2.5-flash-preview-09-2025'], url: null, needsKey: false },
+  'pollinations': { name: 'Pollinations.ai', models: ['openai', 'mistral', 'llama'], url: null, needsKey: false },
+  'groq': { name: 'Groq', models: ['llama3-8b-8192', 'llama3-70b-8192', 'mixtral-8x7b-32768'], url: 'https://console.groq.com/keys', needsKey: true },
+  'openrouter': { name: 'OpenRouter Free', models: ['meta-llama/llama-3-8b-instruct:free', 'google/gemini-2.5-flash:free'], url: 'https://openrouter.ai/keys', needsKey: true }
+};
+
+// --- Script Loader Utility with Promise Caching ---
+const loadingPromises = {};
 const loadScript = (src, globalName) => {
-  return new Promise((resolve, reject) => {
-    if (window[globalName]) return resolve(window[globalName]);
+  if (window[globalName]) return Promise.resolve(window[globalName]);
+  if (loadingPromises[src]) return loadingPromises[src];
+  
+  loadingPromises[src] = new Promise((resolve, reject) => {
     const script = document.createElement('script');
     script.src = src;
     script.onload = () => resolve(window[globalName]);
     script.onerror = () => reject(new Error(`Failed to load ${src}`));
     document.head.appendChild(script);
   });
+  return loadingPromises[src];
 };
 
 // --- Custom Tooltip Component ---
 const Tooltip = ({ text, children }) => (
-  <div className="relative flex items-center group cursor-help ml-1.5">
+  <div className="relative flex items-center group ml-1.5">
     {children}
     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[240px] p-2.5 bg-slate-800 text-white text-[12px] font-medium rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-[100] text-center shadow-xl leading-relaxed scale-95 group-hover:scale-100 origin-bottom">
       {text}
@@ -79,9 +93,36 @@ export default function App() {
   const [sreCostY2, setSreCostY2] = useState(500); 
 
   const [currency, setCurrency] = useState('USD');
+  const [scenario, setScenario] = useState('realistic');
 
-  // Approximate exchange rates relative to USD
-  const exchangeRates = { USD: 1, PHP: 56.5, EUR: 0.92, JPY: 150.5 };
+  // --- Live Exchange Rates State ---
+  const [exchangeRates, setExchangeRates] = useState({ USD: 1, PHP: 56.5, EUR: 0.92, JPY: 150.5 });
+  const [ratesStatus, setRatesStatus] = useState('loading'); // 'loading', 'live', 'fallback'
+
+  useEffect(() => {
+    const fetchLiveRates = async () => {
+      try {
+        const response = await fetch('https://open.er-api.com/v6/latest/USD');
+        const data = await response.json();
+        if (data && data.rates) {
+          setExchangeRates({
+            USD: 1,
+            PHP: data.rates.PHP || 56.5,
+            EUR: data.rates.EUR || 0.92,
+            JPY: data.rates.JPY || 150.5
+          });
+          setRatesStatus('live');
+        } else {
+          setRatesStatus('fallback');
+        }
+      } catch (error) {
+        console.warn('Failed to fetch live exchange rates. Using fallback rates.', error);
+        setRatesStatus('fallback');
+      }
+    };
+    fetchLiveRates();
+  }, []);
+
   const currencyConfig = {
     USD: { locale: 'en-US', code: 'USD' },
     PHP: { locale: 'en-PH', code: 'PHP' },
@@ -106,14 +147,7 @@ export default function App() {
   const [isAiConfigOpen, setIsAiConfigOpen] = useState(false);
   const [aiProvider, setAiProvider] = useState('builtin');
   const [aiApiKey, setAiApiKey] = useState('');
-  const [aiModel, setAiModel] = useState('gemini-2.5-flash-preview-09-2025');
-
-  const providerOptions = {
-    'builtin': { name: 'Built-in Gemini', models: ['gemini-2.5-flash-preview-09-2025'], url: null, needsKey: false },
-    'pollinations': { name: 'Pollinations.ai', models: ['openai', 'mistral', 'llama'], url: null, needsKey: false },
-    'groq': { name: 'Groq', models: ['llama3-8b-8192', 'llama3-70b-8192', 'mixtral-8x7b-32768'], url: 'https://console.groq.com/keys', needsKey: true },
-    'openrouter': { name: 'OpenRouter Free', models: ['meta-llama/llama-3-8b-instruct:free', 'google/gemini-2.5-flash:free'], url: 'https://openrouter.ai/keys', needsKey: true }
-  };
+  const [aiModel, setAiModel] = useState(providerOptions['builtin'].models[0]);
 
   const handleProviderChange = (e) => {
     const newProv = e.target.value;
@@ -138,14 +172,22 @@ export default function App() {
     const rawExecutions = Math.max(0, Number(executionsPerMonth));
     const effectiveExecutions = volumePeriod === 'daily' ? rawExecutions * Math.max(1, Number(workingDays)) : rawExecutions;
     const cost = Math.max(0, Number(resourceCost));
-    const autoRatio = Math.max(0, Math.min(100, Number(automationPercent))) / 100;
     const months = Math.max(0, Number(durationMonths));
-    const implCost = Math.max(0, Number(implementationCost));
+
+    const scenarioConfig = {
+      optimistic: { benefit: 1.1, cost: 0.9 },
+      realistic: { benefit: 1.0, cost: 1.0 },
+      conservative: { benefit: 0.75, cost: 1.25 }
+    };
+    const sc = scenarioConfig[scenario];
+
+    const autoRatio = Math.max(0, Math.min(100, Number(automationPercent) * sc.benefit)) / 100;
+    const implCost = Math.max(0, Number(implementationCost)) * sc.cost;
     
-    const baseRunCost = Math.max(0, Number(monthlyRunCost));
+    const baseRunCost = Math.max(0, Number(monthlyRunCost)) * sc.cost;
     const inflationRate = Math.max(0, Number(runCostInflation)) / 100;
-    const sreY1 = Math.max(0, Number(sreCostY1));
-    const sreY2 = Math.max(0, Number(sreCostY2));
+    const sreY1 = Math.max(0, Number(sreCostY1)) * sc.cost;
+    const sreY2 = Math.max(0, Number(sreCostY2)) * sc.cost;
 
     const hoursMonthlyCurrent = effectiveExecutions * exactEffort;
     const hoursMonthlySaved = hoursMonthlyCurrent * autoRatio;
@@ -182,7 +224,8 @@ export default function App() {
 
       if (paybackMonth === Infinity && cumulativeNet >= 0) {
         let remainder = cumulativeNet;
-        let fraction = 1 - (remainder / monthlyNet);
+        // Fix fractional math: if monthlyNet is 0, avoid NaN
+        let fraction = monthlyNet === 0 ? 0 : 1 - (remainder / monthlyNet);
         paybackMonth = m - 1 + fraction;
       }
     }
@@ -194,7 +237,9 @@ export default function App() {
     const roi = totalInvestment > 0 ? (netSave / totalInvestment) * 100 : (netSave > 0 ? Infinity : 0);
     
     const avgNetMonthlySave = months > 0 ? (totalGrossSave - totalRunCost - totalSreCost) / months : 0;
-    const futureMonthlyCostAvg = months > 0 ? ((currentMonthlyCost * months) - totalGrossSave + totalRunCost + totalSreCost) / months : currentMonthlyCost;
+    
+    // Fixed: Simplified and corrected futureMonthlyCostAvg logic 
+    const futureMonthlyCostAvg = (currentMonthlyCost - grossMonthlySave) + (months > 0 ? (totalRunCost + totalSreCost) / months : 0);
 
     return {
       effectiveExecutions,
@@ -211,14 +256,14 @@ export default function App() {
       paybackPeriod: paybackMonth,
       hoursSavedMonthly: hoursMonthlySaved,
       hoursSavedTotal: hoursSavedTotal,
-      fteSavings: hoursMonthlySaved / 160,
-      currentFte: hoursMonthlyCurrent / 160,
-      toBeFte: Math.max(0, hoursMonthlyCurrent - hoursMonthlySaved) / 160,
+      fteSavings: hoursMonthlySaved / HOURS_PER_FTE_MONTH,
+      currentFte: hoursMonthlyCurrent / HOURS_PER_FTE_MONTH,
+      toBeFte: Math.max(0, hoursMonthlyCurrent - hoursMonthlySaved) / HOURS_PER_FTE_MONTH,
       totalManualHoursMonthly: hoursMonthlyCurrent,
       remainingManualHoursMonthly: Math.max(0, hoursMonthlyCurrent - hoursMonthlySaved),
       monthlyData
     };
-  }, [executionsPerMonth, effortHours, resourceCost, automationPercent, durationMonths, implementationCost, monthlyRunCost, runCostInflation, sreCostY1, sreCostY2, volumePeriod, workingDays]);
+  }, [executionsPerMonth, effortHours, resourceCost, automationPercent, durationMonths, implementationCost, monthlyRunCost, runCostInflation, sreCostY1, sreCostY2, volumePeriod, workingDays, scenario]);
 
   const formatCurrency = (value) => {
     const config = currencyConfig[currency];
@@ -234,13 +279,12 @@ export default function App() {
   const handleExportXLSX = async () => {
     setIsExportingXLSX(true);
     try {
-      // Dynamically load xlsx-js-style for styling support (replaces standard SheetJS)
       const XLSX = await loadScript('https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js', 'XLSX');
       const wb = XLSX.utils.book_new();
+      const scenarioLabel = scenario.charAt(0).toUpperCase() + scenario.slice(1);
 
-      // Setup the exact requested table structure
       const ws_data = [
-        ["", "", "", "", "Quantitative Benefits", "", "", "", "", ""],
+        ["", "", "", "", `Quantitative Benefits (${scenarioLabel} Forecast)`, "", "", "", "", ""],
         [
           "Tool", 
           "Use Case Description", 
@@ -268,54 +312,26 @@ export default function App() {
       ];
 
       const ws = XLSX.utils.aoa_to_sheet(ws_data);
+      ws['!merges'] = [{ s: { r: 0, c: 4 }, e: { r: 0, c: 9 } }];
 
-      // Merge Cells: E1 to J1
-      ws['!merges'] = [
-        { s: { r: 0, c: 4 }, e: { r: 0, c: 9 } }
-      ];
-
-      // Styling Definition for Headers (Blue bg, White text, Bold, Centered)
       const headerStyle = {
-        fill: { fgColor: { rgb: "1E40AF" } }, // Tailwind blue-800
+        fill: { fgColor: { rgb: "1E40AF" } }, 
         font: { color: { rgb: "FFFFFF" }, bold: true },
         alignment: { wrapText: true, vertical: "center", horizontal: "center" }
       };
 
-      // Styling Definition for Data (Top-aligned, wrapped)
-      const dataStyle = {
-        alignment: { wrapText: true, vertical: "top", horizontal: "left" }
-      };
+      const dataStyle = { alignment: { wrapText: true, vertical: "top", horizontal: "left" } };
 
-      // Apply Header Styles to Quantitative Benefits
       if (ws['E1']) ws['E1'].s = headerStyle;
 
-      // Apply Styles to Column Headers (Row 2) and Data (Row 3)
       const cols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
       cols.forEach(col => {
         if (ws[`${col}2`]) ws[`${col}2`].s = headerStyle;
         if (ws[`${col}3`]) ws[`${col}3`].s = dataStyle; 
       });
 
-      // Adjust column widths to provide "good padding"
-      ws['!cols'] = [
-        { wch: 25 }, // A: Tool
-        { wch: 40 }, // B: Use Case
-        { wch: 40 }, // C: Challenges
-        { wch: 40 }, // D: Benefits
-        { wch: 20 }, // E: Executions
-        { wch: 20 }, // F: Effort
-        { wch: 20 }, // G: Cost
-        { wch: 15 }, // H: % Auto
-        { wch: 20 }, // I: Duration
-        { wch: 20 }  // J: Cost Benefit
-      ];
-
-      // Adjust row heights to provide vertical padding
-      ws['!rows'] = [
-        { hpt: 30 }, // Row 1 (Header Group)
-        { hpt: 60 }, // Row 2 (Column Headers)
-        { hpt: 80 }  // Row 3 (Data row - taller for wrapping text)
-      ];
+      ws['!cols'] = [ { wch: 25 }, { wch: 40 }, { wch: 40 }, { wch: 40 }, { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 15 }, { wch: 20 }, { wch: 20 } ];
+      ws['!rows'] = [ { hpt: 30 }, { hpt: 60 }, { hpt: 80 } ];
 
       XLSX.utils.book_append_sheet(wb, ws, "Automation Savings");
       XLSX.writeFile(wb, "Automation Savings.xlsx");
@@ -329,27 +345,25 @@ export default function App() {
   const handleExportPPTX = async () => {
     setIsExportingPPTX(true);
     try {
-      // PptxGenJS requires JSZip to be loaded first in browser environments without bundlers
-      await loadScript('https://cdn.jsdelivr.net/gh/gitbrent/PptxGenJS/libs/jszip.min.js', 'JSZip');
-      const pptxgen = window.pptxgen || await loadScript('https://cdn.jsdelivr.net/gh/gitbrent/PptxGenJS/dist/pptxgen.min.js', 'PptxGenJS');
+      // Switched to stable npm CDNs instead of Github CDN for JSZip and PptxGenJS
+      await loadScript('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js', 'JSZip');
+      const pptxgen = window.pptxgen || await loadScript('https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js', 'PptxGenJS');
       
       const pptx = new pptxgen();
       pptx.layout = 'LAYOUT_WIDE';
       const slide = pptx.addSlide();
 
-      const brandColor = '1E3A8A'; // Tailwind blue-900
+      const brandColor = '1E3A8A';
+      const scenarioLabel = scenario.charAt(0).toUpperCase() + scenario.slice(1);
 
-      // Title
       slide.addText(`${toolName || 'Proposed Automation'} Business Case`, { x: 0.5, y: 0.5, w: 12, h: 0.8, fontSize: 32, bold: true, color: brandColor });
-      slide.addText(`Use Case: ${useCase || 'N/A'}`, { x: 0.5, y: 1.2, w: 12, h: 0.4, fontSize: 16, color: '64748B', italic: true });
+      slide.addText(`Use Case: ${useCase || 'N/A'} | Scenario: ${scenarioLabel}`, { x: 0.5, y: 1.2, w: 12, h: 0.4, fontSize: 16, color: '64748B', italic: true });
 
-      // KPI & Challenges (Left Column)
       slide.addShape(pptx.ShapeType.rect, { x: 0.5, y: 1.8, w: 5, h: 2.8, fill: { color: 'F8FAFC' }, line: { color: 'E2E8F0', width: 1 } });
       slide.addText([{ text: "Strategic Value", options: { bold: true, fontSize: 18, color: brandColor, breakLine: true } },
                      { text: `\nKPIs:\n${kpis || 'None specified'}\n\nChallenges Solved:\n${challenges || 'None specified'}`, options: { fontSize: 12, color: '333333' } }], 
                      { x: 0.7, y: 2.0, w: 4.6, h: 2.4, align: 'left', valign: 'top' });
 
-      // Current vs To-Be (Right Column)
       slide.addShape(pptx.ShapeType.rect, { x: 5.8, y: 1.8, w: 6.8, h: 2.8, fill: { color: 'EFF6FF' }, line: { color: 'BFDBFE', width: 1 } });
       slide.addText("Current vs. Future State", { x: 6.0, y: 2.0, w: 6.4, h: 0.4, bold: true, fontSize: 18, color: '1D4ED8' });
       
@@ -359,7 +373,6 @@ export default function App() {
       slide.addText(`Future Monthly Cost: ${formatCurrency(results.futureMonthlyCostAvg)}\nResidual Effort: ${Math.round(results.remainingManualHoursMonthly)} hrs (${results.toBeFte.toFixed(1)} FTEs)`, 
         { x: 9.2, y: 2.5, w: 3, h: 1.5, fontSize: 14, color: '333333' });
 
-      // Financial Metrics Cards (Bottom Row)
       const metricY = 5.0;
       const cardW = 2.8;
       
@@ -384,6 +397,7 @@ export default function App() {
 
   // --- API AI Caller ---
   const fetchWithRetry = async (url, options) => {
+    // Basic exponential backoff implementation
     const delays = [1000, 2000, 4000, 8000, 16000];
     for (let i = 0; i < delays.length; i++) {
       try {
@@ -398,10 +412,15 @@ export default function App() {
     }
   };
 
+  // Safely truncate strings before interpolating to AI prompts
+  const sanitizeStr = (str, limit = 400) => (str || '').substring(0, limit).replace(/[{}]/g, '');
+
   const callAI = async (prompt) => {
     if (providerOptions[aiProvider].needsKey && !aiApiKey.trim()) throw new Error(`Please provide an API key in AI Settings.`);
+    
     if (aiProvider === 'builtin') {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${aiModel}:generateContent?key=`;
+      const apiKey = ""; // API key is populated automatically by the execution environment
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${aiModel}:generateContent?key=${apiKey}`;
       const data = await fetchWithRetry(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
       return data?.candidates?.[0]?.content?.parts?.[0]?.text;
     } else if (aiProvider === 'pollinations') {
@@ -418,7 +437,7 @@ export default function App() {
   const generateAIPitch = async () => {
     setIsGenerating(true);
     const prompt = `Act as a professional business analyst. Write a persuasive, general business case pitch for an automation project.
-    Details: Tool Name: ${toolName || 'Proposed Automation'} | Use Case: ${useCase || 'N/A'}
+    Details: Tool Name: ${sanitizeStr(toolName) || 'Proposed Automation'} | Use Case: ${sanitizeStr(useCase) || 'N/A'} | Scenario: ${scenario.charAt(0).toUpperCase() + scenario.slice(1)} Forecast
     Financials: Lifetime Net Savings: ${formatCurrency(results.netSavings)} over ${durationMonths} months | ROI: ${Math.round(results.roi)}%
     Write a compelling executive summary (2-3 paragraphs). Do NOT include greetings. Use standard plain text formatting.`;
     try {
@@ -431,7 +450,7 @@ export default function App() {
   const generateSuggestions = async () => {
     if (!toolName && !useCase) { alert("Please enter a Tool Name and Use Case to enable Auto-Fill."); return; }
     setIsGeneratingSuggestions(true);
-    const prompt = `Based on Tool Name: ${toolName} and Use Case: ${useCase}, return ONLY a valid JSON object: {"kpis": ["..."], "challenges": ["..."], "benefits": ["..."]}`;
+    const prompt = `Based on Tool Name: ${sanitizeStr(toolName)} and Use Case: ${sanitizeStr(useCase)}, return ONLY a valid JSON object: {"kpis": ["..."], "challenges": ["..."], "benefits": ["..."]}`;
     try {
       const text = await callAI(prompt);
       const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -455,15 +474,39 @@ export default function App() {
     finally { setIsGeneratingInsights(false); }
   };
 
+  const fallbackCopyTextToClipboard = (text) => {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-999999px";
+    textArea.style.top = "-999999px";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+      document.execCommand('copy');
+      setCopied(true); setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Fallback: Oops, unable to copy', err);
+    }
+    document.body.removeChild(textArea);
+  };
+
   const handleCopy = () => {
-    const textToCopy = aiPitch;
-    if (!textToCopy) return;
-    navigator.clipboard.writeText(textToCopy).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {});
+    if (!aiPitch) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(aiPitch)
+        .then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); })
+        .catch(() => fallbackCopyTextToClipboard(aiPitch)); // Safari/iFrame restriction fallback
+    } else {
+      fallbackCopyTextToClipboard(aiPitch);
+    }
   };
 
   const inputStyle = "w-full px-4 py-3.5 bg-slate-50/70 border border-slate-200/80 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all duration-200 text-slate-800 placeholder-slate-400 outline-none hover:bg-slate-50 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]";
   const inputErrorStyle = "w-full px-4 py-3.5 bg-red-50/70 border border-red-200 rounded-2xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition-all duration-200 text-red-900 outline-none shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]";
-  const cardStyle = "bg-white rounded-[28px] shadow-sm border border-slate-200/60 relative"; // Removed overflow-hidden so tooltips show
+  const cardStyle = "bg-white rounded-[28px] shadow-sm border border-slate-200/60 relative";
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans p-4 md:p-6 lg:p-8 selection:bg-blue-100">
@@ -483,12 +526,19 @@ export default function App() {
           
           <div className="flex items-center space-x-3">
             {/* Currency */}
-            <div className="hidden md:flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200/50 mr-1">
-              {Object.keys(currencyConfig).map((curr) => (
-                <button key={curr} onClick={() => handleCurrencyChange(curr)} className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all ${currency === curr ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
-                  {curr}
-                </button>
-              ))}
+            <div className="hidden md:flex items-center mr-1">
+              <Tooltip text={ratesStatus === 'live' ? 'Live Exchange Rates Active' : 'Offline Fallback Rates'}>
+                <div className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200/50 relative">
+                  {ratesStatus === 'live' && (
+                    <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 border-2 border-slate-100 rounded-full z-10"></div>
+                  )}
+                  {Object.keys(currencyConfig).map((curr) => (
+                    <button key={curr} onClick={() => handleCurrencyChange(curr)} className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all ${currency === curr ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
+                      {curr}
+                    </button>
+                  ))}
+                </div>
+              </Tooltip>
             </div>
 
             {/* Export Buttons */}
@@ -562,7 +612,7 @@ export default function App() {
                   <div className="md:col-span-2">
                     <label className="flex items-center text-sm font-bold text-slate-700 mb-2">
                       Automation Name 
-                      <Tooltip text="Give your automation project a short, recognizable name."><Info size={14} className="text-slate-400 hover:text-blue-500 transition-colors"/></Tooltip>
+                      <Tooltip text="Give your automation project a short, recognizable name."><Info size={14} className="text-slate-400 hover:text-blue-500 transition-colors cursor-help"/></Tooltip>
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400"><Cpu size={18} /></div>
@@ -573,7 +623,7 @@ export default function App() {
                   <div className="md:col-span-2">
                     <label className="flex items-center text-sm font-bold text-slate-700 mb-2">
                       Use Case Description
-                      <Tooltip text='What specific manual process is this bot replacing? (e.g., "Resetting user passwords")'><Info size={14} className="text-slate-400 hover:text-blue-500 transition-colors"/></Tooltip>
+                      <Tooltip text='What specific manual process is this bot replacing? (e.g., "Resetting user passwords")'><Info size={14} className="text-slate-400 hover:text-blue-500 transition-colors cursor-help"/></Tooltip>
                     </label>
                     <textarea value={useCase} onChange={(e) => setUseCase(e.target.value)} rows={2} placeholder="Briefly describe what the automation does..." className={`${inputStyle} resize-none font-medium`} />
                   </div>
@@ -581,7 +631,7 @@ export default function App() {
                   <div className="md:col-span-2">
                     <label className="flex items-center text-sm font-bold text-slate-700 mb-2">
                       <BarChart3 size={16} className="mr-1.5 text-purple-500" /> Target KPIs
-                      <Tooltip text='Which business metrics will this improve? (e.g., "Average Handle Time", "Error Rate")'><Info size={14} className="text-slate-400 hover:text-blue-500 transition-colors"/></Tooltip>
+                      <Tooltip text='Which business metrics will this improve? (e.g., "Average Handle Time", "Error Rate")'><Info size={14} className="text-slate-400 hover:text-blue-500 transition-colors cursor-help"/></Tooltip>
                     </label>
                     <textarea value={kpis} onChange={(e) => setKpis(e.target.value)} rows={3} placeholder="e.g., MTTR, CSAT, Error Rate..." className={`${inputStyle} resize-none font-medium`} />
                   </div>
@@ -589,7 +639,7 @@ export default function App() {
                   <div>
                     <label className="flex items-center text-sm font-bold text-slate-700 mb-2">
                       <Target size={16} className="mr-1.5 text-red-500" /> Challenges Addressed
-                      <Tooltip text='What pain points are solved? (e.g., "Too many typos", "Slow response time")'><Info size={14} className="text-slate-400 hover:text-blue-500 transition-colors"/></Tooltip>
+                      <Tooltip text='What pain points are solved? (e.g., "Too many typos", "Slow response time")'><Info size={14} className="text-slate-400 hover:text-blue-500 transition-colors cursor-help"/></Tooltip>
                     </label>
                     <textarea value={challenges} onChange={(e) => setChallenges(e.target.value)} rows={4} placeholder="What pain points are solved?" className={`${inputStyle} resize-none text-sm font-medium`} />
                   </div>
@@ -597,7 +647,7 @@ export default function App() {
                   <div>
                     <label className="flex items-center text-sm font-bold text-slate-700 mb-2">
                       <Award size={16} className="mr-1.5 text-green-500" /> Qualitative Benefits
-                      <Tooltip text='What are the soft benefits? (e.g., "Higher employee morale", "Better compliance")'><Info size={14} className="text-slate-400 hover:text-blue-500 transition-colors"/></Tooltip>
+                      <Tooltip text='What are the soft benefits? (e.g., "Higher employee morale", "Better compliance")'><Info size={14} className="text-slate-400 hover:text-blue-500 transition-colors cursor-help"/></Tooltip>
                     </label>
                     <textarea value={qualitativeBenefits} onChange={(e) => setQualitativeBenefits(e.target.value)} rows={4} placeholder="e.g., Improved employee morale..." className={`${inputStyle} resize-none text-sm font-medium`} />
                   </div>
@@ -620,7 +670,7 @@ export default function App() {
                     <label className="flex items-center text-sm font-bold text-slate-700">
                       Number of Tasks
                       <Tooltip text={volumePeriod === 'daily' ? 'How many times per day? Multiplied by working days to get monthly volume.' : 'How many times does a human perform this specific task every month?'}>
-                        <Info size={14} className="text-slate-400 hover:text-blue-500 transition-colors"/>
+                        <Info size={14} className="text-slate-400 hover:text-blue-500 transition-colors cursor-help"/>
                       </Tooltip>
                     </label>
                     <div className="flex bg-slate-200/60 p-1 rounded-xl shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)]">
@@ -644,12 +694,12 @@ export default function App() {
                   <label className="flex items-center text-sm font-bold text-slate-700 mb-2">
                     Time Spent per Task
                     <Tooltip text='AHT (Average Handle Time): How long does it take a human to complete this task just once?'>
-                      <Info size={14} className="text-slate-400 hover:text-blue-500 transition-colors"/>
+                      <Info size={14} className="text-slate-400 hover:text-blue-500 transition-colors cursor-help"/>
                     </Tooltip>
                   </label>
                   <div className="flex space-x-3">
                     <div className="relative flex-1">
-                      <input type="number" value={Math.round(effortHours * 60)} onChange={handleMinutesChange} className={`${effortHours < 0 ? inputErrorStyle : inputStyle} pr-12 font-mono text-lg`} />
+                      <input type="number" value={effortHours * 60} onChange={handleMinutesChange} className={`${effortHours < 0 ? inputErrorStyle : inputStyle} pr-12 font-mono text-lg`} />
                       <span className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 font-bold text-xs pointer-events-none">MIN</span>
                     </div>
                     <div className="relative flex-1">
@@ -664,7 +714,7 @@ export default function App() {
                   <label className="flex items-center text-sm font-bold text-slate-700 mb-2">
                     Resource Cost (Hourly)
                     <Tooltip text={`The fully loaded hourly wage of the employee currently doing this task manually (in ${currency}).`}>
-                      <Info size={14} className="text-slate-400 hover:text-blue-500 transition-colors"/>
+                      <Info size={14} className="text-slate-400 hover:text-blue-500 transition-colors cursor-help"/>
                     </Tooltip>
                   </label>
                   <div className="relative">
@@ -678,7 +728,7 @@ export default function App() {
                   <label className="flex items-center text-sm font-bold text-slate-700 mb-2">
                     Remaining Duration
                     <Tooltip text='How many months will this automation run before the project ends or needs a rebuild?'>
-                      <Info size={14} className="text-slate-400 hover:text-blue-500 transition-colors"/>
+                      <Info size={14} className="text-slate-400 hover:text-blue-500 transition-colors cursor-help"/>
                     </Tooltip>
                   </label>
                   <div className="relative">
@@ -694,12 +744,12 @@ export default function App() {
                     <label className="flex items-center text-sm font-bold text-slate-700">
                       Percentage Automated
                       <Tooltip text='What percentage of the manual work is being completely eliminated by the bot?'>
-                        <Info size={14} className="text-slate-400 hover:text-blue-500 transition-colors"/>
+                        <Info size={14} className="text-slate-400 hover:text-blue-500 transition-colors cursor-help"/>
                       </Tooltip>
                     </label>
                     <span className="font-extrabold text-blue-700 bg-blue-100 px-4 py-1.5 rounded-xl text-sm shadow-sm">{automationPercent}%</span>
                   </div>
-                  <input type="range" min="0" max="100" value={automationPercent} onChange={(e) => setAutomationPercent(e.target.value)} className="w-full h-3 bg-slate-200 rounded-full appearance-none cursor-pointer accent-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-500/30" />
+                  <input type="range" aria-label="Percentage Automated" min="0" max="100" value={automationPercent} onChange={(e) => setAutomationPercent(e.target.value)} className="w-full h-3 bg-slate-200 rounded-full appearance-none cursor-pointer accent-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-500/30" />
                   <div className="flex justify-between text-xs font-bold text-slate-400 mt-3 px-1"><span>0%</span><span>50%</span><span>100%</span></div>
                 </div>
 
@@ -718,7 +768,7 @@ export default function App() {
                         <label className="flex items-center text-xs font-bold text-slate-700 mb-1">
                           One-Time Build
                           <Tooltip text='Total upfront investment required (e.g., developer salaries, software licenses, vendor fees).'>
-                            <Info size={12} className="text-slate-400 hover:text-blue-500 transition-colors"/>
+                            <Info size={12} className="text-slate-400 hover:text-blue-500 transition-colors cursor-help"/>
                           </Tooltip>
                         </label>
                         <p className="text-[10px] text-slate-500 mb-3 leading-tight">Upfront investment cost.</p>
@@ -735,7 +785,7 @@ export default function App() {
                         <label className="flex items-center text-xs font-bold text-slate-700 mb-1">
                           Base Monthly Run Cost
                           <Tooltip text='Base recurring costs (licenses, cloud) and their projected Annual Percentage Increase.'>
-                            <Info size={12} className="text-slate-400 hover:text-blue-500 transition-colors"/>
+                            <Info size={12} className="text-slate-400 hover:text-blue-500 transition-colors cursor-help"/>
                           </Tooltip>
                         </label>
                         <p className="text-[10px] text-slate-500 mb-2 leading-tight">Recurring licenses/infra.</p>
@@ -762,7 +812,7 @@ export default function App() {
                         <label className="flex items-center text-xs font-bold text-slate-700 mb-1">
                           Y1 SRE / Mo
                           <Tooltip text='Monthly cost of SREs/Maintenance needed specifically for the first year (e.g., handling heavy onboarding).'>
-                            <Info size={12} className="text-slate-400 hover:text-blue-500 transition-colors"/>
+                            <Info size={12} className="text-slate-400 hover:text-blue-500 transition-colors cursor-help"/>
                           </Tooltip>
                         </label>
                         <p className="text-[10px] text-slate-500 mb-3 leading-tight">First 12 mo support cost.</p>
@@ -779,7 +829,7 @@ export default function App() {
                         <label className="flex items-center text-xs font-bold text-slate-700 mb-1">
                           Y2+ SRE / Mo
                           <Tooltip text='Reduced monthly SRE cost for Year 2 and beyond, after the system stabilizes.'>
-                            <Info size={12} className="text-slate-400 hover:text-blue-500 transition-colors"/>
+                            <Info size={12} className="text-slate-400 hover:text-blue-500 transition-colors cursor-help"/>
                           </Tooltip>
                         </label>
                         <p className="text-[10px] text-slate-500 mb-3 leading-tight">Ongoing tapered support.</p>
@@ -800,6 +850,18 @@ export default function App() {
           {/* Right Column: Results & Output */}
           <div className="lg:col-span-5 space-y-6">
             
+            {/* Scenario Toggle */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-2 pl-5 rounded-3xl border border-slate-200/60 shadow-sm">
+              <h3 className="text-sm font-bold text-slate-800 flex items-center">
+                <Activity size={16} className="mr-2 text-blue-600" /> Forecast Scenario
+              </h3>
+              <div className="flex bg-slate-100 p-1 rounded-2xl shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)] w-full sm:w-auto">
+                <button onClick={() => setScenario('optimistic')} className={`flex-1 sm:flex-none px-4 py-2 text-xs rounded-xl transition-all font-bold ${scenario === 'optimistic' ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-500 hover:text-slate-700'}`}>Optimistic</button>
+                <button onClick={() => setScenario('realistic')} className={`flex-1 sm:flex-none px-4 py-2 text-xs rounded-xl transition-all font-bold ${scenario === 'realistic' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}>Realistic</button>
+                <button onClick={() => setScenario('conservative')} className={`flex-1 sm:flex-none px-4 py-2 text-xs rounded-xl transition-all font-bold ${scenario === 'conservative' ? 'bg-white shadow-sm text-amber-600' : 'text-slate-500 hover:text-slate-700'}`}>Conservative</button>
+              </div>
+            </div>
+
             {/* Primary Result Card */}
             <div className="bg-gradient-to-br from-[#0F172A] via-[#1E1B4B] to-[#312E81] rounded-[28px] shadow-xl p-8 text-white relative overflow-hidden flex flex-col justify-between">
               <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500 opacity-[0.08] rounded-full blur-[80px] pointer-events-none"></div>
@@ -810,7 +872,7 @@ export default function App() {
                 <div className="flex items-center space-x-3 mb-3">
                   <Tooltip text="Net Savings = (Gross Monthly Save × Duration) - Total Dynamic Run/SRE Costs - Implementation Cost">
                     <span className="bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl text-xs font-bold uppercase tracking-widest text-blue-100 border border-white/10 shadow-sm flex items-center cursor-help">
-                      Est. Lifetime Net Savings <Info size={14} className="ml-1.5 opacity-70" />
+                      Est. Lifetime Net Savings <Info size={14} className="ml-1.5 opacity-70 cursor-help" />
                     </span>
                   </Tooltip>
                   <span className="text-blue-200 text-sm font-semibold flex items-center">
@@ -826,13 +888,13 @@ export default function App() {
               <div className="grid grid-cols-2 gap-4 relative z-10 mb-6">
                 <div>
                   <Tooltip text="Average Monthly Net Savings (factors in strict month-by-month run cost inflation and variable SRE costs).">
-                    <p className="text-blue-300 text-xs mb-1.5 uppercase tracking-wider font-bold flex items-center cursor-help w-max">Avg Net Monthly <Info size={12} className="ml-1 opacity-70"/></p>
+                    <p className="text-blue-300 text-xs mb-1.5 uppercase tracking-wider font-bold flex items-center cursor-help w-max">Avg Net Monthly <Info size={12} className="ml-1 opacity-70 cursor-help"/></p>
                   </Tooltip>
                   <p className="text-2xl font-bold tracking-tight text-white">{formatCurrency(results.avgNetMonthlySave)}</p>
                 </div>
                 <div>
                   <Tooltip text="Implementation Cost + Total Lifetime Run Costs + Total Lifetime SRE Costs">
-                    <p className="text-blue-300 text-xs mb-1.5 uppercase tracking-wider font-bold flex items-center cursor-help w-max">Total Investment <Info size={12} className="ml-1 opacity-70"/></p>
+                    <p className="text-blue-300 text-xs mb-1.5 uppercase tracking-wider font-bold flex items-center cursor-help w-max">Total Investment <Info size={12} className="ml-1 opacity-70 cursor-help"/></p>
                   </Tooltip>
                   <p className="text-2xl font-bold tracking-tight text-white">{formatCurrency(results.totalInvestment)}</p>
                 </div>
@@ -842,7 +904,7 @@ export default function App() {
               <div className="grid grid-cols-2 gap-4 relative z-10">
                  <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/10 shadow-inner">
                   <Tooltip text="(Net Savings / Total Investment) × 100">
-                    <p className="text-blue-300/80 text-xs mb-1 uppercase tracking-wider font-bold flex items-center cursor-help w-max">ROI <Info size={12} className="ml-1 opacity-70"/></p>
+                    <p className="text-blue-300/80 text-xs mb-1 uppercase tracking-wider font-bold flex items-center cursor-help w-max">ROI <Info size={12} className="ml-1 opacity-70 cursor-help"/></p>
                   </Tooltip>
                   <p className={`text-2xl font-extrabold tracking-tight ${results.roi < 0 ? 'text-red-400' : results.roi >= 100 ? 'text-[#34D399]' : 'text-white'}`}>
                     {results.roi === Infinity ? '∞' : `${Math.round(results.roi).toLocaleString()}%`}
@@ -850,7 +912,7 @@ export default function App() {
                 </div>
                 <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/10 shadow-inner">
                   <Tooltip text="Exact month where cumulative savings exceeds cumulative implementation, run, and maintenance costs.">
-                    <p className="text-blue-300/80 text-xs mb-1 uppercase tracking-wider font-bold flex items-center cursor-help w-max">Payback Period <Info size={12} className="ml-1 opacity-70"/></p>
+                    <p className="text-blue-300/80 text-xs mb-1 uppercase tracking-wider font-bold flex items-center cursor-help w-max">Payback Period <Info size={12} className="ml-1 opacity-70 cursor-help"/></p>
                   </Tooltip>
                   <p className="text-2xl font-extrabold tracking-tight text-white">
                     {results.paybackPeriod === Infinity ? 'Never' : results.paybackPeriod === 0 ? 'Immediate' : `${results.paybackPeriod.toFixed(1)} mo`}
@@ -898,7 +960,7 @@ export default function App() {
                     <div className="flex justify-between items-start mb-4">
                       <div>
                          <Tooltip text="Average future monthly cost (Remaining manual labor + Average run cost + Average SRE cost).">
-                           <div className="text-[11px] font-bold text-blue-400 uppercase mb-1 flex items-center cursor-help">Avg Total Cost/Mo <Info size={10} className="ml-1 opacity-80" /></div>
+                           <div className="text-[11px] font-bold text-blue-400 uppercase mb-1 flex items-center cursor-help">Avg Total Cost/Mo <Info size={10} className="ml-1 opacity-80 cursor-help" /></div>
                          </Tooltip>
                          <div className="text-xl font-extrabold text-blue-900 tracking-tight">{formatCurrency(results.futureMonthlyCostAvg)}</div>
                       </div>
@@ -942,7 +1004,7 @@ export default function App() {
               <div>
                 <Tooltip text="Total manual hours saved over the project duration.">
                   <div className="flex items-center space-x-2 text-emerald-700 mb-3 bg-emerald-50 w-max px-3 py-1.5 rounded-xl font-bold text-sm cursor-help">
-                    <Clock size={16} /><span>Time Recaptured</span><Info size={14} className="opacity-70" />
+                    <Clock size={16} /><span>Time Recaptured</span><Info size={14} className="opacity-70 cursor-help" />
                   </div>
                 </Tooltip>
                 <div className="text-3xl font-extrabold text-slate-800 tracking-tight">
@@ -956,7 +1018,7 @@ export default function App() {
               <div className="border-l border-slate-100 pl-6">
                 <Tooltip text="Full-Time Equivalents (Assumes 160 hours/month per employee).">
                   <div className="flex items-center space-x-2 text-indigo-700 mb-3 bg-indigo-50 w-max px-3 py-1.5 rounded-xl font-bold text-sm cursor-help">
-                    <Users size={16} /><span>FTE Savings</span><Info size={14} className="opacity-70" />
+                    <Users size={16} /><span>FTE Savings</span><Info size={14} className="opacity-70 cursor-help" />
                   </div>
                 </Tooltip>
                 <div className="text-3xl font-extrabold text-slate-800 tracking-tight">
@@ -1027,21 +1089,23 @@ export default function App() {
         </div>
 
         <div className={`${cardStyle} mt-6 mb-12`}>
-          <button onClick={() => setIsHowItWorksOpen(!isHowItWorksOpen)} className="w-full p-6 md:p-8 flex items-center justify-between hover:bg-slate-50 transition-colors text-left outline-none">
+          <button onClick={() => setIsHowItWorksOpen(!isHowItWorksOpen)} aria-expanded={isHowItWorksOpen} aria-controls="how-it-works-content" className="w-full p-6 md:p-8 flex items-center justify-between hover:bg-slate-50 transition-colors text-left outline-none">
             <div className="flex items-center space-x-4"><div className="bg-slate-100 p-3 rounded-2xl text-slate-600"><HelpCircle size={24} /></div><div><h2 className="text-lg font-extrabold text-slate-900 tracking-tight">Methodology & AI Details</h2><p className="text-sm text-slate-500 font-medium">How these numbers are calculated</p></div></div>
             <div className={`transform transition-transform duration-300 bg-slate-100 p-2 rounded-full ${isHowItWorksOpen ? 'rotate-180' : ''}`}><ChevronDown size={20} className="text-slate-500" /></div>
           </button>
-          <div className={`transition-all duration-300 ease-in-out ${isHowItWorksOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-            <div className="p-6 md:p-8 pt-0 border-t border-slate-100">
+          <div id="how-it-works-content" aria-hidden={!isHowItWorksOpen} className={`transition-all duration-300 ease-in-out ${isHowItWorksOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+            <div className="p-6 md:p-8 pt-0 border-t border-slate-100" tabIndex={isHowItWorksOpen ? 0 : -1}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6">
                 <div className="space-y-6">
                   <div><h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">Month-By-Month Engine</h3><p className="text-sm text-slate-600 leading-relaxed font-medium">This calculator doesn't just multiply static numbers. It loops through every month of the project's duration to accurately compound <strong>Run Cost Inflation</strong> and dynamically switch between <strong>Y1 vs Y2+ SRE/Maintenance costs</strong>. This guarantees a mathematically precise Payback Period and ROI.</p></div>
                   <div><h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">Net Savings</h3><p className="text-sm text-slate-600 leading-relaxed font-medium">The actual financial gain. Projects the gross savings over the lifetime of the project and subtracts the initial implementation cost, the inflating monthly run costs, and the variable monthly maintenance costs.</p></div>
+                  <div><h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">Scenario Modeling</h3><p className="text-sm text-slate-600 leading-relaxed font-medium">The <strong>Forecast Scenario</strong> toggle stress-tests your business case. <em>Realistic</em> uses your exact inputs. <em>Conservative</em> inflates all implementation and run costs by 25% while shrinking the expected automation yield by 25% (simulating delays/complexity). <em>Optimistic</em> reduces costs by 10% and boosts automation yield by 10%.</p></div>
                   <div><h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">SRE / Maintenance Ramp-Down</h3><p className="text-sm text-slate-600 leading-relaxed font-medium">Complex automations usually require heavier support when they are first launched, which tapers off as the system stabilizes. The advanced cost settings allow you to accurately forecast this ramp-down.</p></div>
                 </div>
                 <div className="space-y-6">
                   <div><h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">FTE Savings</h3><p className="text-sm text-slate-600 leading-relaxed font-medium">FTE stands for "Full-Time Equivalent". In this tool, we assume a standard work month has roughly 160 hours. If your automation saves 160 hours, it is effectively doing the work of 1 full-time employee.</p></div>
                   <div><h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">Return on Investment (ROI)</h3><p className="text-sm text-slate-600 leading-relaxed font-medium">Measures profitability. An ROI of 100% means the automation paid for its total investment and generated that same amount in pure savings.</p></div>
+                  <div><h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">Live Currency Conversion</h3><p className="text-sm text-slate-600 leading-relaxed font-medium">Currency switching automatically recalculates all monetary inputs and results using real-time exchange rates fetched securely from <strong>open.er-api.com</strong>. A small green dot on the currency selector indicates live rates are active. If you are offline, it seamlessly falls back to standard default rates.</p></div>
                   <div className="bg-blue-50/80 border border-blue-100 rounded-2xl p-6 mt-4">
                     <h3 className="text-sm font-bold text-blue-900 uppercase tracking-wider mb-2 flex items-center"><Settings size={16} className="mr-2 text-blue-600" /> What AI powers these insights?</h3>
                     <p className="text-sm text-blue-800 leading-relaxed font-medium">By default, this calculator integrates Google's advanced <strong>Gemini 2.5 Flash</strong> model. You can click the <strong className="inline-flex items-center text-blue-900 bg-white px-2 py-0.5 rounded shadow-sm mx-1 hover:bg-slate-50 transition-colors"><Settings size={12} className="mr-1"/> AI Config</strong> button at the top to switch to other high-quality free models.</p>
