@@ -26,14 +26,15 @@ import {
   Coins,
   Wrench,
   Download,
-  Presentation
+  Presentation,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 // --- Global Constants & Configurations ---
 const HOURS_PER_FTE_MONTH = 160;
 
 const providerOptions = {
-  'builtin': { name: 'Built-in Gemini', models: ['gemini-2.5-flash-preview-09-2025'], url: null, needsKey: false },
   'pollinations': { name: 'Pollinations.ai', models: ['openai', 'mistral', 'llama'], url: null, needsKey: false },
   'groq': { name: 'Groq', models: ['llama3-8b-8192', 'llama3-70b-8192', 'mixtral-8x7b-32768'], url: 'https://console.groq.com/keys', needsKey: true },
   'openrouter': { name: 'OpenRouter Free', models: ['meta-llama/llama-3-8b-instruct:free', 'google/gemini-2.5-flash:free'], url: 'https://openrouter.ai/keys', needsKey: true }
@@ -57,7 +58,7 @@ const loadScript = (src, globalName) => {
 
 // --- Custom Tooltip Component ---
 const Tooltip = ({ text, children }) => (
-  <div className="relative flex items-center group ml-1.5">
+  <div className="relative flex items-center group ml-1.5 z-50">
     {children}
     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[240px] p-2.5 bg-slate-800 text-white text-[12px] font-medium rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-[100] text-center shadow-xl leading-relaxed scale-95 group-hover:scale-100 origin-bottom">
       {text}
@@ -75,22 +76,22 @@ export default function App() {
   const [kpis, setKpis] = useState('');
 
   // --- Quantitative State ---
-  const [executionsPerMonth, setExecutionsPerMonth] = useState(1200);
+  const [executionsPerMonth, setExecutionsPerMonth] = useState('');
   const [volumePeriod, setVolumePeriod] = useState('monthly');
   const [workingDays, setWorkingDays] = useState(22);
-  const [effortHours, setEffortHours] = useState(0.333333); 
-  const [resourceCost, setResourceCost] = useState(30);
-  const [automationPercent, setAutomationPercent] = useState(80);
-  const [durationMonths, setDurationMonths] = useState(36);
+  const [effortHours, setEffortHours] = useState(''); 
+  const [resourceCost, setResourceCost] = useState('');
+  const [automationPercent, setAutomationPercent] = useState(0);
+  const [durationMonths, setDurationMonths] = useState('');
   
   // Base Costs
-  const [implementationCost, setImplementationCost] = useState(5000);
-  const [monthlyRunCost, setMonthlyRunCost] = useState(250); 
+  const [implementationCost, setImplementationCost] = useState('');
+  const [monthlyRunCost, setMonthlyRunCost] = useState(''); 
   
   // Advanced Ongoing Costs
-  const [runCostInflation, setRunCostInflation] = useState(5); 
-  const [sreCostY1, setSreCostY1] = useState(1500); 
-  const [sreCostY2, setSreCostY2] = useState(500); 
+  const [runCostInflation, setRunCostInflation] = useState(''); 
+  const [sreCostY1, setSreCostY1] = useState(''); 
+  const [sreCostY2, setSreCostY2] = useState(''); 
 
   const [currency, setCurrency] = useState('USD');
   const [scenario, setScenario] = useState('realistic');
@@ -138,16 +139,27 @@ export default function App() {
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
   const [roiInsights, setRoiInsights] = useState('');
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
+  const [showScore, setShowScore] = useState(true);
   
   // Export states
   const [isExportingXLSX, setIsExportingXLSX] = useState(false);
   const [isExportingPPTX, setIsExportingPPTX] = useState(false);
 
+  // Ready state logic to enable/disable exports
+  const isReadyToExport = !!(
+    toolName.trim() && 
+    useCase.trim() && 
+    Number(executionsPerMonth) > 0 && 
+    Number(durationMonths) > 0 &&
+    Number(resourceCost) > 0 &&
+    Number(effortHours) > 0
+  );
+
   // --- AI Config State ---
   const [isAiConfigOpen, setIsAiConfigOpen] = useState(false);
-  const [aiProvider, setAiProvider] = useState('builtin');
+  const [aiProvider, setAiProvider] = useState('pollinations');
   const [aiApiKey, setAiApiKey] = useState('');
-  const [aiModel, setAiModel] = useState(providerOptions['builtin'].models[0]);
+  const [aiModel, setAiModel] = useState(providerOptions['pollinations'].models[0]);
 
   const handleProviderChange = (e) => {
     const newProv = e.target.value;
@@ -158,11 +170,13 @@ export default function App() {
   const handleCurrencyChange = (newCurrency) => {
     if (newCurrency === currency) return;
     const multiplier = exchangeRates[newCurrency] / exchangeRates[currency];
-    setResourceCost(prev => Number((prev * multiplier).toFixed(2)));
-    setImplementationCost(prev => Number((prev * multiplier).toFixed(0)));
-    setMonthlyRunCost(prev => Number((prev * multiplier).toFixed(2)));
-    setSreCostY1(prev => Number((prev * multiplier).toFixed(2)));
-    setSreCostY2(prev => Number((prev * multiplier).toFixed(2)));
+    
+    // Safely recalculate avoiding turning empty inputs into "0" strings abruptly
+    setResourceCost(prev => prev === '' ? '' : Number((prev * multiplier).toFixed(2)));
+    setImplementationCost(prev => prev === '' ? '' : Number((prev * multiplier).toFixed(0)));
+    setMonthlyRunCost(prev => prev === '' ? '' : Number((prev * multiplier).toFixed(2)));
+    setSreCostY1(prev => prev === '' ? '' : Number((prev * multiplier).toFixed(2)));
+    setSreCostY2(prev => prev === '' ? '' : Number((prev * multiplier).toFixed(2)));
     setCurrency(newCurrency);
   };
 
@@ -237,9 +251,40 @@ export default function App() {
     const roi = totalInvestment > 0 ? (netSave / totalInvestment) * 100 : (netSave > 0 ? Infinity : 0);
     
     const avgNetMonthlySave = months > 0 ? (totalGrossSave - totalRunCost - totalSreCost) / months : 0;
-    
-    // Fixed: Simplified and corrected futureMonthlyCostAvg logic 
     const futureMonthlyCostAvg = (currentMonthlyCost - grossMonthlySave) + (months > 0 ? (totalRunCost + totalSreCost) / months : 0);
+    const fteSavings = hoursMonthlySaved / HOURS_PER_FTE_MONTH;
+
+    // --- Calculate Automation Score (0-100) ---
+    let score = 0;
+    
+    // 1. ROI Contribution (Up to 40 points)
+    if (roi >= 200) score += 40;
+    else if (roi >= 100) score += 30;
+    else if (roi >= 50) score += 20;
+    else if (roi > 0) score += 10;
+    
+    // 2. Payback Period Contribution (Up to 40 points)
+    if (paybackMonth <= 6) score += 40;
+    else if (paybackMonth <= 12) score += 30;
+    else if (paybackMonth <= 24) score += 20;
+    else if (paybackMonth <= 36) score += 10;
+    
+    // 3. FTE Savings Contribution (Up to 20 points)
+    if (fteSavings >= 2) score += 20;
+    else if (fteSavings >= 1) score += 15;
+    else if (fteSavings >= 0.5) score += 10;
+    else if (fteSavings > 0) score += 5;
+
+    // Cap & Floor
+    score = Math.min(100, Math.max(0, score));
+    if (netSave <= 0) score = 0; // Negative ROI zeros out score
+
+    let scoreLabel = "";
+    let scoreColor = "";
+    if (score >= 80) { scoreLabel = "Strong Investment"; scoreColor = "text-emerald-400"; }
+    else if (score >= 60) { scoreLabel = "Good Investment"; scoreColor = "text-blue-400"; }
+    else if (score >= 40) { scoreLabel = "Marginal Return"; scoreColor = "text-amber-400"; }
+    else { scoreLabel = "High Risk / Reject"; scoreColor = "text-red-400"; }
 
     return {
       effectiveExecutions,
@@ -256,12 +301,15 @@ export default function App() {
       paybackPeriod: paybackMonth,
       hoursSavedMonthly: hoursMonthlySaved,
       hoursSavedTotal: hoursSavedTotal,
-      fteSavings: hoursMonthlySaved / HOURS_PER_FTE_MONTH,
+      fteSavings,
       currentFte: hoursMonthlyCurrent / HOURS_PER_FTE_MONTH,
       toBeFte: Math.max(0, hoursMonthlyCurrent - hoursMonthlySaved) / HOURS_PER_FTE_MONTH,
       totalManualHoursMonthly: hoursMonthlyCurrent,
       remainingManualHoursMonthly: Math.max(0, hoursMonthlyCurrent - hoursMonthlySaved),
-      monthlyData
+      monthlyData,
+      automationScore: score,
+      scoreLabel,
+      scoreColor
     };
   }, [executionsPerMonth, effortHours, resourceCost, automationPercent, durationMonths, implementationCost, monthlyRunCost, runCostInflation, sreCostY1, sreCostY2, volumePeriod, workingDays, scenario]);
 
@@ -271,12 +319,18 @@ export default function App() {
   };
 
   const handleMinutesChange = (e) => {
-    const mins = Math.max(0, Number(e.target.value));
-    setEffortHours(mins / 60);
+    const val = e.target.value;
+    if (val === '') {
+      setEffortHours('');
+    } else {
+      const mins = Math.max(0, Number(val));
+      setEffortHours(mins / 60);
+    }
   };
 
   // --- External Exports ---
   const handleExportXLSX = async () => {
+    if (!isReadyToExport) return;
     setIsExportingXLSX(true);
     try {
       const XLSX = await loadScript('https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js', 'XLSX');
@@ -343,6 +397,7 @@ export default function App() {
   };
 
   const handleExportPPTX = async () => {
+    if (!isReadyToExport) return;
     setIsExportingPPTX(true);
     try {
       // Switched to stable npm CDNs instead of Github CDN for JSZip and PptxGenJS
@@ -418,12 +473,7 @@ export default function App() {
   const callAI = async (prompt) => {
     if (providerOptions[aiProvider].needsKey && !aiApiKey.trim()) throw new Error(`Please provide an API key in AI Settings.`);
     
-    if (aiProvider === 'builtin') {
-      const apiKey = ""; // API key is populated automatically by the execution environment
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${aiModel}:generateContent?key=${apiKey}`;
-      const data = await fetchWithRetry(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
-      return data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    } else if (aiProvider === 'pollinations') {
+    if (aiProvider === 'pollinations') {
       const response = await fetch(`https://text.pollinations.ai/`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: [{ role: 'user', content: prompt }], model: aiModel }) });
       if (!response.ok) throw new Error("API error");
       return await response.text();
@@ -438,7 +488,7 @@ export default function App() {
     setIsGenerating(true);
     const prompt = `Act as a professional business analyst. Write a persuasive, general business case pitch for an automation project.
     Details: Tool Name: ${sanitizeStr(toolName) || 'Proposed Automation'} | Use Case: ${sanitizeStr(useCase) || 'N/A'} | Scenario: ${scenario.charAt(0).toUpperCase() + scenario.slice(1)} Forecast
-    Financials: Lifetime Net Savings: ${formatCurrency(results.netSavings)} over ${durationMonths} months | ROI: ${Math.round(results.roi)}%
+    Financials: Lifetime Net Savings: ${formatCurrency(results.netSavings)} over ${durationMonths} months | ROI: ${Math.round(results.roi)}% | Automation Viability Score: ${results.automationScore}/100 (${results.scoreLabel})
     Write a compelling executive summary (2-3 paragraphs). Do NOT include greetings. Use standard plain text formatting.`;
     try {
       const text = await callAI(prompt);
@@ -542,15 +592,19 @@ export default function App() {
             </div>
 
             {/* Export Buttons */}
-            <div className="flex bg-emerald-50 border border-emerald-200/60 rounded-2xl overflow-hidden shadow-sm">
-              <button onClick={handleExportXLSX} disabled={isExportingXLSX} className="flex items-center space-x-1.5 text-xs font-bold text-emerald-700 hover:bg-emerald-100 px-3 py-3 transition-all border-r border-emerald-200/60" title="Export Report to Excel">
-                {isExportingXLSX ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-                <span className="hidden lg:inline">Excel</span>
-              </button>
-              <button onClick={handleExportPPTX} disabled={isExportingPPTX} className="flex items-center space-x-1.5 text-xs font-bold text-orange-700 hover:bg-orange-100 bg-orange-50 px-3 py-3 transition-all" title="Export 1-Slide Summary to PowerPoint">
-                {isExportingPPTX ? <Loader2 size={16} className="animate-spin" /> : <Presentation size={16} />}
-                <span className="hidden lg:inline">PPTX</span>
-              </button>
+            <div className="flex items-center">
+              <Tooltip text={isReadyToExport ? "Export Options" : "Please fill out basic Qualitative and Quantitative details (Tool Name, Use Case, Output/Duration variables) to enable exports."}>
+                <div className={`flex bg-emerald-50 border border-emerald-200/60 rounded-2xl overflow-hidden shadow-sm transition-opacity ${isReadyToExport ? 'opacity-100' : 'opacity-40 grayscale'}`}>
+                  <button onClick={handleExportXLSX} disabled={isExportingXLSX || !isReadyToExport} className="flex items-center space-x-1.5 text-xs font-bold text-emerald-700 hover:bg-emerald-100 px-3 py-3 transition-all border-r border-emerald-200/60 disabled:cursor-not-allowed" title="Export Report to Excel">
+                    {isExportingXLSX ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                    <span className="hidden lg:inline">Excel</span>
+                  </button>
+                  <button onClick={handleExportPPTX} disabled={isExportingPPTX || !isReadyToExport} className="flex items-center space-x-1.5 text-xs font-bold text-orange-700 hover:bg-orange-100 bg-orange-50 px-3 py-3 transition-all disabled:cursor-not-allowed" title="Export 1-Slide Summary to PowerPoint">
+                    {isExportingPPTX ? <Loader2 size={16} className="animate-spin" /> : <Presentation size={16} />}
+                    <span className="hidden lg:inline">PPTX</span>
+                  </button>
+                </div>
+              </Tooltip>
             </div>
 
             <button onClick={() => setIsAiConfigOpen(true)} className="flex items-center space-x-1 text-sm font-bold text-slate-600 hover:text-blue-700 bg-slate-100 hover:bg-blue-50 p-3 rounded-2xl transition-all border border-transparent hover:border-blue-100">
@@ -679,10 +733,10 @@ export default function App() {
                     </div>
                   </div>
                   <div className="flex space-x-2">
-                    <input type="number" value={executionsPerMonth} onChange={(e) => setExecutionsPerMonth(e.target.value)} className={`${executionsPerMonth < 0 ? inputErrorStyle : inputStyle} font-mono text-lg`} />
+                    <input type="number" value={executionsPerMonth} onChange={(e) => setExecutionsPerMonth(e.target.value)} placeholder="0" className={`${executionsPerMonth !== '' && executionsPerMonth < 0 ? inputErrorStyle : inputStyle} font-mono text-lg`} />
                     {volumePeriod === 'daily' && (
                       <div className="relative w-28 flex-shrink-0" title="Working days per month">
-                        <input type="number" min="1" max="31" value={workingDays} onChange={(e) => setWorkingDays(e.target.value)} className={`${workingDays < 1 ? inputErrorStyle : inputStyle} pr-10 font-mono text-lg`} />
+                        <input type="number" min="1" max="31" value={workingDays} onChange={(e) => setWorkingDays(e.target.value)} placeholder="0" className={`${workingDays !== '' && workingDays < 1 ? inputErrorStyle : inputStyle} pr-10 font-mono text-lg`} />
                         <span className="absolute right-3 top-3.5 text-xs font-bold text-slate-400">days</span>
                       </div>
                     )}
@@ -699,11 +753,11 @@ export default function App() {
                   </label>
                   <div className="flex space-x-3">
                     <div className="relative flex-1">
-                      <input type="number" value={effortHours * 60} onChange={handleMinutesChange} className={`${effortHours < 0 ? inputErrorStyle : inputStyle} pr-12 font-mono text-lg`} />
+                      <input type="number" value={effortHours !== '' ? effortHours * 60 : ''} onChange={handleMinutesChange} placeholder="0" className={`${effortHours !== '' && effortHours < 0 ? inputErrorStyle : inputStyle} pr-12 font-mono text-lg`} />
                       <span className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 font-bold text-xs pointer-events-none">MIN</span>
                     </div>
                     <div className="relative flex-1">
-                      <input type="number" step="0.01" value={Number(effortHours).toFixed(2)} onChange={(e) => setEffortHours(e.target.value)} className={`${effortHours < 0 ? inputErrorStyle : inputStyle} pr-12 font-mono text-lg bg-slate-100/50`} />
+                      <input type="number" step="0.01" value={effortHours !== '' ? Number(effortHours).toFixed(2) : ''} onChange={(e) => setEffortHours(e.target.value)} placeholder="0.00" className={`${effortHours !== '' && effortHours < 0 ? inputErrorStyle : inputStyle} pr-12 font-mono text-lg bg-slate-100/50`} />
                       <span className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 font-bold text-xs pointer-events-none">HR</span>
                     </div>
                   </div>
@@ -719,7 +773,7 @@ export default function App() {
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400"><Coins size={18} /></div>
-                    <input type="number" value={resourceCost} onChange={(e) => setResourceCost(e.target.value)} className={`${resourceCost < 0 ? inputErrorStyle : inputStyle} pl-10 font-mono text-lg`} />
+                    <input type="number" value={resourceCost} onChange={(e) => setResourceCost(e.target.value)} placeholder="0" className={`${resourceCost !== '' && resourceCost < 0 ? inputErrorStyle : inputStyle} pl-10 font-mono text-lg`} />
                   </div>
                 </div>
 
@@ -733,7 +787,7 @@ export default function App() {
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400"><Briefcase size={18} /></div>
-                    <input type="number" value={durationMonths} onChange={(e) => setDurationMonths(e.target.value)} className={`${durationMonths < 0 ? inputErrorStyle : inputStyle} pl-10 pr-20 font-mono text-lg`} />
+                    <input type="number" value={durationMonths} onChange={(e) => setDurationMonths(e.target.value)} placeholder="0" className={`${durationMonths !== '' && durationMonths < 0 ? inputErrorStyle : inputStyle} pl-10 pr-20 font-mono text-lg`} />
                     <span className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 font-bold text-xs pointer-events-none">MONTHS</span>
                   </div>
                 </div>
@@ -775,7 +829,7 @@ export default function App() {
                       </div>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400"><Coins size={14} /></div>
-                        <input type="number" min="0" value={implementationCost} onChange={(e) => setImplementationCost(e.target.value)} className={`w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono pl-8`} />
+                        <input type="number" min="0" value={implementationCost} onChange={(e) => setImplementationCost(e.target.value)} placeholder="0" className={`w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono pl-8`} />
                       </div>
                     </div>
 
@@ -793,13 +847,13 @@ export default function App() {
                       <div className="space-y-3">
                         <div className="relative">
                           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400"><Coins size={14} /></div>
-                          <input type="number" min="0" value={monthlyRunCost} onChange={(e) => setMonthlyRunCost(e.target.value)} className={`w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono pl-8`} />
+                          <input type="number" min="0" value={monthlyRunCost} onChange={(e) => setMonthlyRunCost(e.target.value)} placeholder="0" className={`w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono pl-8`} />
                         </div>
                         <div>
                           <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">YOY Inflation</label>
                           <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400"><TrendingUp size={14} /></div>
-                            <input type="number" min="0" value={runCostInflation} onChange={(e) => setRunCostInflation(e.target.value)} className={`w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono pl-8 pr-8`} />
+                            <input type="number" min="0" value={runCostInflation} onChange={(e) => setRunCostInflation(e.target.value)} placeholder="0" className={`w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono pl-8 pr-8`} />
                             <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 font-bold text-xs">%</span>
                           </div>
                         </div>
@@ -819,7 +873,7 @@ export default function App() {
                       </div>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400"><Users size={14} /></div>
-                        <input type="number" min="0" value={sreCostY1} onChange={(e) => setSreCostY1(e.target.value)} className={`w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono pl-8`} />
+                        <input type="number" min="0" value={sreCostY1} onChange={(e) => setSreCostY1(e.target.value)} placeholder="0" className={`w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono pl-8`} />
                       </div>
                     </div>
 
@@ -836,7 +890,7 @@ export default function App() {
                       </div>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400"><Users size={14} /></div>
-                        <input type="number" min="0" value={sreCostY2} onChange={(e) => setSreCostY2(e.target.value)} className={`w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono pl-8`} />
+                        <input type="number" min="0" value={sreCostY2} onChange={(e) => setSreCostY2(e.target.value)} placeholder="0" className={`w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono pl-8`} />
                       </div>
                     </div>
 
@@ -868,6 +922,27 @@ export default function App() {
               <div className="absolute bottom-[-20%] left-[-10%] w-64 h-64 bg-purple-500 opacity-[0.1] rounded-full blur-[80px] pointer-events-none"></div>
               <div className="absolute bottom-6 right-6 opacity-5 pointer-events-none"><TrendingUp size={160} /></div>
               
+              {/* Automation Score Header */}
+              <div className="relative z-10 border-b border-white/10 pb-5 mb-5 flex justify-between items-center">
+                <div className="flex items-center space-x-2">
+                   <button onClick={() => setShowScore(!showScore)} className="text-blue-400 hover:text-white transition-colors bg-white/5 p-2 rounded-xl" title={showScore ? "Hide Score" : "Show Score"}>
+                      {showScore ? <Eye size={18} /> : <EyeOff size={18} />}
+                   </button>
+                   <span className="text-xs font-bold uppercase tracking-widest text-blue-300">Viability Score</span>
+                </div>
+                {showScore ? (
+                   <div className="flex items-center space-x-3">
+                     <span className={`text-[11px] font-black uppercase tracking-widest ${results.scoreColor}`}>{results.scoreLabel}</span>
+                     <div className="bg-white/10 backdrop-blur-md px-3 py-1 rounded-xl text-lg font-black text-white border border-white/10 shadow-sm flex items-baseline space-x-1">
+                       <span>{results.automationScore}</span>
+                       <span className="text-[10px] text-blue-400 font-bold uppercase">/ 100</span>
+                     </div>
+                   </div>
+                ) : (
+                   <div className="text-[11px] font-bold uppercase tracking-widest text-blue-400/50">Score Hidden</div>
+                )}
+              </div>
+
               <div className="relative z-10">
                 <div className="flex items-center space-x-3 mb-3">
                   <Tooltip text="Net Savings = (Gross Monthly Save × Duration) - Total Dynamic Run/SRE Costs - Implementation Cost">
@@ -876,7 +951,7 @@ export default function App() {
                     </span>
                   </Tooltip>
                   <span className="text-blue-200 text-sm font-semibold flex items-center">
-                    <Clock size={14} className="mr-1.5 opacity-70"/> {durationMonths} Mo Project
+                    <Clock size={14} className="mr-1.5 opacity-70"/> {Number(durationMonths) || 0} Mo Project
                   </span>
                 </div>
                 
@@ -1064,7 +1139,7 @@ export default function App() {
                      <div className="whitespace-pre-wrap text-[15px]">{aiPitch}</div>
                   ) : toolName || useCase ? (
                     <>
-                      <p className="mb-4 text-[15px]">By implementing <strong className="text-white">{toolName || "the proposed automation"}</strong> {useCase && ` to ${useCase}`}, we anticipate automating <strong className="text-blue-400">{automationPercent}%</strong> of the targeted workload. Currently, this task requires {Number(results.effectiveExecutions).toLocaleString()} executions per month, taking approximately {Math.round(effortHours * 60)} minutes each.</p>
+                      <p className="mb-4 text-[15px]">By implementing <strong className="text-white">{toolName || "the proposed automation"}</strong> {useCase && ` to ${useCase}`}, we anticipate automating <strong className="text-blue-400">{automationPercent}%</strong> of the targeted workload. Currently, this task requires {Number(results.effectiveExecutions).toLocaleString()} executions per month, taking approximately {Math.round(Number(effortHours) * 60)} minutes each.</p>
                       {(challenges || kpis || qualitativeBenefits) && (
                         <>
                           <p className="mb-2 text-[15px] font-bold text-white">Strategic Value & Pain Points Addressed:</p>
@@ -1075,11 +1150,11 @@ export default function App() {
                           </div>
                         </>
                       )}
-                      <p className="mb-4 text-[15px]">Financially, this requires an initial investment of {formatCurrency(implementationCost)}. Over the {durationMonths}-month lifecycle, total maintenance and inflated run costs are projected at {formatCurrency(results.totalRunCost + results.totalSreCost)}. The automation yields a gross labor cost avoidance of <strong className="text-emerald-400">{formatCurrency(results.grossMonthlySave)} per month</strong>. After factoring in these dynamic operational costs, this amounts to a <strong>Lifetime Net Savings of <span className="text-emerald-400">{formatCurrency(results.netSavings)}</span></strong>. The precise payback period is <strong>{results.paybackPeriod === Infinity ? 'Never' : results.paybackPeriod.toFixed(1) + ' months'}</strong>, delivering an ROI of <strong>{results.roi === Infinity ? 'Infinite' : `${Math.round(results.roi)}%`}</strong>.</p>
+                      <p className="mb-4 text-[15px]">Financially, this requires an initial investment of {formatCurrency(implementationCost)}. Over the {Number(durationMonths) || 0}-month lifecycle, total maintenance and inflated run costs are projected at {formatCurrency(results.totalRunCost + results.totalSreCost)}. The automation yields a gross labor cost avoidance of <strong className="text-emerald-400">{formatCurrency(results.grossMonthlySave)} per month</strong>. After factoring in these dynamic operational costs, this amounts to a <strong>Lifetime Net Savings of <span className="text-emerald-400">{formatCurrency(results.netSavings)}</span></strong>. The precise payback period is <strong>{results.paybackPeriod === Infinity ? 'Never' : results.paybackPeriod.toFixed(1) + ' months'}</strong>, delivering an ROI of <strong>{results.roi === Infinity ? 'Infinite' : `${Math.round(results.roi)}%`}</strong>.</p>
                       <p className="text-[15px]">Operationally, the automation recaptures {Math.round(results.hoursSavedTotal).toLocaleString()} resource hours over the project life. This represents an ongoing monthly savings of <strong className="text-indigo-300">{results.fteSavings.toFixed(1)} FTEs</strong> (Full-Time Equivalents) that can be redirected toward higher-value, strategic initiatives.</p>
                     </>
                   ) : (
-                    <div className="h-full flex flex-col items-center justify-center text-slate-500 text-center py-12"><div className="bg-slate-800 p-4 rounded-full mb-4 opacity-50"><Cpu size={40} /></div><p className="font-medium text-lg text-slate-400">Ready to draft your business case.</p><p className="text-sm mt-1">Enter a tool name and use case above to begin.</p></div>
+                    <div className="h-full flex flex-col items-center justify-center text-slate-500 text-center py-12"><div className="bg-slate-800 p-4 rounded-full mb-4 opacity-50"><Cpu size={40} /></div><p className="font-medium text-lg text-slate-400">Ready to draft your business case.</p><p className="text-sm mt-1">Enter details above to begin.</p></div>
                   )}
                 </div>
               </div>
@@ -1099,6 +1174,16 @@ export default function App() {
                 <div className="space-y-6">
                   <div><h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">Month-By-Month Engine</h3><p className="text-sm text-slate-600 leading-relaxed font-medium">This calculator doesn't just multiply static numbers. It loops through every month of the project's duration to accurately compound <strong>Run Cost Inflation</strong> and dynamically switch between <strong>Y1 vs Y2+ SRE/Maintenance costs</strong>. This guarantees a mathematically precise Payback Period and ROI.</p></div>
                   <div><h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">Net Savings</h3><p className="text-sm text-slate-600 leading-relaxed font-medium">The actual financial gain. Projects the gross savings over the lifetime of the project and subtracts the initial implementation cost, the inflating monthly run costs, and the variable monthly maintenance costs.</p></div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">Automation Score Algorithm</h3>
+                    <p className="text-sm text-slate-600 leading-relaxed font-medium">A quick heuristic score out of 100 to determine investment viability. It evaluates three key pillars:</p>
+                    <ul className="list-disc pl-5 mt-2 text-sm text-slate-600 leading-relaxed font-medium space-y-1">
+                      <li><strong>ROI (40 pts):</strong> &ge;200% (40), &ge;100% (30), &ge;50% (20), &gt;0% (10)</li>
+                      <li><strong>Payback Period (40 pts):</strong> &le;6 mo (40), &le;12 mo (30), &le;24 mo (20), &le;36 mo (10)</li>
+                      <li><strong>FTE Savings (20 pts):</strong> &ge;2 FTEs (20), &ge;1 FTE (15), &ge;0.5 FTE (10), &gt;0 FTE (5)</li>
+                    </ul>
+                    <p className="text-sm text-slate-600 leading-relaxed font-medium mt-2">Scores over 80 are considered strong investments. You can toggle visibility using the eye icon in the results panel.</p>
+                  </div>
                   <div><h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">Scenario Modeling</h3><p className="text-sm text-slate-600 leading-relaxed font-medium">The <strong>Forecast Scenario</strong> toggle stress-tests your business case. <em>Realistic</em> uses your exact inputs. <em>Conservative</em> inflates all implementation and run costs by 25% while shrinking the expected automation yield by 25% (simulating delays/complexity). <em>Optimistic</em> reduces costs by 10% and boosts automation yield by 10%.</p></div>
                   <div><h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">SRE / Maintenance Ramp-Down</h3><p className="text-sm text-slate-600 leading-relaxed font-medium">Complex automations usually require heavier support when they are first launched, which tapers off as the system stabilizes. The advanced cost settings allow you to accurately forecast this ramp-down.</p></div>
                 </div>
@@ -1108,7 +1193,7 @@ export default function App() {
                   <div><h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">Live Currency Conversion</h3><p className="text-sm text-slate-600 leading-relaxed font-medium">Currency switching automatically recalculates all monetary inputs and results using real-time exchange rates fetched securely from <strong>open.er-api.com</strong>. A small green dot on the currency selector indicates live rates are active. If you are offline, it seamlessly falls back to standard default rates.</p></div>
                   <div className="bg-blue-50/80 border border-blue-100 rounded-2xl p-6 mt-4">
                     <h3 className="text-sm font-bold text-blue-900 uppercase tracking-wider mb-2 flex items-center"><Settings size={16} className="mr-2 text-blue-600" /> What AI powers these insights?</h3>
-                    <p className="text-sm text-blue-800 leading-relaxed font-medium">By default, this calculator integrates Google's advanced <strong>Gemini 2.5 Flash</strong> model. You can click the <strong className="inline-flex items-center text-blue-900 bg-white px-2 py-0.5 rounded shadow-sm mx-1 hover:bg-slate-50 transition-colors"><Settings size={12} className="mr-1"/> AI Config</strong> button at the top to switch to other high-quality free models.</p>
+                    <p className="text-sm text-blue-800 leading-relaxed font-medium">By default, this calculator securely integrates <strong>Pollinations.ai</strong> for free, seamless text generation. You can click the <strong className="inline-flex items-center text-blue-900 bg-white px-2 py-0.5 rounded shadow-sm mx-1 hover:bg-slate-50 transition-colors"><Settings size={12} className="mr-1"/> AI Config</strong> button at the top to optionally switch to other high-quality models using your own API keys.</p>
                   </div>
                 </div>
               </div>
