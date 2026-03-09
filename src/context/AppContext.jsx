@@ -14,7 +14,7 @@ const createDefaultSre = () => [{ id: crypto.randomUUID(), cl: 'CL9', tasksPerMo
 const defaultRunCostBreakdown = { productLicense: { cost: '', inflation: 5 }, ai: { enabled: false, cost: '', inflation: 5 }, splunk: { enabled: false, cost: '', inflation: 5 }, infra: { enabled: false, cost: '', inflation: 5 }, other: { enabled: false, cost: '', inflation: 5 } };
 
 export function AppProvider({ children }) {
-  // --- All State Declarations from Original App.jsx go here ---
+  // --- Core States ---
   const [baseLcr, setBaseLcr] = useState(DEFAULT_LCR);
   const [lcrRates, setLcrRates] = useStickyState(DEFAULT_LCR, 'as_lcrRates');
   const [toolName, setToolName] = useStickyState('', 'as_toolName');
@@ -88,7 +88,7 @@ export function AppProvider({ children }) {
             setLcrRates(prev => (JSON.stringify(prev) === JSON.stringify(DEFAULT_LCR)) ? data : prev);
           }
         }
-      } catch (error) { /* Silently fallback to DEFAULT_LCR */ }
+      } catch (error) { /* Silently fallback */ }
     };
     fetchLiveRates(); fetchRemoteLcr();
     return () => controller.abort();
@@ -98,11 +98,38 @@ export function AppProvider({ children }) {
   const calculationDeps = { laborBreakdown, automationPercent, durationMonths, implementationCost, monthlyRunCost, runCostInflation, isAdvancedRunCost, runCostBreakdown, lcrRates, hasSre, isAdvancedSre, sreCostY1, sreCostY2, sreBreakdown, workingDays, hoursPerDay, scenario, currency, exchangeRates };
   const results = useCalculationEngine(calculationDeps);
 
-  // --- Helper Functions (Copy exactly from original App.jsx) ---
+  // --- Handlers & Utils ---
   const formatCurrency = (value) => new Intl.NumberFormat(currencyConfig[currency].locale, { style: 'currency', currency: currencyConfig[currency].code, maximumFractionDigits: 0 }).format(value);
   
-  // Add all other handlers here (handleCurrencyChange, handleLaborMinutesChange, updateLabor, generateAIPitch, etc.)
-  // Note: Omitted for brevity in this guide, just paste the handler logic from the monolith here.
+  const handleCurrencyChange = (newCurrency) => {
+    if (newCurrency === currency) return;
+    const multiplier = exchangeRates[newCurrency] / exchangeRates[currency];
+    if (!isFinite(multiplier) || multiplier === 0) return;
+    const newIc = implementationCost === '' ? '' : Number((implementationCost * multiplier).toFixed(0));
+    const newMc = monthlyRunCost === '' ? '' : Number((monthlyRunCost * multiplier).toFixed(2));
+    setRunCostBreakdown(prev => {
+       const updated = { ...prev };
+       Object.keys(updated).forEach(key => {
+         if (updated[key].cost !== '') updated[key].cost = Number((updated[key].cost * multiplier).toFixed(2));
+       });
+       return updated;
+    });
+    setImplementationCost(newIc); setMonthlyRunCost(newMc); setCurrency(newCurrency);
+  };
+
+  const updateLabor = (id, field, value) => setLaborBreakdown(prev => prev.map(item => item.id === id ? { ...item, [field]: value } : item));
+  const addLabor = () => setLaborBreakdown(prev => [...prev, { id: crypto.randomUUID(), cl: 'CL12', executions: '', volumePeriod: 'monthly', effortMinutes: '', effortHours: '' }]);
+  const removeLabor = (id) => setLaborBreakdown(prev => prev.filter(item => item.id !== id));
+  const handleLaborMinutesChange = (id, val) => { if (val === '') { updateLabor(id, 'effortMinutes', ''); updateLabor(id, 'effortHours', ''); } else { updateLabor(id, 'effortMinutes', val); updateLabor(id, 'effortHours', Math.max(0, Number(val)) / 60); } };
+  const handleLaborHoursChange = (id, val) => { if (val === '') { updateLabor(id, 'effortHours', ''); updateLabor(id, 'effortMinutes', ''); } else { updateLabor(id, 'effortHours', val); updateLabor(id, 'effortMinutes', Math.max(0, Number(val)) * 60); } };
+
+  const updateSreRole = (id, field, value) => setSreBreakdown(prev => prev.map(item => item.id === id ? { ...item, [field]: value } : item));
+  const addSreRole = () => setSreBreakdown(prev => [...prev, { id: crypto.randomUUID(), cl: 'CL9', tasksPerMonth: '', effortMinutes: '', effortHours: '', y2Reduction: 50 }]);
+  const removeSreRole = (id) => setSreBreakdown(prev => prev.filter(item => item.id !== id));
+  const handleSreMinutesChange = (id, val) => { if (val === '') { updateSreRole(id, 'effortMinutes', ''); updateSreRole(id, 'effortHours', ''); } else { updateSreRole(id, 'effortMinutes', val); updateSreRole(id, 'effortHours', Math.max(0, Number(val)) / 60); } };
+  const handleSreHoursChange = (id, val) => { if (val === '') { updateSreRole(id, 'effortHours', ''); updateSreRole(id, 'effortMinutes', ''); } else { updateSreRole(id, 'effortHours', val); updateSreRole(id, 'effortMinutes', Math.max(0, Number(val)) * 60); } };
+
+  const updateRunCostBreakdown = (category, field, value) => setRunCostBreakdown(prev => ({ ...prev, [category]: { ...prev[category], [field]: value } }));
 
   // --- Dynamic Styling ---
   const bgMain = isDarkMode ? "bg-[#0B1120]" : "bg-[#F8FAFC]";
@@ -116,8 +143,21 @@ export function AppProvider({ children }) {
   const inputErrorStyle = `w-full px-4 py-3.5 ${isDarkMode ? 'bg-red-950/30 border-red-900 text-red-400 focus:bg-[#0F172A]' : 'bg-red-50/70 border-red-200 text-red-900 focus:bg-white'} border rounded-2xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 outline-none shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]`;
 
   const contextValue = {
-    // Add all states, functions, styling vars, and `results` here
-    toolName, setToolName, results, isDarkMode, setIsDarkMode, /* etc... */
+    // Export absolutely everything required by child components
+    toolName, setToolName, useCase, setUseCase, challenges, setChallenges, qualitativeBenefits, setQualitativeBenefits, kpis, setKpis,
+    aiGeneratedFields, setAiGeneratedFields, laborBreakdown, setLaborBreakdown, lcrRates, setLcrRates, baseLcr,
+    automationPercent, setAutomationPercent, durationMonths, setDurationMonths, implementationCost, setImplementationCost,
+    monthlyRunCost, setMonthlyRunCost, runCostInflation, setRunCostInflation, isAdvancedRunCost, setIsAdvancedRunCost, runCostBreakdown, setRunCostBreakdown,
+    hasSre, setHasSre, isAdvancedSre, setIsAdvancedSre, sreCostY1, setSreCostY1, sreCostY2, setSreCostY2, sreBreakdown, setSreBreakdown, sreUseCase, setSreUseCase, isSreModalOpen, setIsSreModalOpen, isRunCostModalOpen, setIsRunCostModalOpen,
+    currency, setCurrency, scenario, setScenario, workingDays, setWorkingDays, hoursPerDay, setHoursPerDay, isDarkMode, setIsDarkMode,
+    exchangeRates, ratesStatus, copied, setCopied, aiPitch, setAiPitch, isGenerating, setIsGenerating, isGeneratingSuggestions, setIsGeneratingSuggestions,
+    isGeneratingInsights, setIsGeneratingInsights, isGeneratingSreUseCase, setIsGeneratingSreUseCase, roiInsights, setRoiInsights, isHowItWorksOpen, setIsHowItWorksOpen, showScore, setShowScore,
+    showClearConfirm, setShowClearConfirm, isSettingsOpen, setIsSettingsOpen, isExportingXLSX, setIsExportingXLSX, isExportingPPTX, setIsExportingPPTX,
+    aiProvider, setAiProvider, aiApiKey, setAiApiKey, aiModel, setAiModel, currencyConfig, results,
+    
+    handleCurrencyChange, handleLaborMinutesChange, handleLaborHoursChange, handleSreMinutesChange, handleSreHoursChange, updateLabor, addLabor, removeLabor, updateSreRole, addSreRole, removeSreRole, updateRunCostBreakdown, formatCurrency,
+    bgMain, textMain, textHeading, textSub, borderMuted, panelBg, cardStyle, inputStyle, inputErrorStyle
+    // (Note: To keep this completely self-contained, also move AI generation and Export handler functions here if they are not already moved to utility files).
   };
 
   return <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>;
