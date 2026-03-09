@@ -37,8 +37,6 @@ import {
 } from 'lucide-react';
 
 // --- Global Constants & Configurations ---
-const HOURS_PER_FTE_MONTH = 160;
-
 const providerOptions = {
   'pollinations': { name: 'Pollinations.ai', models: ['openai', 'mistral', 'llama'], url: null, needsKey: false },
   'groq': { name: 'Groq', models: ['llama3-8b-8192', 'llama3-70b-8192', 'mixtral-8x7b-32768'], url: 'https://console.groq.com/keys', needsKey: true },
@@ -103,7 +101,6 @@ export default function App() {
   // --- Quantitative State ---
   const [executionsPerMonth, setExecutionsPerMonth] = useStickyState('', 'as_executionsPerMonth');
   const [volumePeriod, setVolumePeriod] = useStickyState('monthly', 'as_volumePeriod');
-  const [workingDays, setWorkingDays] = useStickyState(22, 'as_workingDays');
   const [effortHours, setEffortHours] = useStickyState('', 'as_effortHours'); 
   const [resourceCost, setResourceCost] = useStickyState('', 'as_resourceCost');
   const [automationPercent, setAutomationPercent] = useStickyState(0, 'as_automationPercent');
@@ -121,6 +118,10 @@ export default function App() {
   const [currency, setCurrency] = useStickyState('USD', 'as_currency');
   const [scenario, setScenario] = useStickyState('realistic', 'as_scenario');
 
+  // --- Operational Settings State ---
+  const [workingDays, setWorkingDays] = useStickyState(22, 'as_workingDays');
+  const [hoursPerDay, setHoursPerDay] = useStickyState(8, 'as_hoursPerDay');
+
   // --- Theme State ---
   const [isDarkMode, setIsDarkMode] = useStickyState(false, 'as_theme_dark');
 
@@ -131,7 +132,7 @@ export default function App() {
   useEffect(() => {
     const fetchLiveRates = async () => {
       try {
-        const response = await fetch('https://open.er-api.com/v6/latest/USD');
+        const response = await fetch('https://api.frankfurter.app/latest?from=USD');
         const data = await response.json();
         if (data && data.rates) {
           setExchangeRates({
@@ -169,6 +170,7 @@ export default function App() {
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
   const [showScore, setShowScore] = useStickyState(true, 'as_showScore');
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
   // Export states
   const [isExportingXLSX, setIsExportingXLSX] = useState(false);
@@ -185,7 +187,6 @@ export default function App() {
   );
 
   // --- AI Config State ---
-  const [isAiConfigOpen, setIsAiConfigOpen] = useState(false);
   const [aiProvider, setAiProvider] = useStickyState('pollinations', 'as_aiProvider');
   const [aiApiKey, setAiApiKey] = useStickyState('', 'as_aiApiKey');
   const [aiModel, setAiModel] = useStickyState(providerOptions['pollinations'].models[0], 'as_aiModel');
@@ -218,6 +219,7 @@ export default function App() {
     setExecutionsPerMonth(1200);
     setVolumePeriod('monthly');
     setWorkingDays(22);
+    setHoursPerDay(8);
     setEffortHours(0.5); // 30 mins
     setResourceCost(30);
     setAutomationPercent(90);
@@ -239,7 +241,6 @@ export default function App() {
     setKpis('');
     setExecutionsPerMonth('');
     setVolumePeriod('monthly');
-    setWorkingDays(22);
     setEffortHours('');
     setResourceCost('');
     setAutomationPercent(0);
@@ -263,6 +264,7 @@ export default function App() {
     const effectiveExecutions = volumePeriod === 'daily' ? rawExecutions * Math.max(1, Number(workingDays)) : rawExecutions;
     const cost = Math.max(0, Number(resourceCost));
     const months = Math.max(0, Number(durationMonths));
+    const fteHoursPerMonth = Math.max(1, Number(workingDays)) * Math.max(1, Number(hoursPerDay));
 
     const scenarioConfig = {
       optimistic: { benefit: 1.1, cost: 0.9 },
@@ -327,7 +329,7 @@ export default function App() {
     
     const avgNetMonthlySave = months > 0 ? (totalGrossSave - totalRunCost - totalSreCost) / months : 0;
     const futureMonthlyCostAvg = (currentMonthlyCost - grossMonthlySave) + (months > 0 ? (totalRunCost + totalSreCost) / months : 0);
-    const fteSavings = hoursMonthlySaved / HOURS_PER_FTE_MONTH;
+    const fteSavings = hoursMonthlySaved / fteHoursPerMonth;
 
     // --- Calculate Automation Score (0-100) ---
     let score = 0;
@@ -377,16 +379,17 @@ export default function App() {
       hoursSavedMonthly: hoursMonthlySaved,
       hoursSavedTotal: hoursSavedTotal,
       fteSavings,
-      currentFte: hoursMonthlyCurrent / HOURS_PER_FTE_MONTH,
-      toBeFte: Math.max(0, hoursMonthlyCurrent - hoursMonthlySaved) / HOURS_PER_FTE_MONTH,
+      currentFte: hoursMonthlyCurrent / fteHoursPerMonth,
+      toBeFte: Math.max(0, hoursMonthlyCurrent - hoursMonthlySaved) / fteHoursPerMonth,
       totalManualHoursMonthly: hoursMonthlyCurrent,
       remainingManualHoursMonthly: Math.max(0, hoursMonthlyCurrent - hoursMonthlySaved),
       monthlyData,
       automationScore: score,
       scoreLabel,
-      scoreColor
+      scoreColor,
+      fteHoursPerMonth
     };
-  }, [executionsPerMonth, effortHours, resourceCost, automationPercent, durationMonths, implementationCost, monthlyRunCost, runCostInflation, sreCostY1, sreCostY2, volumePeriod, workingDays, scenario]);
+  }, [executionsPerMonth, effortHours, resourceCost, automationPercent, durationMonths, implementationCost, monthlyRunCost, runCostInflation, sreCostY1, sreCostY2, volumePeriod, workingDays, hoursPerDay, scenario]);
 
   const formatCurrency = (value) => {
     const config = currencyConfig[currency];
@@ -806,8 +809,8 @@ export default function App() {
                  </button>
                </Tooltip>
 
-               <Tooltip text="AI Configuration">
-                 <button onClick={() => setIsAiConfigOpen(true)} className={`flex items-center text-sm font-bold ${isDarkMode ? 'text-slate-400 hover:text-blue-400 hover:bg-[#1E293B]' : 'text-slate-600 hover:text-blue-600 hover:bg-white shadow-sm'} p-2.5 rounded-[14px] transition-all`}>
+               <Tooltip text="Settings">
+                 <button onClick={() => setIsSettingsOpen(true)} className={`flex items-center text-sm font-bold ${isDarkMode ? 'text-slate-400 hover:text-blue-400 hover:bg-[#1E293B]' : 'text-slate-600 hover:text-blue-600 hover:bg-white shadow-sm'} p-2.5 rounded-[14px] transition-all`}>
                    <Settings size={18} />
                  </button>
                </Tooltip>
@@ -832,31 +835,57 @@ export default function App() {
           </div>
         )}
 
-        {/* --- AI Config Modal --- */}
-        {isAiConfigOpen && (
+        {/* --- Settings Modal (Operational & AI) --- */}
+        {isSettingsOpen && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4 transition-opacity">
             <div className={`${isDarkMode ? 'bg-[#1E293B] border-slate-700' : 'bg-white border-slate-100'} rounded-[32px] shadow-2xl w-full max-w-md overflow-hidden border`}>
               <div className={`${isDarkMode ? 'bg-[#0F172A] border-slate-700' : 'bg-slate-50 border-slate-100'} border-b px-6 py-5 flex items-center justify-between`}>
-                <div className="flex items-center space-x-3"><div className="bg-blue-500/20 p-2 rounded-xl text-blue-500"><Sparkles size={18} /></div><h2 className={`text-xl font-bold ${textHeading}`}>AI Configuration</h2></div>
-                <button onClick={() => setIsAiConfigOpen(false)} className={`${isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-400 hover:text-slate-800 bg-white hover:bg-slate-100 shadow-sm'} p-2 rounded-full transition-colors`}><X size={20} /></button>
+                <div className="flex items-center space-x-3"><div className="bg-blue-500/20 p-2 rounded-xl text-blue-500"><Settings size={18} /></div><h2 className={`text-xl font-bold ${textHeading}`}>Settings</h2></div>
+                <button onClick={() => setIsSettingsOpen(false)} className={`${isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-400 hover:text-slate-800 bg-white hover:bg-slate-100 shadow-sm'} p-2 rounded-full transition-colors`}><X size={20} /></button>
               </div>
-              <div className="p-6 space-y-5">
+              
+              <div className="p-6 space-y-8 max-h-[75vh] overflow-y-auto custom-scrollbar">
+                {/* Operational Settings */}
                 <div>
-                  <label className={`block text-sm font-bold ${textMain} mb-2`}>AI Provider</label>
-                  <select value={aiProvider} onChange={handleProviderChange} className={inputStyle}>
-                    {Object.entries(providerOptions).map(([key, opt]) => (<option key={key} value={key}>{opt.name}</option>))}
-                  </select>
-                </div>
-                {providerOptions[aiProvider].needsKey && (
-                  <div>
-                    <label className={`block text-sm font-bold ${textMain} mb-2`}>API Key</label>
-                    <input type="password" value={aiApiKey} onChange={(e) => setAiApiKey(e.target.value)} placeholder="Paste your API key here..." className={`${inputStyle} font-mono`} />
-                    {providerOptions[aiProvider].url && (<a href={providerOptions[aiProvider].url} target="_blank" rel="noreferrer" className="inline-flex items-center mt-2 text-xs font-bold text-blue-500 hover:text-blue-400">Get your free key <ExternalLink size={12} className="ml-1" /></a>)}
+                  <h3 className={`text-xs font-bold uppercase tracking-wider ${textSub} mb-4 border-b ${borderMuted} pb-2`}>Operational Configuration</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className={`block text-sm font-bold ${textMain} mb-2`}>Working Days / Mo</label>
+                      <input type="number" min="1" max="31" value={workingDays} onChange={(e) => setWorkingDays(e.target.value)} className={inputStyle} />
+                    </div>
+                    <div>
+                      <label className={`block text-sm font-bold ${textMain} mb-2`}>Hours / Day</label>
+                      <input type="number" min="1" max="24" value={hoursPerDay} onChange={(e) => setHoursPerDay(e.target.value)} className={inputStyle} />
+                    </div>
                   </div>
-                )}
+                  <div className={`mt-3 p-3 rounded-xl ${isDarkMode ? 'bg-blue-950/30 border border-blue-900/50 text-blue-200' : 'bg-blue-50 border border-blue-100 text-blue-800'} text-xs font-medium`}>
+                    <strong>FTE Baseline:</strong> {Math.max(1, Number(workingDays)) * Math.max(1, Number(hoursPerDay))} hours per month.
+                  </div>
+                </div>
+
+                {/* AI Settings */}
+                <div>
+                  <h3 className={`text-xs font-bold uppercase tracking-wider ${textSub} mb-4 border-b ${borderMuted} pb-2`}>AI Configuration</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className={`block text-sm font-bold ${textMain} mb-2`}>AI Provider</label>
+                      <select value={aiProvider} onChange={handleProviderChange} className={inputStyle}>
+                        {Object.entries(providerOptions).map(([key, opt]) => (<option key={key} value={key}>{opt.name}</option>))}
+                      </select>
+                    </div>
+                    {providerOptions[aiProvider].needsKey && (
+                      <div>
+                        <label className={`block text-sm font-bold ${textMain} mb-2`}>API Key</label>
+                        <input type="password" value={aiApiKey} onChange={(e) => setAiApiKey(e.target.value)} placeholder="Paste your API key here..." className={`${inputStyle} font-mono`} />
+                        {providerOptions[aiProvider].url && (<a href={providerOptions[aiProvider].url} target="_blank" rel="noreferrer" className="inline-flex items-center mt-2 text-xs font-bold text-blue-500 hover:text-blue-400">Get your free key <ExternalLink size={12} className="ml-1" /></a>)}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
+
               <div className={`px-6 py-5 ${isDarkMode ? 'bg-[#0F172A] border-slate-700' : 'bg-slate-50 border-slate-100'} border-t flex justify-end`}>
-                <button onClick={() => setIsAiConfigOpen(false)} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-2xl font-bold transition-colors shadow-md">Save & Close</button>
+                <button onClick={() => setIsSettingsOpen(false)} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-2xl font-bold transition-colors shadow-md">Save & Close</button>
               </div>
             </div>
           </div>
@@ -942,7 +971,7 @@ export default function App() {
                   <div className="flex justify-between items-center mb-2">
                     <label className={`flex items-center text-sm font-bold ${textMain}`}>
                       Number of Tasks
-                      <Tooltip text={volumePeriod === 'daily' ? 'How many times per day? Multiplied by working days to get monthly volume.' : 'How many times does a human perform this specific task every month?'}>
+                      <Tooltip text={volumePeriod === 'daily' ? 'How many times per day? Multiplied by working days (configured in settings) to get monthly volume.' : 'How many times does a human perform this specific task every month?'}>
                         <Info size={14} className={`${textSub} hover:text-blue-500 transition-colors cursor-help`}/>
                       </Tooltip>
                     </label>
@@ -951,12 +980,11 @@ export default function App() {
                       <button onClick={() => setVolumePeriod('monthly')} className={`px-3 py-1 text-xs rounded-lg transition-all font-bold ${volumePeriod === 'monthly' ? (isDarkMode ? 'bg-[#1E293B] text-slate-200 shadow-sm' : 'bg-white shadow-sm text-slate-800') : (isDarkMode ? 'text-slate-500 hover:text-slate-300' : 'text-slate-500 hover:text-slate-700')}`}>Monthly</button>
                     </div>
                   </div>
-                  <div className="flex space-x-2">
-                    <input type="number" value={executionsPerMonth} onChange={(e) => setExecutionsPerMonth(e.target.value)} placeholder="0" className={`${executionsPerMonth !== '' && executionsPerMonth < 0 ? inputErrorStyle : inputStyle} font-mono text-lg`} />
+                  <div className="flex space-x-2 items-center">
+                    <input type="number" value={executionsPerMonth} onChange={(e) => setExecutionsPerMonth(e.target.value)} placeholder="0" className={`${executionsPerMonth !== '' && executionsPerMonth < 0 ? inputErrorStyle : inputStyle} font-mono text-lg flex-1`} />
                     {volumePeriod === 'daily' && (
-                      <div className="relative w-28 flex-shrink-0" title="Working days per month">
-                        <input type="number" min="1" max="31" value={workingDays} onChange={(e) => setWorkingDays(e.target.value)} placeholder="0" className={`${workingDays !== '' && workingDays < 1 ? inputErrorStyle : inputStyle} pr-10 font-mono text-lg`} />
-                        <span className={`absolute right-3 top-3.5 text-xs font-bold ${textSub}`}>days</span>
+                      <div className={`px-3 py-3.5 rounded-2xl border ${isDarkMode ? 'bg-[#0F172A] border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'} text-xs font-bold whitespace-nowrap`}>
+                        × {workingDays} days
                       </div>
                     )}
                   </div>
@@ -972,7 +1000,7 @@ export default function App() {
                   </label>
                   <div className="flex space-x-3">
                     <div className="relative flex-1">
-                      <input type="number" value={effortHours !== '' ? effortHours * 60 : ''} onChange={handleMinutesChange} placeholder="0" className={`${effortHours !== '' && effortHours < 0 ? inputErrorStyle : inputStyle} pr-12 font-mono text-lg`} />
+                      <input type="number" value={effortHours !== '' ? Math.round(effortHours * 60) : ''} onChange={handleMinutesChange} placeholder="0" className={`${effortHours !== '' && effortHours < 0 ? inputErrorStyle : inputStyle} pr-12 font-mono text-lg`} />
                       <span className={`absolute inset-y-0 right-0 pr-4 flex items-center ${textSub} font-bold text-xs pointer-events-none`}>MIN</span>
                     </div>
                     <div className="relative flex-1">
@@ -1311,7 +1339,7 @@ export default function App() {
               </div>
 
               <div className={`border-l ${borderMuted} pl-6`}>
-                <Tooltip text="Full-Time Equivalents (Assumes 160 hours/month per employee).">
+                <Tooltip text={`Full-Time Equivalents (Assumes configured ${results.fteHoursPerMonth} hours/month per employee).`}>
                   <div className={`flex items-center space-x-2 text-indigo-500 mb-3 ${isDarkMode ? 'bg-indigo-950/30' : 'bg-indigo-50'} w-max px-3 py-1.5 rounded-xl font-bold text-sm cursor-help`}>
                     <Users size={16} /><span>FTE Savings</span><Info size={14} className="opacity-70 cursor-help" />
                   </div>
@@ -1408,12 +1436,12 @@ export default function App() {
                   <div><h3 className={`text-sm font-bold ${textHeading} uppercase tracking-wider mb-2`}>SRE / Maintenance Ramp-Down</h3><p className={`text-sm ${textSub} leading-relaxed font-medium`}>Complex automations usually require heavier support when they are first launched, which tapers off as the system stabilizes. The advanced cost settings allow you to accurately forecast this ramp-down.</p></div>
                 </div>
                 <div className="space-y-6">
-                  <div><h3 className={`text-sm font-bold ${textHeading} uppercase tracking-wider mb-2`}>FTE Savings</h3><p className={`text-sm ${textSub} leading-relaxed font-medium`}>FTE stands for "Full-Time Equivalent". In this tool, we assume a standard work month has roughly 160 hours. If your automation saves 160 hours, it is effectively doing the work of 1 full-time employee.</p></div>
+                  <div><h3 className={`text-sm font-bold ${textHeading} uppercase tracking-wider mb-2`}>FTE Savings</h3><p className={`text-sm ${textSub} leading-relaxed font-medium`}>FTE stands for "Full-Time Equivalent". In this tool, an FTE is calculated based on your configured Working Days per Month and Hours per Day (currently <strong>{results.fteHoursPerMonth} hours/month</strong>). If your automation saves this amount of hours, it is effectively doing the work of 1 full-time employee.</p></div>
                   <div><h3 className={`text-sm font-bold ${textHeading} uppercase tracking-wider mb-2`}>Return on Investment (ROI)</h3><p className={`text-sm ${textSub} leading-relaxed font-medium`}>Measures profitability. An ROI of 100% means the automation paid for its total investment and generated that same amount in pure savings.</p></div>
-                  <div><h3 className={`text-sm font-bold ${textHeading} uppercase tracking-wider mb-2`}>Live Currency Conversion</h3><p className={`text-sm ${textSub} leading-relaxed font-medium`}>Currency switching automatically recalculates all monetary inputs and results using real-time exchange rates fetched securely from <strong>open.er-api.com</strong>. A small green dot on the currency selector indicates live rates are active. If you are offline, it seamlessly falls back to standard default rates.</p></div>
+                  <div><h3 className={`text-sm font-bold ${textHeading} uppercase tracking-wider mb-2`}>Live Currency Conversion</h3><p className={`text-sm ${textSub} leading-relaxed font-medium`}>Currency switching automatically recalculates all monetary inputs and results using real-time exchange rates fetched securely from <strong>api.frankfurter.app</strong> (updated every working day). A small green dot on the currency selector indicates live rates are active. If you are offline, it seamlessly falls back to standard default rates.</p></div>
                   <div className={`${isDarkMode ? 'bg-blue-950/20 border-blue-900/30' : 'bg-blue-50/80 border-blue-100'} border rounded-2xl p-6 mt-4`}>
                     <h3 className={`text-sm font-bold ${isDarkMode ? 'text-blue-400' : 'text-blue-900'} uppercase tracking-wider mb-2 flex items-center`}><Settings size={16} className={`mr-2 ${isDarkMode ? 'text-blue-500' : 'text-blue-600'}`} /> What AI powers these insights?</h3>
-                    <p className={`text-sm ${isDarkMode ? 'text-blue-200' : 'text-blue-800'} leading-relaxed font-medium`}>By default, this calculator securely integrates <strong>Pollinations.ai</strong> for free, seamless text generation. You can click the <strong className={`inline-flex items-center ${isDarkMode ? 'text-blue-300 bg-blue-950/50 border border-blue-900' : 'text-blue-900 bg-white shadow-sm'} px-2 py-0.5 rounded mx-1 hover:opacity-80 transition-colors`}><Settings size={12} className="mr-1"/> AI Config</strong> button at the top to optionally switch to other high-quality models using your own API keys.</p>
+                    <p className={`text-sm ${isDarkMode ? 'text-blue-200' : 'text-blue-800'} leading-relaxed font-medium`}>By default, this calculator securely integrates <strong>Pollinations.ai</strong> for free, seamless text generation. You can click the <strong className={`inline-flex items-center ${isDarkMode ? 'text-blue-300 bg-blue-950/50 border border-blue-900' : 'text-blue-900 bg-white shadow-sm'} px-2 py-0.5 rounded mx-1 hover:opacity-80 transition-colors`}><Settings size={12} className="mr-1"/> Settings</strong> button at the top to optionally switch to other high-quality models using your own API keys.</p>
                   </div>
                 </div>
               </div>
