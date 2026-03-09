@@ -4,7 +4,8 @@ import { useCalculationEngine } from '../hooks/useCalculationEngine';
 import { useCurrencyHandlers } from '../hooks/useCurrencyHandlers';
 import { useAIHandlers } from '../hooks/useAIHandlers';
 import { useExportHandlers } from '../hooks/useExportHandlers';
-import { DEFAULT_LCR, providerOptions, currencyConfig } from '../constants/config';
+import { useTheme } from '../hooks/useTheme';
+import { DEFAULT_LCR, providerOptions, currencyConfig, DEFAULT_WORKING_DAYS, DEFAULT_HOURS_PER_DAY } from '../constants/config';
 
 const AppContext = createContext(null);
 export const useApp = () => useContext(AppContext);
@@ -40,8 +41,8 @@ export function AppProvider({ children }) {
   const [sreUseCase, setSreUseCase] = useStickyState('', 'as_sreUseCase');
   const [currency, setCurrency] = useStickyState('USD', 'as_currency');
   const [scenario, setScenario] = useStickyState('realistic', 'as_scenario');
-  const [workingDays, setWorkingDays] = useStickyState(22, 'as_workingDays');
-  const [hoursPerDay, setHoursPerDay] = useStickyState(8, 'as_hoursPerDay');
+  const [workingDays, setWorkingDays] = useStickyState(DEFAULT_WORKING_DAYS, 'as_workingDays');
+  const [hoursPerDay, setHoursPerDay] = useStickyState(DEFAULT_HOURS_PER_DAY, 'as_hoursPerDay');
   const [isDarkMode, setIsDarkMode] = useStickyState(false, 'as_theme_dark');
   const [exchangeRates, setExchangeRates] = useState({ USD: 1, PHP: 56.5, EUR: 0.92, JPY: 150.5 });
   const [ratesStatus, setRatesStatus] = useState('loading'); 
@@ -69,7 +70,7 @@ export function AppProvider({ children }) {
     const controller = new AbortController();
     const fetchLiveRates = async () => {
       try {
-        const response = await fetch('[https://api.frankfurter.app/latest?from=USD](https://api.frankfurter.app/latest?from=USD)', { signal: controller.signal });
+        const response = await fetch('https://api.frankfurter.app/latest?from=USD', { signal: controller.signal });
         const data = await response.json();
         if (data && data.rates) {
           setExchangeRates({ USD: 1, PHP: data.rates.PHP || 56.5, EUR: data.rates.EUR || 0.92, JPY: data.rates.JPY || 150.5 });
@@ -81,7 +82,7 @@ export function AppProvider({ children }) {
     };
     const fetchRemoteLcr = async () => {
       try {
-        const response = await fetch('[https://raw.githubusercontent.com/trbbmnglg/automationsavings/main/src/lcr.json](https://raw.githubusercontent.com/trbbmnglg/automationsavings/main/src/lcr.json)', { signal: controller.signal });
+        const response = await fetch('https://raw.githubusercontent.com/trbbmnglg/automationsavings/main/src/lcr.json', { signal: controller.signal });
         if (response.ok) {
           const data = await response.json();
           if (data && typeof data === 'object') {
@@ -98,11 +99,13 @@ export function AppProvider({ children }) {
   // --- Compose Hooks ---
   const results = useCalculationEngine({ laborBreakdown, automationPercent, durationMonths, implementationCost, monthlyRunCost, runCostInflation, isAdvancedRunCost, runCostBreakdown, lcrRates, hasSre, isAdvancedSre, sreCostY1, sreCostY2, sreBreakdown, workingDays, hoursPerDay, scenario, currency, exchangeRates });
   
-  const { formatCurrency, handleCurrencyChange } = useCurrencyHandlers({ currency, setCurrency, exchangeRates, implementationCost, setImplementationCost, monthlyRunCost, setMonthlyRunCost, setRunCostBreakdown, currencyConfig });
+  const { formatCurrency, handleCurrencyChange } = useCurrencyHandlers({ currency, setCurrency, exchangeRates, implementationCost, setImplementationCost, monthlyRunCost, setMonthlyRunCost, setRunCostBreakdown, currencyConfig, sreCostY1, setSreCostY1, sreCostY2, setSreCostY2 });
   
   const { generateAIPitch, generateSuggestions, generateROIInsights, generateSreUseCase } = useAIHandlers({ aiProvider, aiApiKey, aiModel, providerOptions, toolName, useCase, scenario, durationMonths, results, formatCurrency, automationPercent, challenges, kpis, qualitativeBenefits, setAiPitch, setIsGenerating, setIsGeneratingSuggestions, setKpis, setChallenges, setQualitativeBenefits, setAiGeneratedFields, setIsGeneratingInsights, setRoiInsights, setIsGeneratingSreUseCase, setSreUseCase });
   
   const { isReadyToExport, handleExportXLSX, handleExportPPTX } = useExportHandlers({ toolName, useCase, laborBreakdown, durationMonths, implementationCost, isAdvancedRunCost, monthlyRunCost, results, scenario, automationPercent, challenges, qualitativeBenefits, kpis, formatCurrency, setIsExportingXLSX, setIsExportingPPTX });
+
+  const themeStyles = useTheme(isDarkMode);
 
   // --- Local Handlers ---
   const handleProviderChange = (e) => { setAiProvider(e.target.value); setAiModel(providerOptions[e.target.value].models[0]); };
@@ -110,14 +113,42 @@ export function AppProvider({ children }) {
   const updateLabor = (id, field, value) => setLaborBreakdown(prev => prev.map(item => item.id === id ? { ...item, [field]: value } : item));
   const addLabor = () => setLaborBreakdown(prev => [...prev, { id: crypto.randomUUID(), cl: 'CL12', executions: '', volumePeriod: 'monthly', effortMinutes: '', effortHours: '' }]);
   const removeLabor = (id) => setLaborBreakdown(prev => prev.filter(item => item.id !== id));
-  const handleLaborMinutesChange = (id, val) => { if (val === '') { updateLabor(id, 'effortMinutes', ''); updateLabor(id, 'effortHours', ''); } else { updateLabor(id, 'effortMinutes', val); updateLabor(id, 'effortHours', Math.max(0, Number(val)) / 60); } };
-  const handleLaborHoursChange = (id, val) => { if (val === '') { updateLabor(id, 'effortHours', ''); updateLabor(id, 'effortMinutes', ''); } else { updateLabor(id, 'effortHours', val); updateLabor(id, 'effortMinutes', Math.max(0, Number(val)) * 60); } };
+  
+  const handleLaborMinutesChange = (id, val) => {
+    setLaborBreakdown(prev => prev.map(item => {
+      if (item.id !== id) return item;
+      if (val === '') return { ...item, effortMinutes: '', effortHours: '' };
+      return { ...item, effortMinutes: val, effortHours: Math.max(0, Number(val)) / 60 };
+    }));
+  };
+
+  const handleLaborHoursChange = (id, val) => {
+    setLaborBreakdown(prev => prev.map(item => {
+      if (item.id !== id) return item;
+      if (val === '') return { ...item, effortHours: '', effortMinutes: '' };
+      return { ...item, effortHours: val, effortMinutes: Math.max(0, Number(val)) * 60 };
+    }));
+  };
 
   const updateSreRole = (id, field, value) => setSreBreakdown(prev => prev.map(item => item.id === id ? { ...item, [field]: value } : item));
   const addSreRole = () => setSreBreakdown(prev => [...prev, { id: crypto.randomUUID(), cl: 'CL9', tasksPerMonth: '', effortMinutes: '', effortHours: '', y2Reduction: 50 }]);
   const removeSreRole = (id) => setSreBreakdown(prev => prev.filter(item => item.id !== id));
-  const handleSreMinutesChange = (id, val) => { if (val === '') { updateSreRole(id, 'effortMinutes', ''); updateSreRole(id, 'effortHours', ''); } else { updateSreRole(id, 'effortMinutes', val); updateSreRole(id, 'effortHours', Math.max(0, Number(val)) / 60); } };
-  const handleSreHoursChange = (id, val) => { if (val === '') { updateSreRole(id, 'effortHours', ''); updateSreRole(id, 'effortMinutes', ''); } else { updateSreRole(id, 'effortHours', val); updateSreRole(id, 'effortMinutes', Math.max(0, Number(val)) * 60); } };
+  
+  const handleSreMinutesChange = (id, val) => {
+    setSreBreakdown(prev => prev.map(item => {
+      if (item.id !== id) return item;
+      if (val === '') return { ...item, effortMinutes: '', effortHours: '' };
+      return { ...item, effortMinutes: val, effortHours: Math.max(0, Number(val)) / 60 };
+    }));
+  };
+
+  const handleSreHoursChange = (id, val) => {
+    setSreBreakdown(prev => prev.map(item => {
+      if (item.id !== id) return item;
+      if (val === '') return { ...item, effortHours: '', effortMinutes: '' };
+      return { ...item, effortHours: val, effortMinutes: Math.max(0, Number(val)) * 60 };
+    }));
+  };
 
   const updateRunCostBreakdown = (category, field, value) => setRunCostBreakdown(prev => ({ ...prev, [category]: { ...prev[category], [field]: value } }));
 
@@ -159,17 +190,6 @@ export function AppProvider({ children }) {
     else { fallbackCopyTextToClipboard(aiPitch); }
   };
 
-  // --- Dynamic Styling ---
-  const bgMain = isDarkMode ? "bg-[#0B1120]" : "bg-[#F8FAFC]";
-  const textMain = isDarkMode ? "text-slate-200" : "text-slate-800";
-  const textHeading = isDarkMode ? "text-white" : "text-slate-900";
-  const textSub = isDarkMode ? "text-slate-400" : "text-slate-500";
-  const borderMuted = isDarkMode ? "border-slate-800/80" : "border-slate-100";
-  const panelBg = isDarkMode ? "bg-[#0F172A]" : "bg-slate-50/30";
-  const cardStyle = `${isDarkMode ? 'bg-[#1E293B] border-slate-700/60 shadow-none' : 'bg-white border-slate-200/60 shadow-sm'} rounded-[28px] border relative transition-colors duration-300`;
-  const inputStyle = `w-full px-4 py-3.5 ${isDarkMode ? 'bg-[#0F172A]/80 border-slate-700 text-slate-100 placeholder-slate-500 focus:bg-[#0F172A]' : 'bg-slate-50/70 border-slate-200/80 text-slate-800 placeholder-slate-400 hover:bg-slate-50 focus:bg-white'} border rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]`;
-  const inputErrorStyle = `w-full px-4 py-3.5 ${isDarkMode ? 'bg-red-950/30 border-red-900 text-red-400 focus:bg-[#0F172A]' : 'bg-red-50/70 border-red-200 text-red-900 focus:bg-white'} border rounded-2xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 outline-none shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]`;
-
   const contextValue = {
     toolName, setToolName, useCase, setUseCase, challenges, setChallenges, qualitativeBenefits, setQualitativeBenefits, kpis, setKpis,
     aiGeneratedFields, setAiGeneratedFields, laborBreakdown, setLaborBreakdown, lcrRates, setLcrRates, baseLcr,
@@ -183,7 +203,7 @@ export function AppProvider({ children }) {
     aiProvider, setAiProvider, aiApiKey, setAiApiKey, aiModel, setAiModel, currencyConfig, isReadyToExport, results,
     handleCurrencyChange, handleLaborMinutesChange, handleLaborHoursChange, handleSreMinutesChange, handleSreHoursChange, updateLabor, addLabor, removeLabor, updateSreRole, addSreRole, removeSreRole, updateRunCostBreakdown, handleGenerateMockData, handleClearAll, formatCurrency,
     generateAIPitch, generateSuggestions, generateROIInsights, generateSreUseCase, handleProviderChange, handleExportXLSX, handleExportPPTX, handleCopy,
-    bgMain, textMain, textHeading, textSub, borderMuted, panelBg, cardStyle, inputStyle, inputErrorStyle
+    ...themeStyles
   };
 
   return <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>;
