@@ -151,7 +151,7 @@ export function AppProvider({ children }) {
     setRunCostBreakdown({ productLicense: { cost: 100, inflation: 5 }, ai: { enabled: true, cost: 50, inflation: 3 }, splunk: { enabled: true, cost: 200, inflation: 8 }, infra: { enabled: true, cost: 150, inflation: 5 }, other: { enabled: false, cost: '', inflation: 5 } });
     setHasSre(true); setIsAdvancedSre(true);
     setSreBreakdown([ { id: crypto.randomUUID(), cl: 'CL9', tasksPerMonth: 20, effortMinutes: 45, effortHours: 0.75, y2Reduction: 50 }, { id: crypto.randomUUID(), cl: 'CL7', tasksPerMonth: 5, effortMinutes: 60, effortHours: 1.0, y2Reduction: 80 } ]);
-    setSreUseCase('Ongoing API endpoint maintenance, error resolution, and bot ruleset optimization.');
+    setSreUseCase('• Maintain API integrations.\n• Optimize bot rulesets.');
     setAiPitch(''); setRoiInsights(''); setAiGeneratedFields({ kpis: false, challenges: false, benefits: false });
   };
 
@@ -220,7 +220,7 @@ export function AppProvider({ children }) {
     try { const text = await callAIWrapper(prompt); if (text) setSreUseCase(text.replace(/["']/g, "").trim()); } catch (error) { console.warn("AI SRE Use Case generation failed:", error); } finally { setIsGeneratingSreUseCase(false); }
   };
 
-  // --- Export Handlers (NATIVE IMPORTS) ---
+  // --- Export Handlers ---
   const isReadyToExport = !!(
     toolName.trim() && useCase.trim() && 
     laborBreakdown.some(l => Number(l.executions) > 0 && Number(l.effortHours) > 0) &&
@@ -232,7 +232,6 @@ export function AppProvider({ children }) {
     if (!isReadyToExport) return;
     setIsExportingXLSX(true);
     try {
-      // Dynamic import from node_modules
       const xlsxModule = await import('xlsx-js-style');
       const XLSX = xlsxModule.default || xlsxModule;
       
@@ -270,7 +269,6 @@ export function AppProvider({ children }) {
     if (!isReadyToExport) return;
     setIsExportingPPTX(true);
     try {
-      // Dynamic import from node_modules (pptxgenjs automatically handles JSZip)
       const pptxgenModule = await import('pptxgenjs');
       const PptxGenJS = pptxgenModule.default || pptxgenModule;
       
@@ -278,58 +276,66 @@ export function AppProvider({ children }) {
       pptx.layout = 'LAYOUT_WIDE'; 
       const slide = pptx.addSlide();
       
-      let accentColor = '10B981';
-      if (results.automationScore < 80 && results.automationScore >= 60) accentColor = '3B82F6';
-      if (results.automationScore < 60 && results.automationScore >= 40) accentColor = 'F59E0B';
-      if (results.automationScore < 40) accentColor = 'EF4444';
-      const cBg = 'F8FAFC'; const cCardBg = 'FFFFFF'; const cTextDark = '0F172A'; const cTextMuted = '64748B'; const cBorder = 'E2E8F0';
+      let scoreColor = '10B981';
+      if (results.automationScore < 80 && results.automationScore >= 60) scoreColor = '3B82F6';
+      if (results.automationScore < 60 && results.automationScore >= 40) scoreColor = 'F59E0B';
+      if (results.automationScore < 40) scoreColor = 'EF4444';
+      
+      const cTheme = '7C3AED'; // Electric Violet
+      const cBg = 'F8FAFC'; 
+      const cCardBg = 'FFFFFF'; 
+      const cTextDark = '0F172A'; 
+      const cTextMuted = '64748B'; 
+      const cBorder = 'E2E8F0';
+      const fFace = 'Aptos Display'; // Upgraded Font
+
       slide.background = { color: cBg };
 
-      slide.addShape(pptx.shapes.RECTANGLE, { x: 0, y: 0, w: 13.33, h: 0.1, fill: { color: accentColor } });
-      slide.addText((toolName || 'Proposed Automation').toUpperCase(), { x: 0.5, y: 0.3, w: 8.5, h: 0.6, fontSize: 28, bold: true, color: cTextDark, fontFace: 'Arial Black' });
-      slide.addText(`Business Case & ROI Strategy | Scenario: ${scenario.charAt(0).toUpperCase() + scenario.slice(1)}`, { x: 0.5, y: 0.9, w: 8.5, h: 0.3, fontSize: 12, color: cTextMuted, bold: true });
-      slide.addText(useCase || 'N/A', { x: 0.5, y: 1.2, w: 8.5, h: 0.4, fontSize: 11, color: cTextMuted, italic: true, valign: 'top' });
+      slide.addShape(pptx.shapes.RECTANGLE, { x: 0, y: 0, w: 13.33, h: 0.1, fill: { color: cTheme } });
+      slide.addText((toolName || 'Proposed Automation').toUpperCase(), { x: 0.5, y: 0.3, w: 8.5, h: 0.6, fontSize: 28, bold: true, color: cTextDark, fontFace: fFace });
+      slide.addText(`Business Case & ROI Strategy | Scenario: ${scenario.charAt(0).toUpperCase() + scenario.slice(1)}`, { x: 0.5, y: 0.9, w: 8.5, h: 0.3, fontSize: 12, color: cTextMuted, bold: true, fontFace: fFace });
+      slide.addText(useCase || 'N/A', { x: 0.5, y: 1.2, w: 8.5, h: 0.4, fontSize: 11, color: cTextMuted, italic: true, valign: 'top', fontFace: fFace });
 
-      slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 9.5, y: 0.4, w: 3.3, h: 0.9, fill: { color: accentColor }, rectRadius: 0.1 });
-      slide.addText(`VIABILITY SCORE: ${results.automationScore}/100`, { x: 9.5, y: 0.5, w: 3.3, h: 0.3, fontSize: 10, bold: true, color: 'FFFFFF', align: 'center', opacity: 0.9 });
-      slide.addText(results.scoreLabel.toUpperCase(), { x: 9.5, y: 0.8, w: 3.3, h: 0.4, fontSize: 16, bold: true, color: 'FFFFFF', align: 'center', fontFace: 'Arial Black' });
+      slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: 9.5, y: 0.4, w: 3.3, h: 0.9, fill: { color: scoreColor }, rectRadius: 0.1 });
+      slide.addText(`VIABILITY SCORE: ${results.automationScore}/100`, { x: 9.5, y: 0.5, w: 3.3, h: 0.3, fontSize: 10, bold: true, color: 'FFFFFF', align: 'center', opacity: 0.9, fontFace: fFace });
+      slide.addText(results.scoreLabel.toUpperCase(), { x: 9.5, y: 0.8, w: 3.3, h: 0.4, fontSize: 16, bold: true, color: 'FFFFFF', align: 'center', fontFace: fFace });
 
       const colY = 1.8; const colH = 5.2;
       const col1X = 0.5; const col1W = 3.9;
       slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: col1X, y: colY, w: col1W, h: colH, fill: { color: cCardBg }, line: { color: cBorder, width: 1 }, rectRadius: 0.05 });
-      slide.addText('01 / THE CONTEXT', { x: col1X + 0.2, y: colY + 0.2, w: col1W - 0.4, h: 0.3, fontSize: 12, bold: true, color: accentColor, fontFace: 'Arial Black' });
-      slide.addText('Challenges Addressed', { x: col1X + 0.2, y: colY + 0.7, w: col1W - 0.4, h: 0.3, fontSize: 12, bold: true, color: cTextDark });
-      const chalArr = challenges ? challenges.split('\n').filter(k=>k.trim()!=='').map(c => ({ text: c.replace('•','').trim(), options: { bullet: true, color: cTextMuted } })) : [{ text: "None specified", options: { bullet: true, color: cTextMuted } }];
+      slide.addText('01 / THE CONTEXT', { x: col1X + 0.2, y: colY + 0.2, w: col1W - 0.4, h: 0.3, fontSize: 12, bold: true, color: cTheme, fontFace: fFace });
+      slide.addText('Challenges Addressed', { x: col1X + 0.2, y: colY + 0.7, w: col1W - 0.4, h: 0.3, fontSize: 12, bold: true, color: cTextDark, fontFace: fFace });
+      const chalArr = challenges ? challenges.split('\n').filter(k=>k.trim()!=='').map(c => ({ text: c.replace('•','').trim(), options: { bullet: true, color: cTextMuted, fontFace: fFace } })) : [{ text: "None specified", options: { bullet: true, color: cTextMuted, fontFace: fFace } }];
       slide.addText(chalArr, { x: col1X + 0.3, y: colY + 1.0, w: col1W - 0.6, h: 1.8, fontSize: 11, valign: 'top' });
       slide.addShape(pptx.shapes.LINE, { x: col1X + 0.2, y: colY + 3.0, w: col1W - 0.4, h: 0, line: { color: cBorder, width: 1 } });
-      slide.addText('Target KPIs', { x: col1X + 0.2, y: colY + 3.2, w: col1W - 0.4, h: 0.3, fontSize: 12, bold: true, color: cTextDark });
-      const kpiArr = kpis ? kpis.split('\n').filter(k=>k.trim()!=='').map(k => ({ text: k.replace('•','').trim(), options: { bullet: true, color: cTextMuted } })) : [{ text: "None specified", options: { bullet: true, color: cTextMuted } }];
+      slide.addText('Target KPIs', { x: col1X + 0.2, y: colY + 3.2, w: col1W - 0.4, h: 0.3, fontSize: 12, bold: true, color: cTextDark, fontFace: fFace });
+      const kpiArr = kpis ? kpis.split('\n').filter(k=>k.trim()!=='').map(k => ({ text: k.replace('•','').trim(), options: { bullet: true, color: cTextMuted, fontFace: fFace } })) : [{ text: "None specified", options: { bullet: true, color: cTextMuted, fontFace: fFace } }];
       slide.addText(kpiArr, { x: col1X + 0.3, y: colY + 3.5, w: col1W - 0.6, h: 1.5, fontSize: 11, valign: 'top' });
 
       const col2X = 4.6; const col2W = 4.2;
       slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: col2X, y: colY, w: col2W, h: colH, fill: { color: cCardBg }, line: { color: cBorder, width: 1 }, rectRadius: 0.05 });
-      slide.addText('02 / THE SOLUTION', { x: col2X + 0.2, y: colY + 0.2, w: col2W - 0.4, h: 0.3, fontSize: 12, bold: true, color: accentColor, fontFace: 'Arial Black' });
-      slide.addText('Effort Automation Shift', { x: col2X, y: colY + 0.7, w: col2W, h: 0.3, fontSize: 12, bold: true, color: cTextDark, align: 'center' });
-      slide.addChart(pptx.charts.DOUGHNUT, [{ name: "Effort", labels: ["Automated", "Manual"], values: [Number(automationPercent), 100 - Number(automationPercent)] }], { x: col2X + 0.85, y: colY + 1.1, w: 2.5, h: 2.0, holeSize: 65, showLegend: true, legendPos: 'b', legendFontSize: 10, showLabel: false, chartColors: [accentColor, 'CBD5E1'], dataBorder: { pt: 0 } });
-      slide.addText(`${automationPercent}%`, { x: col2X + 0.85, y: colY + 1.1, w: 2.5, h: 1.7, align: 'center', valign: 'middle', fontSize: 24, bold: true, color: cTextDark, fontFace: 'Arial Black' });
+      slide.addText('02 / THE SOLUTION', { x: col2X + 0.2, y: colY + 0.2, w: col2W - 0.4, h: 0.3, fontSize: 12, bold: true, color: cTheme, fontFace: fFace });
+      slide.addText('Effort Automation Shift', { x: col2X, y: colY + 0.7, w: col2W, h: 0.3, fontSize: 12, bold: true, color: cTextDark, align: 'center', fontFace: fFace });
+      slide.addChart(pptx.charts.DOUGHNUT, [{ name: "Effort", labels: ["Automated", "Manual"], values: [Number(automationPercent), 100 - Number(automationPercent)] }], { x: col2X + 0.85, y: colY + 1.1, w: 2.5, h: 2.0, holeSize: 65, showLegend: true, legendPos: 'b', legendFontSize: 10, showLabel: false, chartColors: [cTheme, 'CBD5E1'], dataBorder: { pt: 0 } });
+      slide.addText(`${automationPercent}%`, { x: col2X + 0.85, y: colY + 1.1, w: 2.5, h: 1.7, align: 'center', valign: 'middle', fontSize: 24, bold: true, color: cTheme, fontFace: fFace });
       slide.addShape(pptx.shapes.LINE, { x: col2X + 0.2, y: colY + 3.3, w: col2W - 0.4, h: 0, line: { color: cBorder, width: 1 } });
-      slide.addText('Monthly Cost Reduction', { x: col2X + 0.2, y: colY + 3.5, w: col2W - 0.4, h: 0.3, fontSize: 11, bold: true, color: cTextMuted });
-      slide.addText(`${formatCurrency(results.currentMonthlyCost)}  →  ${formatCurrency(results.futureMonthlyCostAvg)}`, { x: col2X + 0.2, y: colY + 3.8, w: col2W - 0.4, h: 0.4, fontSize: 18, bold: true, color: cTextDark });
-      slide.addText('Capacity Shift (FTEs)', { x: col2X + 0.2, y: colY + 4.3, w: col2W - 0.4, h: 0.3, fontSize: 11, bold: true, color: cTextMuted });
+      slide.addText('Monthly Cost Reduction', { x: col2X + 0.2, y: colY + 3.5, w: col2W - 0.4, h: 0.3, fontSize: 11, bold: true, color: cTextMuted, fontFace: fFace });
+      slide.addText(`${formatCurrency(results.currentMonthlyCost)}  →  ${formatCurrency(results.futureMonthlyCostAvg)}`, { x: col2X + 0.2, y: colY + 3.8, w: col2W - 0.4, h: 0.4, fontSize: 18, bold: true, color: cTextDark, fontFace: fFace });
+      slide.addText('Capacity Shift (FTEs)', { x: col2X + 0.2, y: colY + 4.3, w: col2W - 0.4, h: 0.3, fontSize: 11, bold: true, color: cTextMuted, fontFace: fFace });
       const maxFteW = col2W - 0.6; const currentFte = results.currentFte || 1; const futureFteW = (results.toBeFte / currentFte) * maxFteW;
       slide.addShape(pptx.shapes.RECTANGLE, { x: col2X + 0.3, y: colY + 4.7, w: maxFteW, h: 0.3, fill: { color: 'E2E8F0' } });
-      slide.addShape(pptx.shapes.RECTANGLE, { x: col2X + 0.3, y: colY + 4.7, w: Math.max(futureFteW, 0.05), h: 0.3, fill: { color: accentColor } });
-      slide.addText(`${results.currentFte.toFixed(1)} FTEs As-Is`, { x: col2X + 0.3, y: colY + 4.7, w: maxFteW, h: 0.3, fontSize: 9, color: cTextMuted, align: 'right', valign: 'middle', pr: 0.1 });
+      slide.addShape(pptx.shapes.RECTANGLE, { x: col2X + 0.3, y: colY + 4.7, w: Math.max(futureFteW, 0.05), h: 0.3, fill: { color: cTheme } });
+      slide.addText(`${results.currentFte.toFixed(1)} FTEs As-Is`, { x: col2X + 0.3, y: colY + 4.7, w: maxFteW, h: 0.3, fontSize: 9, color: cTextMuted, align: 'right', valign: 'middle', pr: 0.1, fontFace: fFace });
 
       const col3X = 9.0; const col3W = 3.8;
-      slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: col3X, y: colY, w: col3W, h: colH, fill: { color: accentColor, transparency: 95 }, line: { color: accentColor, width: 2 }, rectRadius: 0.05 });
-      slide.addText('03 / FINANCIAL IMPACT', { x: col3X + 0.2, y: colY + 0.2, w: col3W - 0.4, h: 0.3, fontSize: 12, bold: true, color: accentColor, fontFace: 'Arial Black' });
+      slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: col3X, y: colY, w: col3W, h: colH, fill: { color: cTheme, transparency: 95 }, line: { color: cTheme, width: 2 }, rectRadius: 0.05 });
+      slide.addText('03 / FINANCIAL IMPACT', { x: col3X + 0.2, y: colY + 0.2, w: col3W - 0.4, h: 0.3, fontSize: 12, bold: true, color: cTheme, fontFace: fFace });
       const impactMetrics = [ { label: "LIFETIME NET SAVINGS", value: formatCurrency(results.netSavings) }, { label: "RETURN ON INVESTMENT (ROI)", value: results.roi === Infinity ? '>1000%' : `${Math.round(results.roi).toLocaleString()}%` }, { label: "PAYBACK PERIOD", value: results.paybackPeriod === Infinity ? 'Never' : `${results.paybackPeriod.toFixed(1)} months` }, { label: "CAPACITY RECAPTURED", value: `${results.fteSavings.toFixed(1)} FTEs/mo` } ];
       let currentY = colY + 0.8;
       impactMetrics.forEach((metric, i) => {
-        slide.addText(metric.label, { x: col3X + 0.3, y: currentY, w: col3W - 0.6, h: 0.3, fontSize: 11, bold: true, color: cTextMuted });
-        slide.addText(metric.value, { x: col3X + 0.3, y: currentY + 0.3, w: col3W - 0.6, h: 0.6, fontSize: 28, bold: true, color: cTextDark, fontFace: 'Arial Black' });
-        if (i < 3) { slide.addShape(pptx.shapes.LINE, { x: col3X + 0.3, y: currentY + 1.0, w: col3W - 0.6, h: 0, line: { color: accentColor, width: 1, transparency: 80 } }); currentY += 1.15; }
+        slide.addText(metric.label, { x: col3X + 0.3, y: currentY, w: col3W - 0.6, h: 0.3, fontSize: 11, bold: true, color: cTextMuted, fontFace: fFace });
+        slide.addText(metric.value, { x: col3X + 0.3, y: currentY + 0.3, w: col3W - 0.6, h: 0.6, fontSize: 28, bold: true, color: cTextDark, fontFace: fFace });
+        if (i < 3) { slide.addShape(pptx.shapes.LINE, { x: col3X + 0.3, y: currentY + 1.0, w: col3W - 0.6, h: 0, line: { color: cTheme, width: 1, transparency: 80 } }); currentY += 1.15; }
       });
 
       await pptx.writeFile({ fileName: `${toolName || 'Automation'} Automation 1 Slider.pptx` });
