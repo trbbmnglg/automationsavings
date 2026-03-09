@@ -1,4 +1,4 @@
-import { useCallback, useCallback } from 'react';
+import { useCallback } from 'react';
 
 export function useExportHandlers({
   toolName, useCase, laborBreakdown, durationMonths, implementationCost,
