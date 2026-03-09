@@ -1,3 +1,5 @@
+import { useCallback } from 'react';
+
 export function useExportHandlers({
   toolName, useCase, laborBreakdown, durationMonths, implementationCost,
   isAdvancedRunCost, monthlyRunCost, results, scenario, automationPercent,
@@ -12,14 +14,9 @@ export function useExportHandlers({
     (isAdvancedRunCost ? Number(results.uiRunCostY1) >= 0 : Number(monthlyRunCost) >= 0)
   );
 
-  const handleExportXLSX = async () => {
+  const handleExportXLSX = useCallback(async () => {
     if (!isReadyToExport) return;
     setIsExportingXLSX(true);
-
-    // BUG 3 FIX: Moved setIsExportingXLSX(false) into a finally block.
-    // Previously, if alert() was called on error, the flag would only reset
-    // after alert() resolved. With finally, the reset is guaranteed to run
-    // regardless of what happens — success, error, or even an unexpected throw.
     try {
       const xlsxModule = await import('xlsx-js-style');
       const XLSX = xlsxModule.default || xlsxModule;
@@ -86,17 +83,17 @@ export function useExportHandlers({
       console.error(e);
       alert(`Failed to generate Excel file. Error: ${e.message}`);
     } finally {
-      // BUG 3 FIX: This now runs even if alert() hangs or an unexpected
-      // error is thrown, so the Export button is never permanently disabled.
       setIsExportingXLSX(false);
     }
-  };
+  }, [
+    isReadyToExport, toolName, useCase, challenges, qualitativeBenefits, kpis,
+    results, formatCurrency, scenario, automationPercent, durationMonths,
+    setIsExportingXLSX
+  ]);
 
-  const handleExportPPTX = async () => {
+  const handleExportPPTX = useCallback(async () => {
     if (!isReadyToExport) return;
     setIsExportingPPTX(true);
-
-    // BUG 3 FIX: Same finally pattern applied to PPTX export.
     try {
       const pptxgenModule = await import('pptxgenjs');
       const PptxGenJS = pptxgenModule.default || pptxgenModule;
@@ -186,10 +183,12 @@ export function useExportHandlers({
       console.error(e);
       alert(`Failed to generate PPTX file. Error: ${e.message}`);
     } finally {
-      // BUG 3 FIX: Guaranteed reset even if pptxgenjs throws an unexpected error.
       setIsExportingPPTX(false);
     }
-  };
+  }, [
+    isReadyToExport, toolName, useCase, challenges, kpis, results,
+    formatCurrency, scenario, automationPercent, setIsExportingPPTX
+  ]);
 
   return { isReadyToExport, handleExportXLSX, handleExportPPTX };
 }
