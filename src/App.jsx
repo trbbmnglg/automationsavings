@@ -1040,7 +1040,7 @@ export default function App() {
                       <div>
                         <label className={`flex items-center text-xs font-bold ${textMain} mb-1`}>
                           One-Time Build
-                          <Tooltip text='Total upfront investment required (e.g., developer salaries, software licenses, vendor fees).'>
+                          <Tooltip text='Total upfront investment required (e.g., developer salaries).'>
                             <Info size={12} className={`${textSub} hover:text-blue-500 transition-colors cursor-help`}/>
                           </Tooltip>
                         </label>
@@ -1057,7 +1057,7 @@ export default function App() {
                       <div>
                         <label className={`flex items-center text-xs font-bold ${textMain} mb-1`}>
                           Base Monthly Run Cost
-                          <Tooltip text='Base recurring costs (licenses, cloud) and their projected Annual Percentage Increase.'>
+                          <Tooltip text='Base recurring costs (Product Licenses, cloud) and their projected Annual Percentage Increase.'>
                             <Info size={12} className={`${textSub} hover:text-blue-500 transition-colors cursor-help`}/>
                           </Tooltip>
                         </label>
@@ -1267,10 +1267,11 @@ export default function App() {
                       </div>
                     </div>
 
-                    {(kpis || qualitativeBenefits) && (
+                    {(kpis || qualitativeBenefits || toolName) && (
                       <div className={`border-t ${isDarkMode ? 'border-blue-900/40' : 'border-blue-100'} pt-3 space-y-3`}>
                         {kpis && (<div><div className="text-[10px] font-bold text-purple-500 uppercase mb-1 flex items-center"><BarChart3 size={12} className="mr-1.5" /> Target KPIs</div><p className={`text-xs ${isDarkMode ? 'text-blue-200' : 'text-blue-800'} leading-relaxed whitespace-pre-wrap font-medium`}>{kpis}</p></div>)}
                         {qualitativeBenefits && (<div><div className="text-[10px] font-bold text-emerald-500 uppercase mb-1 flex items-center"><Award size={12} className="mr-1.5" /> Strategic Benefits</div><p className={`text-xs ${isDarkMode ? 'text-emerald-200' : 'text-emerald-800'} leading-relaxed whitespace-pre-wrap font-medium`}>{qualitativeBenefits}</p></div>)}
+                        {toolName && (<div><div className="text-[10px] font-bold text-blue-500 uppercase mb-1 flex items-center"><Cpu size={12} className="mr-1.5" /> Automation Solution</div><p className={`text-xs ${isDarkMode ? 'text-blue-200' : 'text-blue-800'} leading-relaxed whitespace-pre-wrap font-medium`}>{toolName}</p></div>)}
                       </div>
                     )}
                   </div>
