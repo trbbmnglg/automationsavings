@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 
 export default function Tooltip({ text, children }) {
@@ -6,13 +6,13 @@ export default function Tooltip({ text, children }) {
   const [coords, setCoords] = useState({ top: 0, left: 0 });
   const triggerRef = useRef(null);
 
-  const updateCoords = () => {
+  const updateCoords = useCallback(() => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
       setCoords({ left: rect.left + rect.width / 2, top: rect.top - 8 });
     }
-  };
-
+  }, []);
+  
   const showTooltip = () => { updateCoords(); setIsVisible(true); };
   const hideTooltip = () => setIsVisible(false);
 
