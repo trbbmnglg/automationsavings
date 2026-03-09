@@ -1,6 +1,6 @@
 import React from 'react';
-import { useApp } from '../context/AppContext';
-import Tooltip from './Tooltip';
+import { useApp } from '../../context/AppContext';
+import Tooltip from '../Tooltip';
 import { Wrench, X, Trash2, Info, Plus, ShieldCheck, Loader2, Sparkles } from 'lucide-react';
 
 export default function SreConfigurationModal() {
