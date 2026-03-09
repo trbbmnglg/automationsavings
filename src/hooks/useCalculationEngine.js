@@ -1,13 +1,11 @@
 import { useMemo } from 'react';
 
-export function useCalculationEngine(deps) {
-  const {
-    laborBreakdown, automationPercent, durationMonths, implementationCost, 
-    monthlyRunCost, runCostInflation, isAdvancedRunCost, runCostBreakdown, 
-    lcrRates, hasSre, isAdvancedSre, sreCostY1, sreCostY2, sreBreakdown, 
-    workingDays, hoursPerDay, scenario, currency, exchangeRates
-  } = deps;
-
+export function useCalculationEngine({
+  laborBreakdown, automationPercent, durationMonths, implementationCost, 
+  monthlyRunCost, runCostInflation, isAdvancedRunCost, runCostBreakdown, 
+  lcrRates, hasSre, isAdvancedSre, sreCostY1, sreCostY2, sreBreakdown, 
+  workingDays, hoursPerDay, scenario, currency, exchangeRates
+}) {
   return useMemo(() => {
     const fteHoursPerMonth = Math.max(1, Number(workingDays)) * Math.max(1, Number(hoursPerDay));
     const currencyMultiplier = exchangeRates[currency] / exchangeRates['USD'];
@@ -103,12 +101,13 @@ export function useCalculationEngine(deps) {
       cumulativeNet += monthlyNet;
       monthlyData.push({ month: m, year: currentYear, implementationCost: 0, runCost: currentRunCost, sreCost: currentSreCost, grossSavings: grossMonthlySave, netCashFlow: monthlyNet, cumulativeNet: cumulativeNet });
 
+      // FIX 4: Corrected Payback Logic
       if (paybackMonth === Infinity && cumulativeNet >= 0) {
-        if (grossMonthlySave <= 0) { paybackMonth = Infinity; } 
-        else {
-          let remainder = cumulativeNet;
-          let fraction = monthlyNet === 0 ? 0 : 1 - (remainder / monthlyNet);
-          fraction = Math.max(0, Math.min(1, fraction));
+        if (grossMonthlySave <= 0 || monthlyNet <= 0) { 
+          paybackMonth = Infinity; 
+        } else {
+          const overshoot = Math.max(0, cumulativeNet);
+          const fraction = Math.max(0, Math.min(1, 1 - overshoot / monthlyNet));
           paybackMonth = m - 1 + fraction;
         }
       }
@@ -147,5 +146,10 @@ export function useCalculationEngine(deps) {
       monthlyData, automationScore: score, scoreLabel, scoreColor, fteHoursPerMonth, currencyMultiplier, blendedEffortPerHour, blendedResourceCostPerHour,
       uiSreY1, uiSreY2, uiRunCostY1
     };
-  }, Object.values(deps));
+  }, [
+    laborBreakdown, automationPercent, durationMonths, implementationCost, 
+    monthlyRunCost, runCostInflation, isAdvancedRunCost, runCostBreakdown, 
+    lcrRates, hasSre, isAdvancedSre, sreCostY1, sreCostY2, sreBreakdown, 
+    workingDays, hoursPerDay, scenario, currency, exchangeRates
+  ]); // FIX 1: Stable dependencies array
 }
