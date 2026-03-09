@@ -215,7 +215,9 @@ export function AppProvider({ children }) {
   const updateRunCostBreakdown = (category, field, value) =>
     setRunCostBreakdown(prev => ({ ...prev, [category]: { ...prev[category], [field]: value } }));
 
-  const handleGenerateMockData = () => {
+  // FIX: Wrapped in useCallback — was creating a new function reference on every render,
+  // causing Header to re-render unnecessarily on every keystroke in any input field.
+  const handleGenerateMockData = useCallback(() => {
     setCurrency('USD');
     setToolName('GenWizard Batch Automation');
     setUseCase('Automate manual monitoring of 5000 Control M jobs to resolve delays and missed SLAs.');
@@ -250,9 +252,17 @@ export function AppProvider({ children }) {
     setAiPitch('');
     setRoiInsights('');
     setAiGeneratedFields({ kpis: false, challenges: false, benefits: false });
-  };
+  }, [
+    setCurrency, setToolName, setUseCase, setChallenges, setQualitativeBenefits,
+    setKpis, setLaborBreakdown, setWorkingDays, setHoursPerDay, setAutomationPercent,
+    setDurationMonths, setImplementationCost, setIsAdvancedRunCost, setRunCostBreakdown,
+    setHasSre, setIsAdvancedSre, setSreBreakdown, setSreUseCase,
+    setAiPitch, setRoiInsights, setAiGeneratedFields
+  ]);
 
-  const handleClearAll = () => {
+  // FIX: Wrapped in useCallback — was creating a new function reference on every render,
+  // causing ClearConfirmModal to re-render unnecessarily on every keystroke.
+  const handleClearAll = useCallback(() => {
     setToolName(''); setUseCase(''); setChallenges(''); setQualitativeBenefits(''); setKpis('');
     setLaborBreakdown(createDefaultLabor());
     setAutomationPercent(0); setDurationMonths(''); setImplementationCost('');
@@ -265,7 +275,14 @@ export function AppProvider({ children }) {
     setAiPitch(''); setRoiInsights('');
     setShowClearConfirm(false);
     setAiGeneratedFields({ kpis: false, challenges: false, benefits: false });
-  };
+  }, [
+    setToolName, setUseCase, setChallenges, setQualitativeBenefits, setKpis,
+    setLaborBreakdown, setAutomationPercent, setDurationMonths, setImplementationCost,
+    setMonthlyRunCost, setRunCostInflation, setIsAdvancedRunCost, setRunCostBreakdown,
+    setHasSre, setIsAdvancedSre, setSreCostY1, setSreCostY2, setSreBreakdown,
+    setSreUseCase, setCurrency, setScenario, setAiPitch, setRoiInsights,
+    setShowClearConfirm, setAiGeneratedFields
+  ]);
 
   const fallbackCopyTextToClipboard = (text) => {
     const textArea = document.createElement('textarea');
