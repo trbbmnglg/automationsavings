@@ -3,7 +3,6 @@ import { useStickyState } from '../hooks/useStickyState';
 import { useCalculationEngine } from '../hooks/useCalculationEngine';
 import { DEFAULT_LCR, providerOptions, currencyConfig } from '../constants/config';
 import { fetchWithRetry, sanitizeStr } from '../utils/aiUtils';
-import { loadScript } from '../utils/scriptLoader';
 
 const AppContext = createContext(null);
 export const useApp = () => useContext(AppContext);
@@ -68,7 +67,7 @@ export function AppProvider({ children }) {
     const controller = new AbortController();
     const fetchLiveRates = async () => {
       try {
-        const response = await fetch('[https://api.frankfurter.app/latest?from=USD](https://api.frankfurter.app/latest?from=USD)', { signal: controller.signal });
+        const response = await fetch('https://api.frankfurter.app/latest?from=USD', { signal: controller.signal });
         const data = await response.json();
         if (data && data.rates) {
           setExchangeRates({ USD: 1, PHP: data.rates.PHP || 56.5, EUR: data.rates.EUR || 0.92, JPY: data.rates.JPY || 150.5 });
@@ -80,7 +79,7 @@ export function AppProvider({ children }) {
     };
     const fetchRemoteLcr = async () => {
       try {
-        const response = await fetch('[https://raw.githubusercontent.com/trbbmnglg/automationsavings/main/src/lcr.json](https://raw.githubusercontent.com/trbbmnglg/automationsavings/main/src/lcr.json)', { signal: controller.signal });
+        const response = await fetch('https://raw.githubusercontent.com/trbbmnglg/automationsavings/main/src/lcr.json', { signal: controller.signal });
         if (response.ok) {
           const data = await response.json();
           if (data && typeof data === 'object') {
@@ -173,7 +172,7 @@ export function AppProvider({ children }) {
       if (!res.ok) throw new Error("API error");
       return await res.text();
     } else {
-      let url = aiProvider === 'groq' ? '[https://api.groq.com/openai/v1/chat/completions](https://api.groq.com/openai/v1/chat/completions)' : '[https://openrouter.ai/api/v1/chat/completions](https://openrouter.ai/api/v1/chat/completions)';
+      let url = aiProvider === 'groq' ? 'https://api.groq.com/openai/v1/chat/completions' : 'https://openrouter.ai/api/v1/chat/completions';
       const res = await fetchWithRetry(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${aiApiKey}` }, body: JSON.stringify({ model: aiModel, messages: [{ role: 'user', content: prompt }] }) });
       const data = await res.json();
       return data?.choices?.[0]?.message?.content;
@@ -221,7 +220,7 @@ export function AppProvider({ children }) {
     try { const text = await callAIWrapper(prompt); if (text) setSreUseCase(text.replace(/["']/g, "").trim()); } catch (error) { console.warn("AI SRE Use Case generation failed:", error); } finally { setIsGeneratingSreUseCase(false); }
   };
 
-  // --- Export Handlers ---
+  // --- Export Handlers (NATIVE IMPORTS) ---
   const isReadyToExport = !!(
     toolName.trim() && useCase.trim() && 
     laborBreakdown.some(l => Number(l.executions) > 0 && Number(l.effortHours) > 0) &&
@@ -233,7 +232,10 @@ export function AppProvider({ children }) {
     if (!isReadyToExport) return;
     setIsExportingXLSX(true);
     try {
-      const XLSX = await loadScript('[https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js](https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js)', 'XLSX');
+      // Dynamic import from node_modules
+      const xlsxModule = await import('xlsx-js-style');
+      const XLSX = xlsxModule.default || xlsxModule;
+      
       const wb = XLSX.utils.book_new();
       const scenarioLabel = scenario.charAt(0).toUpperCase() + scenario.slice(1);
 
@@ -260,7 +262,7 @@ export function AppProvider({ children }) {
       XLSX.utils.book_append_sheet(wb, monthlySheet, "Monthly Cash Flow");
 
       XLSX.writeFile(wb, "Automation Savings.xlsx");
-    } catch (e) { console.error(e); alert(`Failed to generate Excel file: ${e.message}`); }
+    } catch (e) { console.error(e); alert(`Failed to generate Excel file. Error: ${e.message}`); }
     setIsExportingXLSX(false);
   };
 
@@ -268,9 +270,13 @@ export function AppProvider({ children }) {
     if (!isReadyToExport) return;
     setIsExportingPPTX(true);
     try {
-      await loadScript('[https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js](https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js)', 'JSZip');
-      const pptxgen = window.pptxgen || await loadScript('[https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js](https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js)', 'PptxGenJS');
-      const pptx = new pptxgen(); pptx.layout = 'LAYOUT_WIDE'; const slide = pptx.addSlide();
+      // Dynamic import from node_modules (pptxgenjs automatically handles JSZip)
+      const pptxgenModule = await import('pptxgenjs');
+      const PptxGenJS = pptxgenModule.default || pptxgenModule;
+      
+      const pptx = new PptxGenJS(); 
+      pptx.layout = 'LAYOUT_WIDE'; 
+      const slide = pptx.addSlide();
       
       let accentColor = '10B981';
       if (results.automationScore < 80 && results.automationScore >= 60) accentColor = '3B82F6';
