@@ -212,6 +212,12 @@ export default function App() {
   };
 
   // --- Business Logic Handlers ---
+  const handleProviderChange = (e) => {
+    const newProv = e.target.value;
+    setAiProvider(newProv);
+    setAiModel(providerOptions[newProv].models[0]);
+  };
+
   const handleCurrencyChange = (newCurrency) => {
     if (newCurrency === currency) return;
     const multiplier = exchangeRates[newCurrency] / exchangeRates[currency];
@@ -246,7 +252,10 @@ export default function App() {
     setChallenges('• Scalability for 5000+ jobs\n• Operator fatigue from manual checks\n• Reactive instead of proactive response');
     setQualitativeBenefits('• Improved SLA adherence\n• Team transition to proactive operations\n• Reduced alert flood noise');
     setKpis('• Job Completion Rate\n• SLA Compliance %\n• Mean Time to Resolve (MTTR)');
-    setExecutionsPerMonth(1200); setVolumePeriod('monthly'); setWorkingDays(22); setHoursPerDay(8);
+    setExecutionsPerMonth(1200);
+    setVolumePeriod('monthly');
+    setWorkingDays(22);
+    setHoursPerDay(8);
     setEffortHours(0.5); setEffortMinutes(30); setResourceCost(30); setAutomationPercent(90); setDurationMonths(36);
     setImplementationCost(5000); setMonthlyRunCost(250); setRunCostInflation(5); setSreCostY1(1500); setSreCostY2(500);
     setAiPitch(''); setRoiInsights('');
@@ -354,6 +363,242 @@ export default function App() {
     Number(resourceCost) >= 0 && Number(implementationCost) >= 0 && Number(monthlyRunCost) >= 0
   );
 
+  // --- External Exports ---
+  const handleExportXLSX = async () => {
+    if (!isReadyToExport) return;
+    setIsExportingXLSX(true);
+    try {
+      const XLSX = await loadScript('https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js', 'XLSX');
+      const wb = XLSX.utils.book_new();
+      const scenarioLabel = scenario.charAt(0).toUpperCase() + scenario.slice(1);
+
+      const ws_data = [
+        ["", "", "", "", `Quantitative Benefits (${scenarioLabel} Forecast)`, "", "", "", "", ""],
+        [
+          "Tool", "Use Case Description", "Challenges Addressed", "Qualitative Benefits", 
+          "# of executions per month", "average effort per execution in hours", 
+          "average resource cost per hour", "% of task automated", 
+          "remaining contract/project duration in months", "Cost Benefit"
+        ],
+        [
+          toolName || 'N/A', useCase || 'N/A', challenges || 'N/A', qualitativeBenefits || 'N/A',
+          results.effectiveExecutions, Number(effortHours).toFixed(2), formatCurrency(resourceCost),
+          `${automationPercent}%`, durationMonths, formatCurrency(results.netSavings)
+        ]
+      ];
+
+      const ws = XLSX.utils.aoa_to_sheet(ws_data);
+      ws['!merges'] = [{ s: { r: 0, c: 4 }, e: { r: 0, c: 9 } }];
+
+      const headerStyle = { fill: { fgColor: { rgb: "1E40AF" } }, font: { color: { rgb: "FFFFFF" }, bold: true }, alignment: { wrapText: true, vertical: "center", horizontal: "center" } };
+      const dataStyle = { alignment: { wrapText: true, vertical: "top", horizontal: "left" } };
+
+      if (ws['E1']) ws['E1'].s = headerStyle;
+
+      const cols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+      cols.forEach(col => {
+        if (ws[`${col}2`]) ws[`${col}2`].s = headerStyle;
+        if (ws[`${col}3`]) ws[`${col}3`].s = dataStyle; 
+      });
+
+      ws['!cols'] = [ { wch: 25 }, { wch: 40 }, { wch: 40 }, { wch: 40 }, { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 15 }, { wch: 20 }, { wch: 20 } ];
+      ws['!rows'] = [ { hpt: 30 }, { hpt: 60 }, { hpt: 80 } ];
+
+      XLSX.utils.book_append_sheet(wb, ws, "Automation Savings");
+      XLSX.writeFile(wb, "Automation Savings.xlsx");
+    } catch (e) {
+      console.error(e);
+      alert("Failed to generate Excel file.");
+    }
+    setIsExportingXLSX(false);
+  };
+
+  const handleExportPPTX = async () => {
+    if (!isReadyToExport) return;
+    setIsExportingPPTX(true);
+    try {
+      await loadScript('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js', 'JSZip');
+      const pptxgen = window.pptxgen || await loadScript('https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js', 'PptxGenJS');
+
+      const pptx = new pptxgen();
+      pptx.layout = 'LAYOUT_WIDE'; // 13.33 x 7.5
+      const slide = pptx.addSlide();
+
+      let accentColor = '10B981'; // Emerald (Strong)
+      if (results.automationScore < 80 && results.automationScore >= 60) accentColor = '3B82F6'; // Blue (Good)
+      if (results.automationScore < 60 && results.automationScore >= 40) accentColor = 'F59E0B'; // Amber (Marginal)
+      if (results.automationScore < 40) accentColor = 'EF4444'; // Red (Risk)
+
+      const cBg = 'F8FAFC'; // Slate 50
+      const cCardBg = 'FFFFFF';
+      const cTextDark = '0F172A'; // Slate 900
+      const cTextMuted = '64748B'; // Slate 500
+      const cBorder = 'E2E8F0'; // Slate 200
+
+      slide.background = { color: cBg };
+
+      // --- 1. HEADER (Top Strip & Title) ---
+      slide.addShape(pptx.shapes.RECTANGLE, { x: 0, y: 0, w: 13.33, h: 0.1, fill: { color: accentColor } });
+      
+      slide.addText((toolName || 'Proposed Automation').toUpperCase(), { 
+        x: 0.5, y: 0.3, w: 8.5, h: 0.6, fontSize: 28, bold: true, color: cTextDark, fontFace: 'Arial Black' 
+      });
+      slide.addText(`Business Case & ROI Strategy | Scenario: ${scenario.charAt(0).toUpperCase() + scenario.slice(1)}`, { 
+        x: 0.5, y: 0.9, w: 8.5, h: 0.3, fontSize: 12, color: cTextMuted, bold: true 
+      });
+      slide.addText(useCase || 'N/A', { 
+        x: 0.5, y: 1.2, w: 8.5, h: 0.4, fontSize: 11, color: cTextMuted, italic: true, valign: 'top' 
+      });
+
+      // Viability Score Badge
+      slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, { 
+        x: 9.5, y: 0.4, w: 3.3, h: 0.9, fill: { color: accentColor }, rectRadius: 0.1 
+      });
+      slide.addText(`VIABILITY SCORE: ${results.automationScore}/100`, { 
+        x: 9.5, y: 0.5, w: 3.3, h: 0.3, fontSize: 10, bold: true, color: 'FFFFFF', align: 'center', opacity: 0.9
+      });
+      slide.addText(results.scoreLabel.toUpperCase(), { 
+        x: 9.5, y: 0.8, w: 3.3, h: 0.4, fontSize: 16, bold: true, color: 'FFFFFF', align: 'center', fontFace: 'Arial Black' 
+      });
+
+      const colY = 1.8;
+      const colH = 5.2;
+
+      // --- 2. LEFT COLUMN: THE CONTEXT ---
+      const col1X = 0.5;
+      const col1W = 3.9;
+      slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: col1X, y: colY, w: col1W, h: colH, fill: { color: cCardBg }, line: { color: cBorder, width: 1 }, rectRadius: 0.05 });
+      slide.addText('01 / THE CONTEXT', { x: col1X + 0.2, y: colY + 0.2, w: col1W - 0.4, h: 0.3, fontSize: 12, bold: true, color: accentColor, fontFace: 'Arial Black' });
+      slide.addText('Challenges Addressed', { x: col1X + 0.2, y: colY + 0.7, w: col1W - 0.4, h: 0.3, fontSize: 12, bold: true, color: cTextDark });
+      const chalArr = challenges ? challenges.split('\n').filter(k=>k.trim()!=='').map(c => ({ text: c.replace('•','').trim(), options: { bullet: true, color: cTextMuted } })) : [{ text: "None specified", options: { bullet: true, color: cTextMuted } }];
+      slide.addText(chalArr, { x: col1X + 0.3, y: colY + 1.0, w: col1W - 0.6, h: 1.8, fontSize: 11, valign: 'top' });
+      slide.addShape(pptx.shapes.LINE, { x: col1X + 0.2, y: colY + 3.0, w: col1W - 0.4, h: 0, line: { color: cBorder, width: 1 } });
+      slide.addText('Target KPIs', { x: col1X + 0.2, y: colY + 3.2, w: col1W - 0.4, h: 0.3, fontSize: 12, bold: true, color: cTextDark });
+      const kpiArr = kpis ? kpis.split('\n').filter(k=>k.trim()!=='').map(k => ({ text: k.replace('•','').trim(), options: { bullet: true, color: cTextMuted } })) : [{ text: "None specified", options: { bullet: true, color: cTextMuted } }];
+      slide.addText(kpiArr, { x: col1X + 0.3, y: colY + 3.5, w: col1W - 0.6, h: 1.5, fontSize: 11, valign: 'top' });
+
+      // --- 3. MIDDLE COLUMN: THE SOLUTION ---
+      const col2X = 4.6;
+      const col2W = 4.2;
+      slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: col2X, y: colY, w: col2W, h: colH, fill: { color: cCardBg }, line: { color: cBorder, width: 1 }, rectRadius: 0.05 });
+      slide.addText('02 / THE SOLUTION', { x: col2X + 0.2, y: colY + 0.2, w: col2W - 0.4, h: 0.3, fontSize: 12, bold: true, color: accentColor, fontFace: 'Arial Black' });
+      slide.addText('Effort Automation Shift', { x: col2X, y: colY + 0.7, w: col2W, h: 0.3, fontSize: 12, bold: true, color: cTextDark, align: 'center' });
+      slide.addChart(pptx.charts.DOUGHNUT, [{ name: "Effort", labels: ["Automated", "Manual"], values: [Number(automationPercent), 100 - Number(automationPercent)] }], { x: col2X + 0.85, y: colY + 1.1, w: 2.5, h: 2.0, holeSize: 65, showLegend: true, legendPos: 'b', legendFontSize: 10, showLabel: false, chartColors: [accentColor, 'CBD5E1'], dataBorder: { pt: 0 } });
+      slide.addText(`${automationPercent}%`, { x: col2X + 0.85, y: colY + 1.1, w: 2.5, h: 1.7, align: 'center', valign: 'middle', fontSize: 24, bold: true, color: cTextDark, fontFace: 'Arial Black' });
+      slide.addShape(pptx.shapes.LINE, { x: col2X + 0.2, y: colY + 3.3, w: col2W - 0.4, h: 0, line: { color: cBorder, width: 1 } });
+      slide.addText('Monthly Cost Reduction', { x: col2X + 0.2, y: colY + 3.5, w: col2W - 0.4, h: 0.3, fontSize: 11, bold: true, color: cTextMuted });
+      slide.addText(`${formatCurrency(results.currentMonthlyCost)}  →  ${formatCurrency(results.futureMonthlyCostAvg)}`, { x: col2X + 0.2, y: colY + 3.8, w: col2W - 0.4, h: 0.4, fontSize: 18, bold: true, color: cTextDark });
+      slide.addText('Capacity Shift (FTEs)', { x: col2X + 0.2, y: colY + 4.3, w: col2W - 0.4, h: 0.3, fontSize: 11, bold: true, color: cTextMuted });
+      
+      const maxFteW = col2W - 0.6;
+      const currentFte = results.currentFte || 1;
+      const futureFteW = (results.toBeFte / currentFte) * maxFteW;
+      
+      slide.addShape(pptx.shapes.RECTANGLE, { x: col2X + 0.3, y: colY + 4.7, w: maxFteW, h: 0.3, fill: { color: 'E2E8F0' } });
+      slide.addShape(pptx.shapes.RECTANGLE, { x: col2X + 0.3, y: colY + 4.7, w: Math.max(futureFteW, 0.05), h: 0.3, fill: { color: accentColor } });
+      slide.addText(`${results.currentFte.toFixed(1)} FTEs As-Is`, { x: col2X + 0.3, y: colY + 4.7, w: maxFteW, h: 0.3, fontSize: 9, color: cTextMuted, align: 'right', valign: 'middle', pr: 0.1 });
+
+      // --- 4. RIGHT COLUMN: THE IMPACT ---
+      const col3X = 9.0;
+      const col3W = 3.8;
+      slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: col3X, y: colY, w: col3W, h: colH, fill: { color: accentColor, transparency: 95 }, line: { color: accentColor, width: 2 }, rectRadius: 0.05 });
+      slide.addText('03 / FINANCIAL IMPACT', { x: col3X + 0.2, y: colY + 0.2, w: col3W - 0.4, h: 0.3, fontSize: 12, bold: true, color: accentColor, fontFace: 'Arial Black' });
+
+      const impactMetrics = [
+        { label: "LIFETIME NET SAVINGS", value: formatCurrency(results.netSavings) },
+        { label: "RETURN ON INVESTMENT (ROI)", value: results.roi === Infinity ? '>1000%' : `${Math.round(results.roi).toLocaleString()}%` },
+        { label: "PAYBACK PERIOD", value: results.paybackPeriod === Infinity ? 'Never' : `${results.paybackPeriod.toFixed(1)} months` },
+        { label: "CAPACITY RECAPTURED", value: `${results.fteSavings.toFixed(1)} FTEs/mo` }
+      ];
+
+      let currentY = colY + 0.8;
+      impactMetrics.forEach((metric, i) => {
+        slide.addText(metric.label, { x: col3X + 0.3, y: currentY, w: col3W - 0.6, h: 0.3, fontSize: 11, bold: true, color: cTextMuted });
+        slide.addText(metric.value, { x: col3X + 0.3, y: currentY + 0.3, w: col3W - 0.6, h: 0.6, fontSize: 28, bold: true, color: cTextDark, fontFace: 'Arial Black' });
+        if (i < 3) {
+          slide.addShape(pptx.shapes.LINE, { x: col3X + 0.3, y: currentY + 1.0, w: col3W - 0.6, h: 0, line: { color: accentColor, width: 1, transparency: 80 } });
+          currentY += 1.15;
+        }
+      });
+
+      await pptx.writeFile({ fileName: `${toolName || 'Automation'} Automation 1 Slider.pptx` });
+    } catch (e) {
+      console.error(e);
+      alert("Failed to generate PPTX file. Check console.");
+    }
+    setIsExportingPPTX(false);
+  };
+
+  // --- AI Gen Handlers ---
+  const generateAIPitch = async () => {
+    setIsGenerating(true);
+    const prompt = `Act as a professional business analyst. Write a persuasive, general business case pitch for an automation project.
+    Details: Tool Name: """${sanitizeStr(toolName)}""" | Use Case: """${sanitizeStr(useCase)}""" | Scenario: ${scenario.charAt(0).toUpperCase() + scenario.slice(1)} Forecast
+    Financials: Lifetime Net Savings: ${formatCurrency(results.netSavings)} over ${durationMonths} months | ROI: ${Math.round(results.roi)}% | Automation Viability Score: ${results.automationScore}/100 (${results.scoreLabel})
+    Write a compelling executive summary (2-3 paragraphs). Do NOT include greetings. Use standard plain text formatting.`;
+    try {
+      const text = await callAI(prompt);
+      if (text) setAiPitch(text.trim());
+    } catch (error) { console.error(error); } 
+    finally { setIsGenerating(false); }
+  };
+
+  const generateSuggestions = async () => {
+    if (!toolName && !useCase) { return; }
+    setIsGeneratingSuggestions(true);
+    const prompt = `Based on Tool Name: """${sanitizeStr(toolName)}""" and Use Case: """${sanitizeStr(useCase)}""", return ONLY a valid JSON object exactly matching this structure: {"kpis": ["..."], "challenges": ["..."], "benefits": ["..."]}. Do NOT include markdown backticks. Do NOT include trailing commas. Escape all internal quotes.`;
+    try {
+      const text = await callAI(prompt);
+      let cleanText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+      const startIndex = cleanText.indexOf('{');
+      const endIndex = cleanText.lastIndexOf('}');
+      if (startIndex !== -1 && endIndex !== -1) {
+        let jsonStr = cleanText.substring(startIndex, endIndex + 1);
+        jsonStr = jsonStr.replace(/,\s*([\]}])/g, '$1'); // Fix common AI trailing comma mistakes
+        jsonStr = jsonStr.replace(/[\x00-\x1F\x7F-\x9F]/g, ""); // Remove unescaped control characters
+        const parsed = JSON.parse(jsonStr);
+        if (parsed.kpis && Array.isArray(parsed.kpis)) setKpis(parsed.kpis.map(k => '• ' + k).join('\n'));
+        if (parsed.challenges && Array.isArray(parsed.challenges)) setChallenges(parsed.challenges.map(c => '• ' + c).join('\n'));
+        if (parsed.benefits && Array.isArray(parsed.benefits)) setQualitativeBenefits(parsed.benefits.map(b => '• ' + b).join('\n'));
+      }
+    } catch (error) { 
+      console.warn("AI Suggestions parsing failed:", error); 
+    } 
+    finally { setIsGeneratingSuggestions(false); }
+  };
+
+  const generateROIInsights = async () => {
+    setIsGeneratingInsights(true);
+    const prompt = `Act as a financial strategist. Analyze these metrics: Net Savings: ${formatCurrency(results.netSavings)}, ROI: ${Math.round(results.roi)}%, Payback: ${results.paybackPeriod.toFixed(1)} mo. Provide 2-3 brief, actionable bullet points to improve ROI. Use simple dashes for bullets, no bold markdown.`;
+    try {
+      const text = await callAI(prompt);
+      if (text) setRoiInsights(text.trim());
+    } catch (error) { console.error(error); } 
+    finally { setIsGeneratingInsights(false); }
+  };
+
+  const fallbackCopyTextToClipboard = (text) => {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed"; textArea.style.left = "-999999px"; textArea.style.top = "-999999px";
+    document.body.appendChild(textArea);
+    textArea.focus(); textArea.select();
+    try {
+      document.execCommand('copy');
+      setCopied(true); setTimeout(() => setCopied(false), 2000);
+    } catch (err) { console.error('Fallback: Oops, unable to copy', err); }
+    document.body.removeChild(textArea);
+  };
+
+  const handleCopy = () => {
+    if (!aiPitch) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(aiPitch)
+        .then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); })
+        .catch(() => fallbackCopyTextToClipboard(aiPitch)); 
+    } else { fallbackCopyTextToClipboard(aiPitch); }
+  };
+
   // --- Dynamic Styling Context ---
   const bgMain = isDarkMode ? "bg-[#0B1120]" : "bg-[#F8FAFC]";
   const textMain = isDarkMode ? "text-slate-200" : "text-slate-800";
@@ -366,6 +611,7 @@ export default function App() {
   const inputErrorStyle = `w-full px-4 py-3.5 ${isDarkMode ? 'bg-red-950/30 border-red-900 text-red-400 focus:bg-[#0F172A]' : 'bg-red-50/70 border-red-200 text-red-900 focus:bg-white'} border rounded-2xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 outline-none shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]`;
 
   const contextValue = {
+    // State
     toolName, setToolName, useCase, setUseCase, challenges, setChallenges, qualitativeBenefits, setQualitativeBenefits, kpis, setKpis,
     executionsPerMonth, setExecutionsPerMonth, volumePeriod, setVolumePeriod, effortHours, setEffortHours, effortMinutes, setEffortMinutes,
     resourceCost, setResourceCost, automationPercent, setAutomationPercent, durationMonths, setDurationMonths, implementationCost, setImplementationCost,
@@ -374,8 +620,13 @@ export default function App() {
     exchangeRates, ratesStatus, copied, setCopied, aiPitch, setAiPitch, isGenerating, setIsGenerating, isGeneratingSuggestions, setIsGeneratingSuggestions,
     isGeneratingInsights, setIsGeneratingInsights, roiInsights, setRoiInsights, isHowItWorksOpen, setIsHowItWorksOpen, showScore, setShowScore,
     showClearConfirm, setShowClearConfirm, isSettingsOpen, setIsSettingsOpen, isExportingXLSX, setIsExportingXLSX, isExportingPPTX, setIsExportingPPTX,
-    isReadyToExport, aiProvider, setAiProvider, aiApiKey, setAiApiKey, aiModel, setAiModel, currencyConfig,
-    handleCurrencyChange, handleMinutesChange, handleHoursChange, handleGenerateMockData, handleClearAll, sanitizeStr, callAI, formatCurrency, results,
+    aiProvider, setAiProvider, aiApiKey, setAiApiKey, aiModel, setAiModel, currencyConfig, isReadyToExport, results,
+
+    // Functions
+    handleCurrencyChange, handleMinutesChange, handleHoursChange, handleGenerateMockData, handleClearAll, sanitizeStr, callAI, formatCurrency,
+    generateAIPitch, generateSuggestions, generateROIInsights, handleProviderChange, handleExportXLSX, handleExportPPTX, handleCopy,
+
+    // Styling
     bgMain, textMain, textHeading, textSub, borderMuted, panelBg, cardStyle, inputStyle, inputErrorStyle
   };
 
@@ -428,10 +679,9 @@ function AppLayout() {
 function Header() {
   const { 
     cardStyle, textHeading, textSub, ratesStatus, currencyConfig, handleCurrencyChange, currency, isDarkMode, 
-    isReadyToExport, isExportingXLSX, isExportingPPTX, setIsDarkMode, handleGenerateMockData, setShowClearConfirm, setIsSettingsOpen 
+    isReadyToExport, isExportingXLSX, isExportingPPTX, setIsDarkMode, handleGenerateMockData, setShowClearConfirm, setIsSettingsOpen,
+    handleExportXLSX, handleExportPPTX
   } = useApp();
-
-  const handleExportXLSX = async () => {/* Simplified for brevity in layout, hook to parent logic ideally. Implementing direct in context handler */};
 
   return (
     <header className={`${cardStyle} p-4 pr-6 flex items-center justify-between z-20`}>
@@ -455,7 +705,21 @@ function Header() {
           </Tooltip>
         </div>
 
-        {/* Note: In a full app, I'd move the huge PPTX code generation logic to a util file to keep App clean, but following the constraints here to keep logic intact */}
+        <div className="hidden sm:flex items-center">
+          <Tooltip text={isReadyToExport ? "Export Options" : "Please fill out basic Qualitative and Quantitative details to enable exports."}>
+            <div className={`flex ${isDarkMode ? 'bg-emerald-950/20 border-emerald-900/50' : 'bg-emerald-50 border-emerald-200/60'} border rounded-2xl overflow-hidden shadow-sm transition-opacity ${isReadyToExport ? 'opacity-100' : 'opacity-40 grayscale'}`}>
+              <button onClick={handleExportXLSX} disabled={isExportingXLSX || !isReadyToExport} className={`flex items-center space-x-1.5 text-xs font-bold ${isDarkMode ? 'text-emerald-400 hover:bg-emerald-900/40 border-emerald-900/50' : 'text-emerald-700 hover:bg-emerald-100 border-emerald-200/60'} px-3 py-3 transition-all border-r disabled:cursor-not-allowed`} title="Export Report to Excel">
+                {isExportingXLSX ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                <span className="hidden lg:inline">Excel</span>
+              </button>
+              <button onClick={handleExportPPTX} disabled={isExportingPPTX || !isReadyToExport} className={`flex items-center space-x-1.5 text-xs font-bold ${isDarkMode ? 'text-orange-400 bg-orange-950/20 hover:bg-orange-900/40' : 'text-orange-700 bg-orange-50 hover:bg-orange-100'} px-3 py-3 transition-all disabled:cursor-not-allowed`} title="Export 1-Slide Summary to PowerPoint">
+                {isExportingPPTX ? <Loader2 size={16} className="animate-spin" /> : <Presentation size={16} />}
+                <span className="hidden lg:inline">PPTX</span>
+              </button>
+            </div>
+          </Tooltip>
+        </div>
+
         <div className={`flex items-center space-x-1 ${isDarkMode ? 'bg-[#0F172A] border-slate-700/80' : 'bg-slate-100 border-transparent'} p-1 rounded-[20px] border`}>
             <Tooltip text={isDarkMode ? "Switch to Day Mode" : "Switch to Night Mode"}><button onClick={() => setIsDarkMode(!isDarkMode)} className={`flex items-center text-sm font-bold ${isDarkMode ? 'text-amber-400 hover:bg-[#1E293B]' : 'text-slate-600 hover:text-amber-600 hover:bg-white shadow-sm'} p-2.5 rounded-[14px] transition-all`}><Sun size={18} /></button></Tooltip>
             <Tooltip text="Generate Mock Data (Quick Test)"><button onClick={handleGenerateMockData} className={`flex items-center text-sm font-bold ${isDarkMode ? 'text-emerald-400 hover:bg-[#1E293B]' : 'text-slate-600 hover:text-emerald-600 hover:bg-white shadow-sm'} p-2.5 rounded-[14px] transition-all`}><FlaskConical size={18} /></button></Tooltip>
@@ -537,25 +801,8 @@ function SettingsModal() {
 }
 
 function QualitativeSection() {
-  const { cardStyle, borderMuted, isDarkMode, textHeading, panelBg, textMain, textSub, inputStyle, toolName, setToolName, useCase, setUseCase, kpis, setKpis, challenges, setChallenges, qualitativeBenefits, setQualitativeBenefits, isGeneratingSuggestions, setIsGeneratingSuggestions, callAI, sanitizeStr } = useApp();
+  const { cardStyle, borderMuted, isDarkMode, textHeading, panelBg, textMain, textSub, inputStyle, toolName, setToolName, useCase, setUseCase, kpis, setKpis, challenges, setChallenges, qualitativeBenefits, setQualitativeBenefits, isGeneratingSuggestions, generateSuggestions } = useApp();
   
-  const generateSuggestions = async () => {
-    if (!toolName && !useCase) { return; }
-    setIsGeneratingSuggestions(true);
-    const prompt = `Based on Tool Name: """${sanitizeStr(toolName)}""" and Use Case: """${sanitizeStr(useCase)}""", return ONLY a valid JSON object: {"kpis": ["..."], "challenges": ["..."], "benefits": ["..."]}`;
-    try {
-      const text = await callAI(prompt);
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        if (parsed.kpis) setKpis(parsed.kpis.map(k => '• ' + k).join('\n'));
-        if (parsed.challenges) setChallenges(parsed.challenges.map(c => '• ' + c).join('\n'));
-        if (parsed.benefits) setQualitativeBenefits(parsed.benefits.map(b => '• ' + b).join('\n'));
-      }
-    } catch (error) { console.error(error); } 
-    finally { setIsGeneratingSuggestions(false); }
-  };
-
   return (
     <section className={cardStyle}>
       <div className={`px-6 md:px-8 py-5 flex flex-col sm:flex-row sm:items-center justify-between border-b ${borderMuted} gap-4`}>
