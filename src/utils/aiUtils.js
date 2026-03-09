@@ -27,4 +27,11 @@ export const fetchWithRetry = async (url, options) => {
   }
 };
 
-export const sanitizeStr = (str, limit = 400) => (str || '').substring(0, limit).replace(/[{}]/g, '').replace(/[\r\n]+/g, ' ');
+export const sanitizeStr = (str, limit = 400) => 
+  (str || '')
+    .substring(0, limit)
+    .replace(/[{}`\\]/g, '')
+    .replace(/[\r\n\t]+/g, ' ')
+    .replace(/ignore\s+(previous|all|prior)\s+instructions?/gi, '[REDACTED]')
+    .replace(/\bsystem\s*prompt\b/gi, '[REDACTED]')
+    .trim();
