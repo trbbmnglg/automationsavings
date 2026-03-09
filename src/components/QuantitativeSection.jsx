@@ -1,7 +1,7 @@
 import React from 'react';
+import { Activity, Briefcase, Info, Plus, Trash2, Wrench, Coins, TrendingUp, Check } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import Tooltip from './Tooltip';
-import { Activity, Briefcase, Info, Plus, Trash2, Wrench, Coins, TrendingUp, Check } from 'lucide-react';
 
 export default function QuantitativeSection() {
   const { 
