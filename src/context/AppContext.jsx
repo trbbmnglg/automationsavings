@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useStickyState } from '../hooks/useStickyState';
 import { useCalculationEngine } from '../hooks/useCalculationEngine';
 import { useCurrencyHandlers } from '../hooks/useCurrencyHandlers';
@@ -10,7 +10,6 @@ import { DEFAULT_LCR, providerOptions, currencyConfig, DEFAULT_WORKING_DAYS, DEF
 const AppContext = createContext(null);
 export const useApp = () => useContext(AppContext);
 
-// Factory initializers — called once per mount, not on every render
 const createDefaultLabor = () => [{ id: crypto.randomUUID(), cl: 'CL12', executions: '', volumePeriod: 'monthly', effortMinutes: '', effortHours: '' }];
 const createDefaultSre = () => [{ id: crypto.randomUUID(), cl: 'CL9', tasksPerMonth: '', effortMinutes: '', effortHours: '', y2Reduction: 50 }];
 const defaultRunCostBreakdown = {
@@ -21,23 +20,12 @@ const defaultRunCostBreakdown = {
   other: { enabled: false, cost: '', inflation: 5 }
 };
 
-// BUG 4 FIX: Helper to derive hours from minutes consistently.
-// Previously, mock data hardcoded effortHours: 0.1667 for 10 minutes,
-// which caused a visible mismatch — the minutes field would display 10
-// but the hours field would show 0.1667 instead of 0.16666...
-// Using this helper guarantees minutes and hours are always derived
-// from the same source value, eliminating floating point drift.
 const minutesToHours = (minutes) => minutes / 60;
 
-// BUG 6 FIX: Validates that an exchange rate value is a finite positive number.
-// The || operator only catches falsy values (0, null, undefined) — not NaN.
-// If the API returns NaN for a rate, all currency math would silently produce NaN,
-// corrupting every financial calculation without any visible error.
 const safeRate = (value, fallback) =>
   (typeof value === 'number' && isFinite(value) && value > 0) ? value : fallback;
 
 export function AppProvider({ children }) {
-  // --- Core States ---
   const [baseLcr, setBaseLcr] = useState(DEFAULT_LCR);
   const [lcrRates, setLcrRates] = useStickyState(DEFAULT_LCR, 'as_lcrRates');
   const [toolName, setToolName] = useStickyState('', 'as_toolName');
@@ -96,11 +84,6 @@ export function AppProvider({ children }) {
         const response = await fetch('https://api.frankfurter.app/latest?from=USD', { signal: controller.signal });
         const data = await response.json();
         if (data && data.rates) {
-          // BUG 6 FIX: Use safeRate() instead of the || operator.
-          // The || operator only catches falsy values (0, null, undefined).
-          // If the API returns NaN (e.g., due to a schema change), || would
-          // NOT catch it, and NaN would silently flow into all calculations.
-          // safeRate() explicitly checks typeof, isFinite, and > 0.
           setExchangeRates({
             USD: 1,
             PHP: safeRate(data.rates.PHP, 56.5),
@@ -130,7 +113,9 @@ export function AppProvider({ children }) {
           }
         }
       } catch (error) {
-        // Silently fall back to DEFAULT_LCR — already loaded as initial state
+        if (error.name !== 'AbortError') {
+          console.warn('Remote LCR fetch failed, using DEFAULT_LCR fallback:', error.message);
+        }
       }
     };
 
@@ -175,11 +160,11 @@ export function AppProvider({ children }) {
 
   const themeStyles = useTheme(isDarkMode);
 
-  // --- Local Handlers ---
-  const handleProviderChange = (e) => {
-    setAiProvider(e.target.value);
-    setAiModel(providerOptions[e.target.value].models[0]);
-  };
+  const handleProviderChange = useCallback((e) => {
+    const newProvider = e.target.value;
+    setAiProvider(newProvider);
+    setAiModel(providerOptions[newProvider].models[0]);
+  }, [providerOptions, setAiProvider, setAiModel]);
 
   const updateLabor = (id, field, value) =>
     setLaborBreakdown(prev => prev.map(item => item.id === id ? { ...item, [field]: value } : item));
@@ -237,26 +222,11 @@ export function AppProvider({ children }) {
     setChallenges('• Scalability for 5000+ jobs\n• Operator fatigue from manual checks\n• Reactive instead of proactive response');
     setQualitativeBenefits('• Improved SLA adherence\n• Team transition to proactive operations\n• Reduced alert flood noise');
     setKpis('• Job Completion Rate\n• SLA Compliance %\n• Mean Time to Resolve (MTTR)');
-
-    // BUG 4 FIX: All effortHours values are now derived via minutesToHours()
-    // instead of hardcoded approximations (e.g. the old 0.1667 for 10 minutes).
-    // This guarantees the minutes and hours fields are always in perfect sync —
-    // reading back effortHours * 60 will always equal effortMinutes exactly.
     setLaborBreakdown([
-      {
-        id: crypto.randomUUID(), cl: 'CL12', executions: 5000, volumePeriod: 'monthly',
-        effortMinutes: 10, effortHours: minutesToHours(10)   // 0.16666... not 0.1667
-      },
-      {
-        id: crypto.randomUUID(), cl: 'CL9', executions: 100, volumePeriod: 'monthly',
-        effortMinutes: 30, effortHours: minutesToHours(30)   // 0.5
-      },
-      {
-        id: crypto.randomUUID(), cl: 'CL7', executions: 20, volumePeriod: 'daily',
-        effortMinutes: 15, effortHours: minutesToHours(15)   // 0.25
-      }
+      { id: crypto.randomUUID(), cl: 'CL12', executions: 5000, volumePeriod: 'monthly', effortMinutes: 10, effortHours: minutesToHours(10) },
+      { id: crypto.randomUUID(), cl: 'CL9', executions: 100, volumePeriod: 'monthly', effortMinutes: 30, effortHours: minutesToHours(30) },
+      { id: crypto.randomUUID(), cl: 'CL7', executions: 20, volumePeriod: 'daily', effortMinutes: 15, effortHours: minutesToHours(15) }
     ]);
-
     setWorkingDays(22);
     setHoursPerDay(8);
     setAutomationPercent(90);
