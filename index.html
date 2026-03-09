@@ -5,35 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Automation Savings Calculator</title>
     <meta name="description" content="Quantify automation ROI, time recaptured, and dynamic operational savings. Build a data-driven business case in minutes." />
-
-    <!--
-      Content Security Policy — IMPORTANT NOTES FOR MAINTAINERS:
-
-      1. HTML comments CANNOT go inside the content="..." attribute value.
-         They must stay outside the <meta> tag entirely (like this block).
-         The previous version had <!-- ... --> inside content="...", which
-         caused the browser to parse '<!--' as a directive name — an error.
-
-      2. style-src requires 'unsafe-inline' because:
-         - Tailwind injects inline styles at runtime in development.
-         - The Vite production bundle (index-*.js) applies inline styles
-           via JavaScript (the oi() function in compiled output).
-         - Without 'unsafe-inline' in style-src, the built app is visually
-           broken. A nonce-based approach would require server-side rendering
-           support, which this static Vite app does not have.
-
-      3. connect-src must explicitly list every domain this app calls via
-         fetch(). Without it, 'default-src' is used as a fallback, which
-         only allows 'self' and would block all external API calls.
-
-      4. cdn.jsdelivr.net is intentionally absent from script-src.
-         pptxgenjs and xlsx-js-style load via Vite dynamic import() from
-         the local bundle — not from a CDN <script> tag.
-
-      5. Cloudflare Insights (static.cloudflareinsights.com) is intentionally
-         absent. It is injected by the hosting environment. If your host
-         requires it, add it to both script-src and connect-src.
-    -->
     <meta http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.frankfurter.app https://text.pollinations.ai https://api.groq.com https://openrouter.ai https://raw.githubusercontent.com; img-src 'self' data:; font-src 'self'; frame-src 'none'; object-src 'none';"
     />
