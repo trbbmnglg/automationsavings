@@ -6,7 +6,7 @@ export function useExportHandlers({
   challenges, qualitativeBenefits, kpis, formatCurrency,
   setIsExportingXLSX, setIsExportingPPTX
 }) {
- 
+
   const isReadyToExport = useMemo(() => !!(
     toolName.trim() && useCase.trim() &&
     laborBreakdown.some(l => Number(l.executions) > 0 && Number(l.effortHours) > 0) &&
@@ -14,7 +14,7 @@ export function useExportHandlers({
     (isAdvancedRunCost ? Number(results.uiRunCostY1) >= 0 : Number(monthlyRunCost) >= 0)
   ), [toolName, useCase, laborBreakdown, durationMonths, implementationCost,
       isAdvancedRunCost, results.uiRunCostY1, monthlyRunCost]);
-  
+
   const handleExportXLSX = useCallback(async () => {
     if (!isReadyToExport) return;
     setIsExportingXLSX(true);
@@ -187,7 +187,8 @@ export function useExportHandlers({
       setIsExportingPPTX(false);
     }
   }, [
-    isReadyToExport, toolName, useCase, challenges, kpis, results,
+    // FIX: qualitativeBenefits added — was missing, causing stale closure on PPTX export
+    isReadyToExport, toolName, useCase, challenges, qualitativeBenefits, kpis, results,
     formatCurrency, scenario, automationPercent, setIsExportingPPTX
   ]);
 
