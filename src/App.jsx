@@ -13,18 +13,14 @@ import SettingsModal from './components/modals/SettingsModal';
 import SreConfigurationModal from './components/modals/SreConfigurationModal';
 import AdvancedRunCostModal from './components/modals/AdvancedRunCostModal';
 
+// NOTE: The .custom-scrollbar CSS rules have been moved to src/index.css
+// so they are parsed once at load time rather than re-injected on every render.
+
 function AppLayout() {
   const { bgMain, textMain, showClearConfirm, isSettingsOpen, isSreModalOpen, isRunCostModalOpen } = useApp();
   
   return (
     <div className={`min-h-screen ${bgMain} ${textMain} font-sans p-4 md:p-6 lg:p-8 selection:bg-blue-100 transition-colors duration-300`}>
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
-      `}</style>
-      
       <div className="max-w-[1400px] mx-auto space-y-6 relative">
         <Header />
         {showClearConfirm && <ClearConfirmModal />}
