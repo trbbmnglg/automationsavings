@@ -11,10 +11,15 @@ export default function SettingsModal() {
   } = useApp();
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4 transition-opacity">
+    <div 
+      role="dialog" 
+      aria-modal="true" 
+      aria-labelledby="modal-title" 
+      className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4 transition-opacity"
+    >
       <div className={`${isDarkMode ? 'bg-[#1E293B] border-slate-700' : 'bg-white border-slate-100'} rounded-[32px] shadow-2xl w-full max-w-md overflow-hidden border`}>
         <div className={`${isDarkMode ? 'bg-[#0F172A] border-slate-700' : 'bg-slate-50 border-slate-100'} border-b px-6 py-5 flex items-center justify-between`}>
-          <div className="flex items-center space-x-3"><div className="bg-blue-500/20 p-2 rounded-xl text-blue-500"><Settings size={18} /></div><h2 className={`text-xl font-bold ${textHeading}`}>Settings</h2></div>
+          <div className="flex items-center space-x-3"><div className="bg-blue-500/20 p-2 rounded-xl text-blue-500"><Settings size={18} /></div><h2 id="modal-title" className={`text-xl font-bold ${textHeading}`}>Settings</h2></div>
           <button onClick={() => setIsSettingsOpen(false)} className={`${isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-400 hover:text-slate-800 bg-white hover:bg-slate-100 shadow-sm'} p-2 rounded-full transition-colors`}><X size={20} /></button>
         </div>
         <div className="p-6 space-y-8 max-h-[75vh] overflow-y-auto custom-scrollbar">
