@@ -1,6 +1,7 @@
 export function useCurrencyHandlers({
   currency, setCurrency, exchangeRates, implementationCost, setImplementationCost,
-  monthlyRunCost, setMonthlyRunCost, setRunCostBreakdown, currencyConfig
+  monthlyRunCost, setMonthlyRunCost, setRunCostBreakdown, currencyConfig,
+  sreCostY1, setSreCostY1, sreCostY2, setSreCostY2
 }) {
   
   const formatCurrency = (value) => {
@@ -17,14 +18,16 @@ export function useCurrencyHandlers({
     const multiplier = exchangeRates[newCurrency] / exchangeRates[currency];
     if (!isFinite(multiplier) || multiplier === 0) return;
     
-    const newIc = implementationCost === '' ? '' : Number((implementationCost * multiplier).toFixed(0));
-    const newMc = monthlyRunCost === '' ? '' : Number((monthlyRunCost * multiplier).toFixed(2));
+    const convert = (val) => val === '' ? '' : Number((val * multiplier).toFixed(2));
+
+    const newIc = convert(implementationCost);
+    const newMc = convert(monthlyRunCost);
     
     setRunCostBreakdown(prev => {
        const updated = { ...prev };
        Object.keys(updated).forEach(key => {
          if (updated[key].cost !== '') {
-           updated[key].cost = Number((updated[key].cost * multiplier).toFixed(2));
+           updated[key].cost = convert(updated[key].cost);
          }
        });
        return updated;
@@ -32,6 +35,8 @@ export function useCurrencyHandlers({
     
     setImplementationCost(newIc); 
     setMonthlyRunCost(newMc); 
+    setSreCostY1(convert(sreCostY1));
+    setSreCostY2(convert(sreCostY2));
     setCurrency(newCurrency);
   };
 
