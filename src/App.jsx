@@ -47,23 +47,23 @@ const providerOptions = {
 const loadingPromises = {};
 const loadScript = (src, globalName) => {
   if (window[globalName]) return Promise.resolve(window[globalName]);
-  if (loadingPromises[src]) return loadingPromises[src];
+  if (loadingPromises[globalName]) return loadingPromises[globalName];
   
-  loadingPromises[src] = new Promise((resolve, reject) => {
+  loadingPromises[globalName] = new Promise((resolve, reject) => {
     const script = document.createElement('script');
     script.src = src;
     script.onload = () => resolve(window[globalName]);
     script.onerror = () => reject(new Error(`Failed to load ${src}`));
     document.head.appendChild(script);
   });
-  return loadingPromises[src];
+  return loadingPromises[globalName];
 };
 
 // --- Custom Tooltip Component ---
 const Tooltip = ({ text, children }) => (
-  <div className="relative flex items-center group ml-1.5 z-50">
+  <div className="relative flex items-center group ml-1.5 z-[9999]">
     {children}
-    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[240px] p-2.5 bg-slate-800 text-white text-[12px] font-medium rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-[100] text-center shadow-xl leading-relaxed scale-95 group-hover:scale-100 origin-bottom">
+    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[240px] p-2.5 bg-slate-800 text-white text-[12px] font-medium rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-[10000] text-center shadow-xl leading-relaxed scale-95 group-hover:scale-100 origin-bottom">
       {text}
       <div className="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-slate-800"></div>
     </div>
@@ -77,6 +77,7 @@ function useStickyState(defaultValue, key) {
       const stickyValue = window.localStorage.getItem(key);
       return stickyValue !== null ? JSON.parse(stickyValue) : defaultValue;
     } catch (err) {
+      console.warn(`Error reading localStorage key "${key}":`, err);
       return defaultValue;
     }
   });
@@ -84,7 +85,9 @@ function useStickyState(defaultValue, key) {
   useEffect(() => {
     try {
       window.localStorage.setItem(key, JSON.stringify(value));
-    } catch (err) {}
+    } catch (err) {
+      console.warn(`Error setting localStorage key "${key}":`, err);
+    }
   }, [key, value]);
 
   return [value, setValue];
@@ -130,9 +133,10 @@ export default function App() {
   const [ratesStatus, setRatesStatus] = useState('loading'); // 'loading', 'live', 'fallback'
 
   useEffect(() => {
+    const controller = new AbortController();
     const fetchLiveRates = async () => {
       try {
-        const response = await fetch('https://api.frankfurter.app/latest?from=USD');
+        const response = await fetch('https://api.frankfurter.app/latest?from=USD', { signal: controller.signal });
         const data = await response.json();
         if (data && data.rates) {
           setExchangeRates({
@@ -146,11 +150,13 @@ export default function App() {
           setRatesStatus('fallback');
         }
       } catch (error) {
+        if (error.name === 'AbortError') return;
         console.warn('Failed to fetch live exchange rates. Using fallback rates.', error);
         setRatesStatus('fallback');
       }
     };
     fetchLiveRates();
+    return () => controller.abort();
   }, []);
 
   const currencyConfig = {
@@ -176,19 +182,20 @@ export default function App() {
   const [isExportingXLSX, setIsExportingXLSX] = useState(false);
   const [isExportingPPTX, setIsExportingPPTX] = useState(false);
 
-  // Ready state logic to enable/disable exports
+  // Export validation guardrails
   const isReadyToExport = !!(
     toolName.trim() && 
     useCase.trim() && 
     Number(executionsPerMonth) > 0 && 
     Number(durationMonths) > 0 &&
-    Number(resourceCost) > 0 &&
+    Number(resourceCost) >= 0 &&
     Number(effortHours) > 0
   );
 
   // --- AI Config State ---
   const [aiProvider, setAiProvider] = useStickyState('pollinations', 'as_aiProvider');
-  const [aiApiKey, setAiApiKey] = useStickyState('', 'as_aiApiKey');
+  // KEY FIX: API keys should never be persisted in localStorage to prevent token scraping/exposure
+  const [aiApiKey, setAiApiKey] = useState('');
   const [aiModel, setAiModel] = useStickyState(providerOptions['pollinations'].models[0], 'as_aiModel');
 
   const handleProviderChange = (e) => {
@@ -200,17 +207,22 @@ export default function App() {
   const handleCurrencyChange = (newCurrency) => {
     if (newCurrency === currency) return;
     const multiplier = exchangeRates[newCurrency] / exchangeRates[currency];
+    if (!isFinite(multiplier)) return;
     
-    // Safely recalculate avoiding turning empty inputs into "0" strings abruptly
-    setResourceCost(prev => prev === '' ? '' : Number((prev * multiplier).toFixed(2)));
-    setImplementationCost(prev => prev === '' ? '' : Number((prev * multiplier).toFixed(0)));
-    setMonthlyRunCost(prev => prev === '' ? '' : Number((prev * multiplier).toFixed(2)));
-    setSreCostY1(prev => prev === '' ? '' : Number((prev * multiplier).toFixed(2)));
-    setSreCostY2(prev => prev === '' ? '' : Number((prev * multiplier).toFixed(2)));
-    setCurrency(newCurrency);
+    try {
+      setResourceCost(prev => prev === '' ? '' : Number((prev * multiplier).toFixed(2)));
+      setImplementationCost(prev => prev === '' ? '' : Number((prev * multiplier).toFixed(0)));
+      setMonthlyRunCost(prev => prev === '' ? '' : Number((prev * multiplier).toFixed(2)));
+      setSreCostY1(prev => prev === '' ? '' : Number((prev * multiplier).toFixed(2)));
+      setSreCostY2(prev => prev === '' ? '' : Number((prev * multiplier).toFixed(2)));
+      setCurrency(newCurrency);
+    } catch (e) {
+      console.error("Failed to map currency values atomatically:", e);
+    }
   };
 
   const handleGenerateMockData = () => {
+    setCurrency('USD'); // Align to baseline before injecting hardcoded mock dollars
     setToolName('GenWizard Batch Automation');
     setUseCase('Automate manual monitoring of 5000 Control M jobs to resolve delays and missed SLAs.');
     setChallenges('• Scalability for 5000+ jobs\n• Operator fatigue from manual checks\n• Reactive instead of proactive response');
@@ -317,6 +329,7 @@ export default function App() {
       if (paybackMonth === Infinity && cumulativeNet >= 0) {
         let remainder = cumulativeNet;
         let fraction = monthlyNet === 0 ? 0 : 1 - (remainder / monthlyNet);
+        fraction = Math.max(0, Math.min(1, fraction)); // Clamp fraction gracefully
         paybackMonth = m - 1 + fraction;
       }
     }
@@ -333,28 +346,23 @@ export default function App() {
 
     // --- Calculate Automation Score (0-100) ---
     let score = 0;
-    
-    // 1. ROI Contribution (Up to 40 points)
     if (roi >= 200) score += 40;
     else if (roi >= 100) score += 30;
     else if (roi >= 50) score += 20;
     else if (roi > 0) score += 10;
     
-    // 2. Payback Period Contribution (Up to 40 points)
     if (paybackMonth <= 6) score += 40;
     else if (paybackMonth <= 12) score += 30;
     else if (paybackMonth <= 24) score += 20;
     else if (paybackMonth <= 36) score += 10;
     
-    // 3. FTE Savings Contribution (Up to 20 points)
     if (fteSavings >= 2) score += 20;
     else if (fteSavings >= 1) score += 15;
     else if (fteSavings >= 0.5) score += 10;
     else if (fteSavings > 0) score += 5;
 
-    // Cap & Floor
     score = Math.min(100, Math.max(0, score));
-    if (netSave <= 0) score = 0; // Negative ROI zeros out score
+    if (netSave <= 0) score = 0;
 
     let scoreLabel = "";
     let scoreColor = "";
@@ -364,30 +372,15 @@ export default function App() {
     else { scoreLabel = "High Risk / Reject"; scoreColor = "text-red-400"; }
 
     return {
-      effectiveExecutions,
-      currentMonthlyCost,
-      futureMonthlyCostAvg,
-      grossMonthlySave,
-      avgNetMonthlySave,
-      totalGrossSavings: totalGrossSave,
-      totalInvestment,
-      totalRunCost,
-      totalSreCost,
-      netSavings: netSave,
-      roi,
-      paybackPeriod: paybackMonth,
-      hoursSavedMonthly: hoursMonthlySaved,
-      hoursSavedTotal: hoursSavedTotal,
-      fteSavings,
+      effectiveExecutions, currentMonthlyCost, futureMonthlyCostAvg, grossMonthlySave,
+      avgNetMonthlySave, totalGrossSavings: totalGrossSave, totalInvestment, totalRunCost,
+      totalSreCost, netSavings: netSave, roi, paybackPeriod: paybackMonth,
+      hoursSavedMonthly: hoursMonthlySaved, hoursSavedTotal: hoursSavedTotal, fteSavings,
       currentFte: hoursMonthlyCurrent / fteHoursPerMonth,
       toBeFte: Math.max(0, hoursMonthlyCurrent - hoursMonthlySaved) / fteHoursPerMonth,
       totalManualHoursMonthly: hoursMonthlyCurrent,
       remainingManualHoursMonthly: Math.max(0, hoursMonthlyCurrent - hoursMonthlySaved),
-      monthlyData,
-      automationScore: score,
-      scoreLabel,
-      scoreColor,
-      fteHoursPerMonth
+      monthlyData, automationScore: score, scoreLabel, scoreColor, fteHoursPerMonth
     };
   }, [executionsPerMonth, effortHours, resourceCost, automationPercent, durationMonths, implementationCost, monthlyRunCost, runCostInflation, sreCostY1, sreCostY2, volumePeriod, workingDays, hoursPerDay, scenario]);
 
@@ -418,40 +411,22 @@ export default function App() {
       const ws_data = [
         ["", "", "", "", `Quantitative Benefits (${scenarioLabel} Forecast)`, "", "", "", "", ""],
         [
-          "Tool", 
-          "Use Case Description", 
-          "Challenges Addressed", 
-          "Qualitative Benefits", 
-          "# of executions per month", 
-          "average effort per execution in hours", 
-          "average resource cost per hour", 
-          "% of task automated", 
-          "remaining contract/project duration in months", 
-          "Cost Benefit"
+          "Tool", "Use Case Description", "Challenges Addressed", "Qualitative Benefits", 
+          "# of executions per month", "average effort per execution in hours", 
+          "average resource cost per hour", "% of task automated", 
+          "remaining contract/project duration in months", "Cost Benefit"
         ],
         [
-          toolName || 'N/A',
-          useCase || 'N/A',
-          challenges || 'N/A',
-          qualitativeBenefits || 'N/A',
-          results.effectiveExecutions,
-          Number(effortHours).toFixed(2),
-          formatCurrency(resourceCost),
-          `${automationPercent}%`,
-          durationMonths,
-          formatCurrency(results.netSavings)
+          toolName || 'N/A', useCase || 'N/A', challenges || 'N/A', qualitativeBenefits || 'N/A',
+          results.effectiveExecutions, Number(effortHours).toFixed(2), formatCurrency(resourceCost),
+          `${automationPercent}%`, durationMonths, formatCurrency(results.netSavings)
         ]
       ];
 
       const ws = XLSX.utils.aoa_to_sheet(ws_data);
       ws['!merges'] = [{ s: { r: 0, c: 4 }, e: { r: 0, c: 9 } }];
 
-      const headerStyle = {
-        fill: { fgColor: { rgb: "1E40AF" } }, 
-        font: { color: { rgb: "FFFFFF" }, bold: true },
-        alignment: { wrapText: true, vertical: "center", horizontal: "center" }
-      };
-
+      const headerStyle = { fill: { fgColor: { rgb: "1E40AF" } }, font: { color: { rgb: "FFFFFF" }, bold: true }, alignment: { wrapText: true, vertical: "center", horizontal: "center" } };
       const dataStyle = { alignment: { wrapText: true, vertical: "top", horizontal: "left" } };
 
       if (ws['E1']) ws['E1'].s = headerStyle;
@@ -578,15 +553,12 @@ export default function App() {
 
       slide.addText('Capacity Shift (FTEs)', { x: col2X + 0.2, y: colY + 4.3, w: col2W - 0.4, h: 0.3, fontSize: 11, bold: true, color: cTextMuted });
       
-      // Horizontal bar for FTE
       const maxFteW = col2W - 0.6;
       const currentFte = results.currentFte || 1;
       const futureFte = results.toBeFte;
       const futureFteW = (futureFte / currentFte) * maxFteW;
       
-      // Background bar (Current)
       slide.addShape(pptx.shapes.RECTANGLE, { x: col2X + 0.3, y: colY + 4.7, w: maxFteW, h: 0.3, fill: { color: 'E2E8F0' } });
-      // Foreground bar (Future)
       slide.addShape(pptx.shapes.RECTANGLE, { x: col2X + 0.3, y: colY + 4.7, w: Math.max(futureFteW, 0.05), h: 0.3, fill: { color: accentColor } });
       slide.addText(`${results.currentFte.toFixed(1)} FTEs As-Is`, { x: col2X + 0.3, y: colY + 4.7, w: maxFteW, h: 0.3, fontSize: 9, color: cTextMuted, align: 'right', valign: 'middle', pr: 0.1 });
 
@@ -633,17 +605,24 @@ export default function App() {
     for (let i = 0; i < delays.length; i++) {
       try {
         const response = await fetch(url, options);
-        const responseText = await response.text();
-        if (!response.ok) throw new Error(`HTTP ${response.status}: ${responseText}`);
-        return JSON.parse(responseText);
+        if (!response.ok) {
+           if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+              const text = await response.text();
+              throw new Error(`HTTP ${response.status}: ${text}`);
+           }
+           throw new Error(`HTTP ${response.status}`);
+        }
+        const textResponse = await response.text();
+        return JSON.parse(textResponse);
       } catch (error) {
-        if (i === delays.length - 1) throw error;
+        if (i === delays.length - 1 || (error.message.includes('HTTP 4') && !error.message.includes('429'))) throw error;
         await new Promise(resolve => setTimeout(resolve, delays[i]));
       }
     }
   };
 
-  const sanitizeStr = (str, limit = 400) => (str || '').substring(0, limit).replace(/[{}]/g, '');
+  // Defend against arbitrary prompt jailbreaks
+  const sanitizeStr = (str, limit = 400) => (str || '').substring(0, limit).replace(/[{}<>]/g, '').replace(/[\r\n]+/g, ' ');
 
   const callAI = async (prompt) => {
     if (providerOptions[aiProvider].needsKey && !aiApiKey.trim()) throw new Error(`Please provide an API key in AI Settings.`);
@@ -662,7 +641,7 @@ export default function App() {
   const generateAIPitch = async () => {
     setIsGenerating(true);
     const prompt = `Act as a professional business analyst. Write a persuasive, general business case pitch for an automation project.
-    Details: Tool Name: ${sanitizeStr(toolName) || 'Proposed Automation'} | Use Case: ${sanitizeStr(useCase) || 'N/A'} | Scenario: ${scenario.charAt(0).toUpperCase() + scenario.slice(1)} Forecast
+    Details: Tool Name: ${sanitizeStr(toolName)} | Use Case: ${sanitizeStr(useCase)} | Scenario: ${scenario.charAt(0).toUpperCase() + scenario.slice(1)} Forecast
     Financials: Lifetime Net Savings: ${formatCurrency(results.netSavings)} over ${durationMonths} months | ROI: ${Math.round(results.roi)}% | Automation Viability Score: ${results.automationScore}/100 (${results.scoreLabel})
     Write a compelling executive summary (2-3 paragraphs). Do NOT include greetings. Use standard plain text formatting.`;
     try {
@@ -742,6 +721,13 @@ export default function App() {
 
   return (
     <div className={`min-h-screen ${bgMain} ${textMain} font-sans p-4 md:p-6 lg:p-8 selection:bg-blue-100 transition-colors duration-300`}>
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
+      `}</style>
+      
       <div className="max-w-[1400px] mx-auto space-y-6">
         
         {/* Header */}
@@ -876,7 +862,7 @@ export default function App() {
                     {providerOptions[aiProvider].needsKey && (
                       <div>
                         <label className={`block text-sm font-bold ${textMain} mb-2`}>API Key</label>
-                        <input type="password" value={aiApiKey} onChange={(e) => setAiApiKey(e.target.value)} placeholder="Paste your API key here..." className={`${inputStyle} font-mono`} />
+                        <input type="password" value={aiApiKey} onChange={(e) => setAiApiKey(e.target.value)} placeholder="Enter API key..." className={`${inputStyle} font-mono`} />
                         {providerOptions[aiProvider].url && (<a href={providerOptions[aiProvider].url} target="_blank" rel="noreferrer" className="inline-flex items-center mt-2 text-xs font-bold text-blue-500 hover:text-blue-400">Get your free key <ExternalLink size={12} className="ml-1" /></a>)}
                       </div>
                     )}
@@ -1000,7 +986,7 @@ export default function App() {
                   </label>
                   <div className="flex space-x-3">
                     <div className="relative flex-1">
-                      <input type="number" value={effortHours !== '' ? Math.round(effortHours * 60) : ''} onChange={handleMinutesChange} placeholder="0" className={`${effortHours !== '' && effortHours < 0 ? inputErrorStyle : inputStyle} pr-12 font-mono text-lg`} />
+                      <input type="number" value={effortHours !== '' ? (effortHours * 60).toFixed(0) : ''} onChange={handleMinutesChange} placeholder="0" className={`${effortHours !== '' && effortHours < 0 ? inputErrorStyle : inputStyle} pr-12 font-mono text-lg`} />
                       <span className={`absolute inset-y-0 right-0 pr-4 flex items-center ${textSub} font-bold text-xs pointer-events-none`}>MIN</span>
                     </div>
                     <div className="relative flex-1">
@@ -1449,12 +1435,6 @@ export default function App() {
           </div>
         </div>
       </div>
-      <style dangerouslySetInnerHTML={{__html: `
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
-      `}} />
     </div>
   );
 }
