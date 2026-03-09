@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, Briefcase, Info, Plus, Trash2, Wrench, Coins, TrendingUp, Check } from 'lucide-react';
+import { Activity, Briefcase, Info, Plus, Trash2, Wrench, Coins, TrendingUp, Check, Calculator } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import Tooltip from './Tooltip';
 
