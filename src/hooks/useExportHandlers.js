@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useCallback } from 'react';
 
 export function useExportHandlers({
   toolName, useCase, laborBreakdown, durationMonths, implementationCost,
@@ -6,14 +6,15 @@ export function useExportHandlers({
   challenges, qualitativeBenefits, kpis, formatCurrency,
   setIsExportingXLSX, setIsExportingPPTX
 }) {
-
-  const isReadyToExport = !!(
+ 
+  const isReadyToExport = useMemo(() => !!(
     toolName.trim() && useCase.trim() &&
     laborBreakdown.some(l => Number(l.executions) > 0 && Number(l.effortHours) > 0) &&
     Number(durationMonths) > 0 && Number(implementationCost) >= 0 &&
     (isAdvancedRunCost ? Number(results.uiRunCostY1) >= 0 : Number(monthlyRunCost) >= 0)
-  );
-
+  ), [toolName, useCase, laborBreakdown, durationMonths, implementationCost,
+      isAdvancedRunCost, results.uiRunCostY1, monthlyRunCost]);
+  
   const handleExportXLSX = useCallback(async () => {
     if (!isReadyToExport) return;
     setIsExportingXLSX(true);
