@@ -5,10 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Automation Savings Calculator</title>
     <meta name="description" content="Quantify automation ROI, time recaptured, and dynamic operational savings. Build a data-driven business case in minutes." />
+    <!-- ✅ Add a comment to document the intentional exclusion,
+     preventing future developers from being confused by CDN blocks -->
     <meta http-equiv="Content-Security-Policy"
       content="
         default-src 'self';
         script-src 'self' 'unsafe-inline';
+        <!-- cdn.jsdelivr.net intentionally excluded:
+             pptxgenjs and xlsx-js-style are bundled via Vite import(),
+             not loaded from CDN. Add here only if CDN scripts are reintroduced. -->
         connect-src 'self'
           https://api.frankfurter.app
           https://text.pollinations.ai
