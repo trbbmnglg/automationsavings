@@ -22,7 +22,7 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['"Aptos Display"', 'system-ui', 'sans-serif'],
+        sans: ['"Aptos Display"', 'Inter', 'system-ui', 'sans-serif'],
       }
     },
   },
