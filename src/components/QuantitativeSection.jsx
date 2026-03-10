@@ -147,14 +147,14 @@ export default function QuantitativeSection() {
                       <input type="number" value={Number(results.uiRunCostY1).toFixed(2)} disabled placeholder="0" className={`w-full px-2 py-2 ${isDarkMode ? 'bg-[#0F172A] border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-800'} border rounded-xl outline-none text-xs font-mono pl-7 transition-colors disabled:opacity-60 disabled:bg-slate-100 dark:disabled:bg-slate-800`} />
                     </div>
                   </div>
-                  {/* FIX: bottom row — items on one line, no wrapping */}
-                  <div className={`pt-2 border-t ${isDarkMode ? 'border-indigo-900/50' : 'border-indigo-200'} flex items-center justify-between gap-2`}>
-                    <span className={`text-[10px] font-bold ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'} flex items-center gap-1 whitespace-nowrap`}>
-                      <Check size={11} /> Adv. Active
+                  {/* FIX: stacked vertically to prevent button overflow in narrow card */}
+                  <div className={`pt-2 border-t ${isDarkMode ? 'border-indigo-900/50' : 'border-indigo-200'} flex flex-col gap-2`}>
+                    <span className={`text-[10px] font-bold ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'} flex items-center gap-1`}>
+                      <Check size={11} /> Advanced Config Active
                     </span>
                     <button
                       onClick={() => setIsRunCostModalOpen(true)}
-                      className={`text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-sm transition-colors whitespace-nowrap ${isDarkMode ? 'bg-slate-700 text-slate-200 hover:bg-slate-600' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}
+                      className={`w-full text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-sm transition-colors ${isDarkMode ? 'bg-slate-700 text-slate-200 hover:bg-slate-600' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}
                     >
                       Edit Advanced
                     </button>
