@@ -104,7 +104,10 @@ export function useExportHandlers({
       const slide = pptx.addSlide();
 
       // FIX: Viability score badge is always green regardless of score value
-      const scoreColor = '10B981';
+      let scoreColor = '10B981';
+      if (results.automationScore < 80 && results.automationScore >= 60) scoreColor = '3B82F6';
+      if (results.automationScore < 60 && results.automationScore >= 40) scoreColor = 'F59E0B';
+      if (results.automationScore < 40) scoreColor = 'EF4444';
 
       const cTheme = '7C3AED';
       const cBg = 'F8FAFC';
