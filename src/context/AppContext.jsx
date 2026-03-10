@@ -9,7 +9,7 @@ import { DEFAULT_LCR, providerOptions, currencyConfig, DEFAULT_WORKING_DAYS, DEF
 
 const AppContext = createContext(null);
 export const useApp = () => useContext(AppContext);
-export const useAppContext = () => useContext(AppContext); // alias for SettingsModal compatibility
+export const useAppContext = () => useContext(AppContext);
 
 const createDefaultLabor = () => [{ id: crypto.randomUUID(), cl: 'CL12', executions: '', volumePeriod: 'monthly', effortMinutes: '', effortHours: '' }];
 const createDefaultSre = () => [{ id: crypto.randomUUID(), cl: 'CL9', tasksPerMonth: '', effortMinutes: '', effortHours: '', y2Reduction: 50 }];
@@ -54,7 +54,7 @@ export function AppProvider({ children }) {
   const [workingDays, setWorkingDays] = useStickyState(DEFAULT_WORKING_DAYS, 'as_workingDays');
   const [hoursPerDay, setHoursPerDay] = useStickyState(DEFAULT_HOURS_PER_DAY, 'as_hoursPerDay');
   const [isDarkMode, setIsDarkMode] = useStickyState(false, 'as_theme_dark');
-  const [themeColor, setThemeColor] = useStickyState('default', 'as_themeColor'); // NEW: theme color state
+  const [themeColor, setThemeColor] = useStickyState('default', 'as_themeColor');
   const [exchangeRates, setExchangeRates] = useState({ USD: 1, PHP: 56.5, EUR: 0.92, JPY: 150.5 });
   const [ratesStatus, setRatesStatus] = useState('loading');
   const [copied, setCopied] = useState(false);
@@ -70,17 +70,15 @@ export function AppProvider({ children }) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSreModalOpen, setIsSreModalOpen] = useState(false);
   const [isRunCostModalOpen, setIsRunCostModalOpen] = useState(false);
+  const [isMonthlyBreakdownOpen, setIsMonthlyBreakdownOpen] = useState(false); // NEW
   const [isExportingXLSX, setIsExportingXLSX] = useState(false);
   const [isExportingPPTX, setIsExportingPPTX] = useState(false);
   const [aiProvider, setAiProvider] = useStickyState('pollinations', 'as_aiProvider');
-  // SECURITY: API key must NEVER use useStickyState — it must never touch localStorage.
   const [aiApiKey, setAiApiKey] = useState('');
   const [aiModel, setAiModel] = useStickyState(providerOptions['pollinations'].models[0], 'as_aiModel');
 
-  // --- Network Effects ---
   useEffect(() => {
     const controller = new AbortController();
-
     const fetchLiveRates = async () => {
       try {
         const response = await fetch('https://api.frankfurter.app/latest?from=USD', { signal: controller.signal });
@@ -100,7 +98,6 @@ export function AppProvider({ children }) {
         if (error.name !== 'AbortError') setRatesStatus('fallback');
       }
     };
-
     const fetchRemoteLcr = async () => {
       try {
         const response = await fetch(
@@ -120,13 +117,11 @@ export function AppProvider({ children }) {
         }
       }
     };
-
     fetchLiveRates();
     fetchRemoteLcr();
     return () => controller.abort();
   }, []);
 
-  // --- Compose Hooks ---
   const results = useCalculationEngine({
     laborBreakdown, automationPercent, durationMonths, implementationCost,
     monthlyRunCost, runCostInflation, isAdvancedRunCost, runCostBreakdown,
@@ -160,7 +155,6 @@ export function AppProvider({ children }) {
     setIsExportingXLSX, setIsExportingPPTX
   });
 
-  // FIXED: pass themeColor as second argument — no more circular AppContext import in useTheme
   const themeStyles = useTheme(isDarkMode, themeColor);
 
   const handleProviderChange = useCallback((e) => {
@@ -326,10 +320,11 @@ export function AppProvider({ children }) {
     sreCostY1, setSreCostY1, sreCostY2, setSreCostY2,
     sreBreakdown, setSreBreakdown, sreUseCase, setSreUseCase,
     isSreModalOpen, setIsSreModalOpen, isRunCostModalOpen, setIsRunCostModalOpen,
+    isMonthlyBreakdownOpen, setIsMonthlyBreakdownOpen, // NEW
     currency, setCurrency, scenario, setScenario,
     workingDays, setWorkingDays, hoursPerDay, setHoursPerDay,
     isDarkMode, setIsDarkMode,
-    themeColor, setThemeColor, // NEW: exposed to context
+    themeColor, setThemeColor,
     exchangeRates, ratesStatus,
     copied, setCopied,
     aiPitch, setAiPitch,
