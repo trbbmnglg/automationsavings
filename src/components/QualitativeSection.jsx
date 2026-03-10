@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { FileText, Sparkles, Loader2, Cpu, Info, BarChart3, Target, Award } from 'lucide-react';
+import { FileText, Sparkles, Loader2, Cpu, Info, BarChart3, Target, Award, ShieldAlert, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import Tooltip from './Tooltip';
 import AIConfirmModal from './modals/AIConfirmModal';
 
-// AI badge now amber to match the Auto-Fill button color
 function AiBadge() {
   return (
     <span className="ml-2 inline-flex items-center space-x-1 px-2 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-600 dark:border-amber-700/60 dark:bg-amber-900/20 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider shadow-sm">
@@ -13,12 +12,19 @@ function AiBadge() {
   );
 }
 
+const CATEGORY_ICON = {
+  prompt_injection: '🚫',
+  pii: '🔒',
+  xss: '⚠️',
+};
+
 export default function QualitativeSection() {
   const { 
     cardStyle, borderMuted, isDarkMode, textHeading, panelBg, textMain, textSub, inputStyle, 
     toolName, setToolName, useCase, setUseCase, kpis, setKpis, challenges, setChallenges, 
     qualitativeBenefits, setQualitativeBenefits, isGeneratingSuggestions, generateSuggestions,
-    aiGeneratedFields, setAiGeneratedFields
+    aiGeneratedFields, setAiGeneratedFields,
+    securityError, setSecurityError
   } = useApp();
 
   const [showAIConfirm, setShowAIConfirm] = useState(false);
@@ -33,10 +39,13 @@ export default function QualitativeSection() {
     if (aiGeneratedFields[field]) {
       setAiGeneratedFields(prev => ({ ...prev, [field]: false }));
     }
+    // Clear security error when user edits fields
+    if (securityError) setSecurityError(null);
   };
 
   const handleAutoFillClick = () => {
     if (!toolName && !useCase) return;
+    setSecurityError(null);
     setShowAIConfirm(true);
   };
 
@@ -45,14 +54,10 @@ export default function QualitativeSection() {
     generateSuggestions();
   };
 
-  const handleCancel = () => {
-    setShowAIConfirm(false);
-  };
-
   return (
     <>
       {showAIConfirm && (
-        <AIConfirmModal onConfirm={handleConfirm} onCancel={handleCancel} />
+        <AIConfirmModal onConfirm={handleConfirm} onCancel={() => setShowAIConfirm(false)} />
       )}
 
       <section className={cardStyle}>
@@ -76,8 +81,36 @@ export default function QualitativeSection() {
         </div>
 
         <div className={`p-6 md:p-8 space-y-5 ${panelBg} rounded-b-[28px]`}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
+          {/* Security Error Banner */}
+          {securityError && (
+            <div className={`flex items-start gap-3 p-4 rounded-2xl border ${
+              isDarkMode
+                ? 'bg-red-950/30 border-red-900/50 text-red-300'
+                : 'bg-red-50 border-red-200 text-red-800'
+            }`}>
+              <div className="shrink-0 mt-0.5">
+                <ShieldAlert size={18} className="text-red-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-extrabold uppercase tracking-widest mb-1 text-red-500">
+                  {CATEGORY_ICON[securityError.category]} AI Feature Blocked
+                  {securityError.field && <span className="ml-2 font-bold normal-case tracking-normal opacity-80">— detected in: {securityError.field}</span>}
+                </div>
+                <p className={`text-sm font-medium leading-relaxed ${isDarkMode ? 'text-red-300' : 'text-red-700'}`}>
+                  {securityError.reason}
+                </p>
+              </div>
+              <button
+                onClick={() => setSecurityError(null)}
+                className={`shrink-0 p-1 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-red-900/40 text-red-400' : 'hover:bg-red-100 text-red-500'}`}
+              >
+                <X size={15} />
+              </button>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="md:col-span-2">
               <label className={`flex items-center text-sm font-bold ${textMain} mb-2`}>
                 Automation Name
@@ -90,7 +123,7 @@ export default function QualitativeSection() {
                 <input
                   type="text"
                   value={toolName}
-                  onChange={(e) => setToolName(e.target.value)}
+                  onChange={(e) => { setToolName(e.target.value); if (securityError) setSecurityError(null); }}
                   placeholder="e.g., Ticket Auto-Triage Bot"
                   className={`${inputStyle} pl-12 font-medium`}
                 />
@@ -106,7 +139,7 @@ export default function QualitativeSection() {
               </label>
               <textarea
                 value={useCase}
-                onChange={(e) => setUseCase(e.target.value)}
+                onChange={(e) => { setUseCase(e.target.value); if (securityError) setSecurityError(null); }}
                 rows={2}
                 placeholder="Briefly describe what the automation does..."
                 className={`${inputStyle} resize-none font-medium`}
@@ -166,7 +199,6 @@ export default function QualitativeSection() {
                 className={`${getFieldStyle(aiGeneratedFields.benefits)} resize-none text-sm font-medium`}
               />
             </div>
-
           </div>
         </div>
       </section>
