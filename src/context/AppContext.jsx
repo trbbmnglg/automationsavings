@@ -1,6 +1,5 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext } from 'react';
 import { useStickyState } from '../hooks/useStickyState';
-import { defaultConfig } from '../constants/config';
 
 export const AppContext = createContext();
 
@@ -28,7 +27,11 @@ export function AppProvider({ children }) {
     mttrHours: 1
   }, 'savings-calc-future-metrics');
 
-  const [sreConfig, setSreConfig] = useStickyState(defaultConfig, 'savings-calc-sre-config');
+  const [sreConfig, setSreConfig] = useStickyState({
+    hourlyRate: 75,
+    hoursPerYear: 2080,
+    benefitsMultiplier: 1.3
+  }, 'savings-calc-sre-config');
 
   const value = {
     isDarkMode,
