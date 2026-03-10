@@ -9,6 +9,7 @@ import { DEFAULT_LCR, providerOptions, currencyConfig, DEFAULT_WORKING_DAYS, DEF
 
 const AppContext = createContext(null);
 export const useApp = () => useContext(AppContext);
+export const useAppContext = () => useContext(AppContext); // alias for SettingsModal compatibility
 
 const createDefaultLabor = () => [{ id: crypto.randomUUID(), cl: 'CL12', executions: '', volumePeriod: 'monthly', effortMinutes: '', effortHours: '' }];
 const createDefaultSre = () => [{ id: crypto.randomUUID(), cl: 'CL9', tasksPerMonth: '', effortMinutes: '', effortHours: '', y2Reduction: 50 }];
@@ -53,6 +54,7 @@ export function AppProvider({ children }) {
   const [workingDays, setWorkingDays] = useStickyState(DEFAULT_WORKING_DAYS, 'as_workingDays');
   const [hoursPerDay, setHoursPerDay] = useStickyState(DEFAULT_HOURS_PER_DAY, 'as_hoursPerDay');
   const [isDarkMode, setIsDarkMode] = useStickyState(false, 'as_theme_dark');
+  const [themeColor, setThemeColor] = useStickyState('default', 'as_themeColor'); // NEW: theme color state
   const [exchangeRates, setExchangeRates] = useState({ USD: 1, PHP: 56.5, EUR: 0.92, JPY: 150.5 });
   const [ratesStatus, setRatesStatus] = useState('loading');
   const [copied, setCopied] = useState(false);
@@ -158,7 +160,8 @@ export function AppProvider({ children }) {
     setIsExportingXLSX, setIsExportingPPTX
   });
 
-  const themeStyles = useTheme(isDarkMode);
+  // FIXED: pass themeColor as second argument — no more circular AppContext import in useTheme
+  const themeStyles = useTheme(isDarkMode, themeColor);
 
   const handleProviderChange = useCallback((e) => {
     const newProvider = e.target.value;
@@ -215,8 +218,6 @@ export function AppProvider({ children }) {
   const updateRunCostBreakdown = (category, field, value) =>
     setRunCostBreakdown(prev => ({ ...prev, [category]: { ...prev[category], [field]: value } }));
 
-  // FIX: Wrapped in useCallback — was creating a new function reference on every render,
-  // causing Header to re-render unnecessarily on every keystroke in any input field.
   const handleGenerateMockData = useCallback(() => {
     setCurrency('USD');
     setToolName('GenWizard Batch Automation');
@@ -260,8 +261,6 @@ export function AppProvider({ children }) {
     setAiPitch, setRoiInsights, setAiGeneratedFields
   ]);
 
-  // FIX: Wrapped in useCallback — was creating a new function reference on every render,
-  // causing ClearConfirmModal to re-render unnecessarily on every keystroke.
   const handleClearAll = useCallback(() => {
     setToolName(''); setUseCase(''); setChallenges(''); setQualitativeBenefits(''); setKpis('');
     setLaborBreakdown(createDefaultLabor());
@@ -330,6 +329,7 @@ export function AppProvider({ children }) {
     currency, setCurrency, scenario, setScenario,
     workingDays, setWorkingDays, hoursPerDay, setHoursPerDay,
     isDarkMode, setIsDarkMode,
+    themeColor, setThemeColor, // NEW: exposed to context
     exchangeRates, ratesStatus,
     copied, setCopied,
     aiPitch, setAiPitch,
