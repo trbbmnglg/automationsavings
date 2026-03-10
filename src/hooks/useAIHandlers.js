@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { fetchWithRetry, sanitizeStr } from '../utils/aiUtils';
+import { fetchWithRetry, sanitizeForAI } from '../utils/aiUtils';
 
 export function useAIHandlers({
   aiProvider, aiApiKey, aiModel, providerOptions, toolName, useCase, scenario, durationMonths,
@@ -9,12 +9,9 @@ export function useAIHandlers({
   setIsGeneratingSreUseCase, setSreUseCase
 }) {
 
-  // BUG 1 FIX: Corrected URL strings (removed markdown link syntax)
-  // BUG 2 FIX: Wrapped in useCallback so the function reference is stable
-  //            across re-renders, preventing unnecessary context re-renders.
   const callAIWrapper = useCallback(async (prompt) => {
     if (providerOptions[aiProvider].needsKey && !aiApiKey.trim()) {
-      throw new Error(`Please provide an API key in AI Settings.`);
+      throw new Error('Please provide an API key in AI Settings.');
     }
 
     if (aiProvider === 'pollinations') {
@@ -26,8 +23,6 @@ export function useAIHandlers({
       if (!res.ok) throw new Error('Pollinations API error');
       return await res.text();
     } else {
-      // BUG 1 FIX: These were previously broken markdown-style links.
-      // They are now plain URL strings that fetch() can actually use.
       const url = aiProvider === 'groq'
         ? 'https://api.groq.com/openai/v1/chat/completions'
         : 'https://openrouter.ai/api/v1/chat/completions';
@@ -45,12 +40,10 @@ export function useAIHandlers({
     }
   }, [aiProvider, aiApiKey, aiModel, providerOptions]);
 
-  // BUG 2 FIX: Each generator is wrapped in useCallback with explicit dependencies.
-  // This ensures the function reference only changes when its actual inputs change,
-  // not on every render of AppProvider.
+  // Uses sanitizeForAI — strips financial figures before sending to provider
   const generateAIPitch = useCallback(async () => {
     setIsGenerating(true);
-    const prompt = `Act as a professional business analyst. Write a persuasive, general business case pitch for an automation project. Details: Tool Name: """${sanitizeStr(toolName)}""" | Use Case: """${sanitizeStr(useCase)}""" | Scenario: ${scenario.charAt(0).toUpperCase() + scenario.slice(1)} Forecast. Financials: Lifetime Net Savings: ${formatCurrency(results.netSavings)} over ${durationMonths} months | ROI: ${Math.round(results.roi)}%. Write a compelling executive summary (2-3 paragraphs). Do NOT include greetings.`;
+    const prompt = `Act as a professional business analyst. Write a persuasive, general business case pitch for an automation project. Details: Tool Name: """${sanitizeForAI(toolName)}""" | Use Case: """${sanitizeForAI(useCase)}""" | Scenario: ${scenario.charAt(0).toUpperCase() + scenario.slice(1)} Forecast. Financials: Lifetime Net Savings: ${formatCurrency(results.netSavings)} over ${durationMonths} months | ROI: ${Math.round(results.roi)}%. Write a compelling executive summary (2-3 paragraphs). Do NOT include greetings.`;
     try {
       const text = await callAIWrapper(prompt);
       if (text) setAiPitch(text.trim());
@@ -64,7 +57,8 @@ export function useAIHandlers({
   const generateSuggestions = useCallback(async () => {
     if (!toolName && !useCase) return;
     setIsGeneratingSuggestions(true);
-    const prompt = `Based on Tool Name: """${sanitizeStr(toolName)}""" and Use Case: """${sanitizeStr(useCase)}""", return ONLY a valid JSON object exactly matching this structure: {"kpis": ["..."], "challenges": ["..."], "benefits": ["..."]}. Do NOT include markdown backticks. Escape all internal quotes.`;
+    // sanitizeForAI used — only tool name & use case sent, no financial data
+    const prompt = `Based on Tool Name: """${sanitizeForAI(toolName)}""" and Use Case: """${sanitizeForAI(useCase)}""", return ONLY a valid JSON object exactly matching this structure: {"kpis": ["..."], "challenges": ["..."], "benefits": ["..."]}. Do NOT include markdown backticks. Escape all internal quotes.`;
     try {
       const text = await callAIWrapper(prompt);
       let cleanText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
@@ -88,6 +82,7 @@ export function useAIHandlers({
 
   const generateROIInsights = useCallback(async () => {
     setIsGeneratingInsights(true);
+    // Only computed metrics sent — no raw user text
     const prompt = `Act as a financial strategist. Analyze these metrics: Net Savings: ${formatCurrency(results.netSavings)}, ROI: ${Math.round(results.roi)}%, Payback: ${results.paybackPeriod.toFixed(1)} mo. Provide 2-3 brief, actionable bullet points to improve ROI. Use simple dashes for bullets, no bold markdown.`;
     try {
       const text = await callAIWrapper(prompt);
@@ -101,8 +96,8 @@ export function useAIHandlers({
 
   const generateSreUseCase = useCallback(async () => {
     setIsGeneratingSreUseCase(true);
-    const tName = toolName?.trim() ? sanitizeStr(toolName) : 'this enterprise automation system';
-    const uCase = useCase?.trim() ? sanitizeStr(useCase) : 'standard automated workflows';
+    const tName = toolName?.trim() ? sanitizeForAI(toolName) : 'this enterprise automation system';
+    const uCase = useCase?.trim() ? sanitizeForAI(useCase) : 'standard automated workflows';
     const prompt = `Based on the automation tool named """${tName}""" and use case """${uCase}""", generate 2 very short, simple bullet points (maximum 5-8 words per point) justifying the need for ongoing SRE/maintenance. Keep it extremely brief. Start each point with '• '. Return ONLY the text without markdown formatting or quotes.`;
     try {
       const text = await callAIWrapper(prompt);
