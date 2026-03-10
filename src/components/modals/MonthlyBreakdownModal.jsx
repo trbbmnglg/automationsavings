@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { X, Download, TrendingUp, TrendingDown, Minus, ChevronLeft, ChevronRight, BarChart3 } from 'lucide-react';
+import { X, Download, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, BarChart3 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
 const ROWS_PER_PAGE = 12;
@@ -10,7 +10,6 @@ export default function MonthlyBreakdownModal() {
     results, formatCurrency, toolName, scenario, durationMonths
   } = useApp();
 
-  const tableRef = useRef(null);
   const [page, setPage] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -24,130 +23,191 @@ export default function MonthlyBreakdownModal() {
     conservative: isDarkMode ? 'text-amber-400' : 'text-amber-600',
   }[scenario] || 'text-blue-400';
 
-  // Summary stats
   const totalGross = data.reduce((s, r) => s + r.grossSavings, 0);
   const totalRun = data.reduce((s, r) => s + r.runCost, 0);
   const totalSre = data.reduce((s, r) => s + r.sreCost, 0);
+  const totalNet = data.reduce((s, r) => s + r.netCashFlow, 0);
   const finalCumulative = data[data.length - 1]?.cumulativeNet ?? 0;
   const implCost = results.monthlyData[0]?.implementationCost ?? 0;
 
-  const handleExportPNG = async () => {
+  const handleExportXLSX = async () => {
     setIsExporting(true);
     try {
-      // Dynamically import html2canvas-like approach using canvas
-      const node = tableRef.current;
-      if (!node) return;
+      const xlsxModule = await import('xlsx-js-style');
+      const XLSX = xlsxModule.default || xlsxModule;
 
-      // Use the browser's built-in print/screenshot via a hidden iframe with full table
-      const allRows = results.monthlyData.slice(1);
+      const wb = XLSX.utils.book_new();
 
-      const bg = isDarkMode ? '#1E293B' : '#FFFFFF';
-      const textColor = isDarkMode ? '#E2E8F0' : '#0F172A';
-      const mutedColor = isDarkMode ? '#64748B' : '#94A3B8';
-      const borderColor = isDarkMode ? '#334155' : '#E2E8F0';
-      const headerBg = isDarkMode ? '#0F172A' : '#F8FAFC';
-      const posColor = '#10B981';
-      const negColor = '#EF4444';
-      const accentColor = isDarkMode ? '#3B82F6' : '#2563EB';
+      // --- Styles ---
+      const headerStyle = {
+        fill: { fgColor: { rgb: '1E3A8A' } },
+        font: { color: { rgb: 'FFFFFF' }, bold: true, sz: 11 },
+        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+        border: { bottom: { style: 'medium', color: { rgb: '3B82F6' } } }
+      };
+      const subHeaderStyle = {
+        fill: { fgColor: { rgb: '1E40AF' } },
+        font: { color: { rgb: 'DBEAFE' }, bold: true, sz: 10 },
+        alignment: { horizontal: 'center', vertical: 'center' }
+      };
+      const numStyle = (color = '0F172A', bold = false) => ({
+        font: { color: { rgb: color }, bold, sz: 10 },
+        alignment: { horizontal: 'right', vertical: 'center' },
+        border: { bottom: { style: 'thin', color: { rgb: 'E2E8F0' } } }
+      });
+      const centerStyle = (color = '64748B', bold = false) => ({
+        font: { color: { rgb: color }, bold, sz: 10 },
+        alignment: { horizontal: 'center', vertical: 'center' },
+        border: { bottom: { style: 'thin', color: { rgb: 'E2E8F0' } } }
+      });
+      const totalStyle = (color = '0F172A') => ({
+        fill: { fgColor: { rgb: 'EFF6FF' } },
+        font: { color: { rgb: color }, bold: true, sz: 11 },
+        alignment: { horizontal: 'right', vertical: 'center' },
+        border: {
+          top: { style: 'medium', color: { rgb: '3B82F6' } },
+          bottom: { style: 'medium', color: { rgb: '3B82F6' } }
+        }
+      });
+      const paybackStyle = {
+        fill: { fgColor: { rgb: 'D1FAE5' } },
+        font: { color: { rgb: '065F46' }, bold: true, sz: 10 },
+        alignment: { horizontal: 'right', vertical: 'center' },
+        border: { bottom: { style: 'thin', color: { rgb: 'A7F3D0' } } }
+      };
 
-      const rowsHtml = allRows.map((row, i) => {
-        const net = row.netCashFlow;
-        const cum = row.cumulativeNet;
-        const netColor = net >= 0 ? posColor : negColor;
-        const cumColor = cum >= 0 ? posColor : negColor;
-        const rowBg = i % 2 === 0 ? (isDarkMode ? '#1E293B' : '#FFFFFF') : (isDarkMode ? '#162032' : '#F8FAFC');
-        return `
-          <tr style="background:${rowBg}">
-            <td style="padding:8px 12px;text-align:center;font-weight:700;color:${mutedColor};border-bottom:1px solid ${borderColor}">${row.month}</td>
-            <td style="padding:8px 12px;text-align:center;color:${mutedColor};border-bottom:1px solid ${borderColor}">Y${row.year}</td>
-            <td style="padding:8px 12px;text-align:right;color:${posColor};font-weight:600;border-bottom:1px solid ${borderColor}">${formatCurrency(row.grossSavings)}</td>
-            <td style="padding:8px 12px;text-align:right;color:${mutedColor};border-bottom:1px solid ${borderColor}">${formatCurrency(row.runCost)}</td>
-            <td style="padding:8px 12px;text-align:right;color:${mutedColor};border-bottom:1px solid ${borderColor}">${formatCurrency(row.sreCost)}</td>
-            <td style="padding:8px 12px;text-align:right;font-weight:700;color:${netColor};border-bottom:1px solid ${borderColor}">${formatCurrency(net)}</td>
-            <td style="padding:8px 12px;text-align:right;font-weight:800;color:${cumColor};border-bottom:1px solid ${borderColor}">${formatCurrency(cum)}</td>
-          </tr>`;
-      }).join('');
+      // --- Sheet 1: Monthly Breakdown ---
+      const scenarioLabel = scenario.charAt(0).toUpperCase() + scenario.slice(1);
+      const titleRow = [`Monthly Cash Flow — ${toolName || 'Automation Project'} | ${scenarioLabel} Scenario | ${durationMonths} Months`];
+      const blankRow = [''];
+      const colHeaders = ['Month', 'Year', 'Gross Savings', 'Run Cost', 'SRE Cost', 'Net Cash Flow', 'Cumulative Net'];
 
-      const html = `
-        <html>
-        <head>
-          <meta charset="UTF-8"/>
-          <style>
-            * { box-sizing: border-box; margin: 0; padding: 0; }
-            body { background: ${bg}; font-family: "Aptos Display", system-ui, sans-serif; padding: 32px; }
-            .header { margin-bottom: 24px; }
-            .title { font-size: 22px; font-weight: 800; color: ${textColor}; }
-            .subtitle { font-size: 13px; color: ${mutedColor}; margin-top: 4px; }
-            .summary { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
-            .stat { background: ${headerBg}; border: 1px solid ${borderColor}; border-radius: 12px; padding: 14px 20px; flex: 1; min-width: 140px; }
-            .stat-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: ${mutedColor}; margin-bottom: 4px; }
-            .stat-value { font-size: 18px; font-weight: 800; color: ${textColor}; }
-            .impl { font-size: 11px; color: ${mutedColor}; margin-top: 4px; }
-            table { width: 100%; border-collapse: collapse; font-size: 13px; }
-            thead tr { background: ${headerBg}; }
-            thead th { padding: 10px 12px; text-align: right; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: ${mutedColor}; border-bottom: 2px solid ${accentColor}; }
-            thead th:first-child, thead th:nth-child(2) { text-align: center; }
-            .footer { margin-top: 16px; font-size: 11px; color: ${mutedColor}; text-align: right; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div class="title">📊 Monthly Cash Flow — ${toolName || 'Automation Project'}</div>
-            <div class="subtitle">Scenario: ${scenario.charAt(0).toUpperCase() + scenario.slice(1)} · ${durationMonths} Month Project · Generated ${new Date().toLocaleDateString()}</div>
-          </div>
-          <div class="summary">
-            <div class="stat">
-              <div class="stat-label">Implementation Cost</div>
-              <div class="stat-value" style="color:${negColor}">${formatCurrency(implCost)}</div>
-            </div>
-            <div class="stat">
-              <div class="stat-label">Total Gross Savings</div>
-              <div class="stat-value" style="color:${posColor}">${formatCurrency(totalGross)}</div>
-            </div>
-            <div class="stat">
-              <div class="stat-label">Total Run Costs</div>
-              <div class="stat-value">${formatCurrency(totalRun)}</div>
-            </div>
-            <div class="stat">
-              <div class="stat-label">Total SRE Costs</div>
-              <div class="stat-value">${formatCurrency(totalSre)}</div>
-            </div>
-            <div class="stat">
-              <div class="stat-label">Lifetime Net</div>
-              <div class="stat-value" style="color:${finalCumulative >= 0 ? posColor : negColor}">${formatCurrency(finalCumulative)}</div>
-            </div>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th style="text-align:center">Mo</th>
-                <th style="text-align:center">Yr</th>
-                <th>Gross Savings</th>
-                <th>Run Cost</th>
-                <th>SRE Cost</th>
-                <th>Net Cash Flow</th>
-                <th>Cumulative Net</th>
-              </tr>
-            </thead>
-            <tbody>${rowsHtml}</tbody>
-          </table>
-          <div class="footer">Automation Savings Calculator · automationsavings.pages.dev</div>
-        </body>
-        </html>`;
+      const wsData = [titleRow, blankRow, colHeaders];
 
-      const blob = new Blob([html], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const win = window.open(url, '_blank', 'width=900,height=700');
-      if (win) {
-        win.onload = () => {
-          setTimeout(() => {
-            win.print();
-            URL.revokeObjectURL(url);
-          }, 500);
+      let paybackFound = false;
+      data.forEach((row, i) => {
+        const isPayback = !paybackFound && row.cumulativeNet >= 0;
+        if (isPayback) paybackFound = true;
+        wsData.push([
+          row.month,
+          `Y${row.year}`,
+          row.grossSavings,
+          row.runCost,
+          row.sreCost,
+          row.netCashFlow,
+          row.cumulativeNet,
+          isPayback ? '← PAYBACK' : ''
+        ]);
+      });
+
+      // Totals row
+      wsData.push([
+        'TOTAL', '',
+        totalGross, totalRun, totalSre, totalNet, finalCumulative, ''
+      ]);
+
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+      // Merge title across all columns
+      ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }];
+
+      // Apply title style
+      if (ws['A1']) ws['A1'].s = {
+        fill: { fgColor: { rgb: '0F172A' } },
+        font: { color: { rgb: '93C5FD' }, bold: true, sz: 13 },
+        alignment: { horizontal: 'left', vertical: 'center' }
+      };
+
+      // Apply column header styles (row 3 = index 2)
+      colHeaders.forEach((_, ci) => {
+        const cellRef = XLSX.utils.encode_cell({ r: 2, c: ci });
+        if (ws[cellRef]) ws[cellRef].s = headerStyle;
+      });
+
+      // Apply data row styles
+      paybackFound = false;
+      data.forEach((row, i) => {
+        const r = i + 3; // offset: title + blank + header
+        const isPayback = !paybackFound && row.cumulativeNet >= 0;
+        if (isPayback) paybackFound = true;
+        const rowBg = i % 2 === 0 ? 'FFFFFF' : 'F8FAFC';
+
+        const applyCell = (c, style) => {
+          const ref = XLSX.utils.encode_cell({ r, c });
+          if (ws[ref]) ws[ref].s = style;
         };
-      }
+
+        if (isPayback) {
+          [0,1,2,3,4,5,6].forEach(c => applyCell(c, paybackStyle));
+          const payRef = XLSX.utils.encode_cell({ r, c: 7 });
+          if (ws[payRef]) ws[payRef].s = { ...paybackStyle, font: { ...paybackStyle.font, color: { rgb: '059669' } } };
+        } else {
+          applyCell(0, centerStyle('64748B', true));
+          applyCell(1, centerStyle('94A3B8'));
+          applyCell(2, numStyle('10B981'));
+          applyCell(3, { ...numStyle('64748B'), fill: { fgColor: { rgb: rowBg } } });
+          applyCell(4, { ...numStyle('64748B'), fill: { fgColor: { rgb: rowBg } } });
+          applyCell(5, numStyle(row.netCashFlow >= 0 ? '10B981' : 'EF4444', true));
+          applyCell(6, numStyle(row.cumulativeNet >= 0 ? '10B981' : '334155', true));
+        }
+      });
+
+      // Totals row
+      const totalRow = data.length + 3;
+      ['A','B','C','D','E','F','G'].forEach((col, ci) => {
+        const ref = `${col}${totalRow + 1}`;
+        if (ws[ref]) {
+          const colors = ['0F172A', '0F172A', '10B981', '64748B', '64748B',
+            totalNet >= 0 ? '10B981' : 'EF4444',
+            finalCumulative >= 0 ? '10B981' : 'EF4444'];
+          ws[ref].s = totalStyle(colors[ci]);
+        }
+      });
+
+      // Column widths
+      ws['!cols'] = [
+        { wch: 8 }, { wch: 6 }, { wch: 16 }, { wch: 14 }, { wch: 14 },
+        { wch: 16 }, { wch: 16 }, { wch: 12 }
+      ];
+      ws['!rows'] = [{ hpt: 28 }, { hpt: 6 }, { hpt: 22 }];
+
+      XLSX.utils.book_append_sheet(wb, ws, 'Monthly Breakdown');
+
+      // --- Sheet 2: Summary ---
+      const summaryData = [
+        ['SUMMARY'],
+        [''],
+        ['Project', toolName || 'N/A'],
+        ['Scenario', scenarioLabel],
+        ['Duration', `${durationMonths} months`],
+        [''],
+        ['COSTS', ''],
+        ['Implementation Cost', implCost],
+        ['Total Run Costs', totalRun],
+        ['Total SRE Costs', totalSre],
+        ['Total Investment', implCost + totalRun + totalSre],
+        [''],
+        ['RETURNS', ''],
+        ['Total Gross Savings', totalGross],
+        ['Lifetime Net Savings', finalCumulative],
+        ['ROI', results.roi === Infinity ? '>1000%' : `${Math.round(results.roi)}%`],
+        ['Payback Period', results.paybackPeriod === Infinity ? 'Never' : `${results.paybackPeriod.toFixed(1)} months`],
+        ['FTE Savings / Mo', results.fteSavings.toFixed(1)],
+      ];
+
+      const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+      wsSummary['!cols'] = [{ wch: 24 }, { wch: 20 }];
+      if (wsSummary['A1']) wsSummary['A1'].s = {
+        fill: { fgColor: { rgb: '0F172A' } },
+        font: { color: { rgb: '93C5FD' }, bold: true, sz: 14 },
+        alignment: { horizontal: 'left' }
+      };
+      XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
+
+      XLSX.writeFile(wb, `${toolName || 'Automation'} Monthly Breakdown.xlsx`);
     } catch (e) {
-      console.error('Export failed:', e);
+      console.error('XLSX export failed:', e);
+      alert(`Export failed: ${e.message}`);
     } finally {
       setIsExporting(false);
     }
@@ -179,12 +239,12 @@ export default function MonthlyBreakdownModal() {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={handleExportPNG}
+              onClick={handleExportXLSX}
               disabled={isExporting}
-              className={`flex items-center gap-2 text-xs font-bold px-4 py-2.5 rounded-2xl transition-all shadow-sm ${isDarkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'} disabled:opacity-60`}
+              className={`flex items-center gap-2 text-xs font-bold px-4 py-2.5 rounded-2xl transition-all shadow-sm ${isDarkMode ? 'bg-emerald-700 hover:bg-emerald-600 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white'} disabled:opacity-60`}
             >
               <Download size={14} />
-              {isExporting ? 'Preparing...' : 'Export PNG'}
+              {isExporting ? 'Exporting...' : 'Export XLSX'}
             </button>
             <button
               onClick={() => setIsMonthlyBreakdownOpen(false)}
@@ -212,7 +272,7 @@ export default function MonthlyBreakdownModal() {
         </div>
 
         {/* Table */}
-        <div ref={tableRef} className="overflow-auto flex-1 custom-scrollbar">
+        <div className="overflow-auto flex-1 custom-scrollbar">
           <table className="w-full text-sm border-collapse">
             <thead className={`sticky top-0 z-10 ${isDarkMode ? 'bg-[#0F172A]' : 'bg-slate-50'}`}>
               <tr>
@@ -230,20 +290,25 @@ export default function MonthlyBreakdownModal() {
               {pageData.map((row, i) => {
                 const net = row.netCashFlow;
                 const cum = row.cumulativeNet;
-                const isPaybackRow = cum >= 0 && (i === 0 || (data[(page * ROWS_PER_PAGE) + i - 1]?.cumulativeNet ?? -1) < 0);
+                const globalIndex = page * ROWS_PER_PAGE + i;
+                const prevCum = globalIndex > 0 ? (data[globalIndex - 1]?.cumulativeNet ?? -1) : -implCost;
+                const isPaybackRow = cum >= 0 && prevCum < 0;
+
                 return (
                   <tr
                     key={row.month}
-                    className={`
-                      transition-colors
-                      ${isPaybackRow ? (isDarkMode ? 'bg-emerald-950/30' : 'bg-emerald-50') : ''}
-                      ${!isPaybackRow && i % 2 === 0 ? (isDarkMode ? 'bg-[#1E293B]' : 'bg-white') : ''}
-                      ${!isPaybackRow && i % 2 !== 0 ? (isDarkMode ? 'bg-[#162032]' : 'bg-slate-50/60') : ''}
-                      hover:${isDarkMode ? 'bg-slate-700/40' : 'bg-blue-50/40'}
+                    className={`transition-colors
+                      ${isPaybackRow
+                        ? (isDarkMode ? 'bg-emerald-950/40' : 'bg-emerald-50')
+                        : i % 2 === 0
+                          ? (isDarkMode ? 'bg-[#1E293B]' : 'bg-white')
+                          : (isDarkMode ? 'bg-[#162032]' : 'bg-slate-50/60')
+                      }
+                      ${isDarkMode ? 'hover:bg-slate-700/40' : 'hover:bg-blue-50/40'}
                     `}
                   >
-                    <td className={`px-4 py-3 text-center font-extrabold ${textHeading} border-b ${borderMuted}`}>
-                      <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs ${isDarkMode ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                    <td className={`px-4 py-3 text-center border-b ${borderMuted}`}>
+                      <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs font-extrabold ${isDarkMode ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-700'}`}>
                         {row.month}
                       </span>
                     </td>
@@ -261,16 +326,14 @@ export default function MonthlyBreakdownModal() {
                     </td>
                     <td className={`px-4 py-3 text-right font-bold border-b ${borderMuted} tabular-nums ${net >= 0 ? 'text-emerald-500' : 'text-red-400'}`}>
                       <span className="inline-flex items-center justify-end gap-1">
-                        {net >= 0
-                          ? <TrendingUp size={13} className="opacity-70" />
-                          : <TrendingDown size={13} className="opacity-70" />}
+                        {net >= 0 ? <TrendingUp size={13} className="opacity-70" /> : <TrendingDown size={13} className="opacity-70" />}
                         {formatCurrency(net)}
                       </span>
                     </td>
-                    <td className={`px-4 py-3 text-right font-extrabold border-b ${borderMuted} tabular-nums ${cum >= 0 ? 'text-emerald-400' : isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                      <span className="inline-flex items-center justify-end gap-1">
+                    <td className={`px-4 py-3 text-right font-extrabold border-b ${borderMuted} tabular-nums`}>
+                      <span className={`inline-flex items-center justify-end gap-2 ${cum >= 0 ? 'text-emerald-400' : isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
                         {isPaybackRow && (
-                          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md ${isDarkMode ? 'bg-emerald-900/60 text-emerald-400' : 'bg-emerald-100 text-emerald-700'} mr-1`}>
+                          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md ${isDarkMode ? 'bg-emerald-900/60 text-emerald-400' : 'bg-emerald-100 text-emerald-700'}`}>
                             PAYBACK
                           </span>
                         )}
@@ -304,7 +367,7 @@ export default function MonthlyBreakdownModal() {
                   onClick={() => setPage(i)}
                   className={`w-8 h-8 rounded-xl text-xs font-bold transition-colors ${
                     page === i
-                      ? (isDarkMode ? 'bg-blue-600 text-white' : 'bg-blue-600 text-white')
+                      ? 'bg-blue-600 text-white'
                       : (isDarkMode ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-200 text-slate-500')
                   }`}
                 >
