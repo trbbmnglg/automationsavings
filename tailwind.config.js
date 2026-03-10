@@ -22,7 +22,7 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['"Aptos Display"', 'Inter', 'system-ui', 'sans-serif'],
+        sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
       }
     },
   },
