@@ -105,49 +105,75 @@ export default function QuantitativeSection() {
           <div className="flex items-center space-x-2 mb-4"><Wrench size={18} className="text-blue-500" /><h3 className={`text-sm font-bold ${textHeading} uppercase tracking-wider`}>Investment & Ongoing Costs</h3></div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
             {/* One-Time Build */}
             <div className={`${isDarkMode ? 'bg-[#0F172A] border-slate-700/80' : 'bg-white border-slate-200'} p-4 rounded-2xl border shadow-sm flex flex-col justify-between`}>
-              <div><label className={`flex items-center text-xs font-bold ${textMain} mb-1`}>One-Time Build <Tooltip text='Total upfront investment required (e.g., developer salaries).'><Info size={12} className={`${textSub} hover:text-blue-500 transition-colors cursor-help`}/></Tooltip></label><p className={`text-[10px] ${textSub} mb-3 leading-tight`}>Upfront investment cost.</p></div>
-              <div className="relative"><div className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none ${textSub}`}><Coins size={14} /></div><input type="number" min="0" value={implementationCost} onChange={(e) => setImplementationCost(e.target.value)} placeholder="0" className={`w-full px-3 py-2 ${isDarkMode ? 'bg-[#1E293B] border-slate-700 focus:bg-[#0F172A] text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'} border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono pl-8 transition-colors`} /></div>
+              <div>
+                <label className={`flex items-center text-xs font-bold ${textMain} mb-1`}>One-Time Build <Tooltip text='Total upfront investment required (e.g., developer salaries).'><Info size={12} className={`${textSub} hover:text-blue-500 transition-colors cursor-help`}/></Tooltip></label>
+                <p className={`text-[10px] ${textSub} mb-3 leading-tight`}>Upfront investment cost.</p>
+              </div>
+              <div className="relative">
+                <div className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none ${textSub}`}><Coins size={14} /></div>
+                <input type="number" min="0" value={implementationCost} onChange={(e) => setImplementationCost(e.target.value)} placeholder="0" className={`w-full px-3 py-2 ${isDarkMode ? 'bg-[#1E293B] border-slate-700 focus:bg-[#0F172A] text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'} border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono pl-8 transition-colors`} />
+              </div>
             </div>
             
             {/* Monthly Run Cost - Toggleable Advanced Mode */}
             <div className={`${isDarkMode ? (isAdvancedRunCost ? 'bg-indigo-950/20 border-indigo-900/40' : 'bg-slate-800/40 border-slate-700/80') : (isAdvancedRunCost ? 'bg-indigo-50/50 border-indigo-100' : 'bg-slate-50 border-slate-200')} p-4 rounded-2xl border shadow-sm flex flex-col justify-between transition-colors`}>
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <label className={`flex items-center text-xs font-bold ${isAdvancedRunCost ? 'text-indigo-600 dark:text-indigo-400' : textMain} mb-1 transition-colors`}>
-                    Monthly Run Cost
+              
+              {/* FIX: header row — label truncates cleanly, toggle stays right */}
+              <div>
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <label className={`text-xs font-bold leading-tight ${isAdvancedRunCost ? 'text-indigo-600 dark:text-indigo-400' : textMain} transition-colors`}>
+                    Run Cost
                     <Tooltip text='Base recurring costs (Product Licenses, cloud) and their projected Annual Percentage Increase.'><Info size={12} className={`${textSub} hover:text-indigo-500 transition-colors cursor-help ml-1`}/></Tooltip>
                   </label>
-                  <p className={`text-[10px] ${textSub} mb-2 leading-tight`}>Recurring licenses/infra.</p>
+                  <button
+                    onClick={() => { setIsAdvancedRunCost(!isAdvancedRunCost); if(!isAdvancedRunCost) setIsRunCostModalOpen(true); }}
+                    className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${isAdvancedRunCost ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-600'}`}
+                  >
+                    <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${isAdvancedRunCost ? 'translate-x-5' : 'translate-x-1'}`} />
+                  </button>
                 </div>
-                <button onClick={() => { setIsAdvancedRunCost(!isAdvancedRunCost); if(!isAdvancedRunCost) setIsRunCostModalOpen(true); }} className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${isAdvancedRunCost ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-600'}`}>
-                  <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${isAdvancedRunCost ? 'translate-x-5' : 'translate-x-1'}`} />
-                </button>
+                <p className={`text-[10px] ${textSub} mb-3 leading-tight`}>Recurring licenses/infra.</p>
               </div>
               
               {isAdvancedRunCost ? (
-                 <div className="space-y-3">
-                    <div>
-                      <label className={`block text-[10px] font-bold ${textSub} uppercase mb-1`}>Blended Cost / Mo</label>
-                      <div className="relative">
-                        <div className={`absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none ${textSub}`}><Coins size={12} /></div>
-                        <input type="number" value={Number(results.uiRunCostY1).toFixed(2)} disabled placeholder="0" className={`w-full px-2 py-2 ${isDarkMode ? 'bg-[#0F172A] border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-800'} border rounded-xl outline-none text-xs font-mono pl-7 transition-colors disabled:opacity-60 disabled:bg-slate-100 dark:disabled:bg-slate-800`} />
-                      </div>
+                <div className="space-y-3">
+                  <div>
+                    <label className={`block text-[10px] font-bold ${textSub} uppercase mb-1`}>Blended Cost / Mo</label>
+                    <div className="relative">
+                      <div className={`absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none ${textSub}`}><Coins size={12} /></div>
+                      <input type="number" value={Number(results.uiRunCostY1).toFixed(2)} disabled placeholder="0" className={`w-full px-2 py-2 ${isDarkMode ? 'bg-[#0F172A] border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-800'} border rounded-xl outline-none text-xs font-mono pl-7 transition-colors disabled:opacity-60 disabled:bg-slate-100 dark:disabled:bg-slate-800`} />
                     </div>
-                    <div className={`pt-2 border-t ${isDarkMode ? 'border-indigo-900/50' : 'border-indigo-200'} flex justify-between items-center`}>
-                        <div className="flex items-center space-x-2">
-                           <span className={`text-[10px] font-bold ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'} flex items-center`}><Check size={12} className="mr-1" /> Advanced Config Active</span>
-                        </div>
-                        <button onClick={() => setIsRunCostModalOpen(true)} className={`text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-sm transition-colors ${isDarkMode ? 'bg-slate-700 text-slate-200 hover:bg-slate-600' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}>
-                          Edit Advanced
-                        </button>
-                    </div>
-                 </div>
+                  </div>
+                  {/* FIX: bottom row — items on one line, no wrapping */}
+                  <div className={`pt-2 border-t ${isDarkMode ? 'border-indigo-900/50' : 'border-indigo-200'} flex items-center justify-between gap-2`}>
+                    <span className={`text-[10px] font-bold ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'} flex items-center gap-1 whitespace-nowrap`}>
+                      <Check size={11} /> Adv. Active
+                    </span>
+                    <button
+                      onClick={() => setIsRunCostModalOpen(true)}
+                      className={`text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-sm transition-colors whitespace-nowrap ${isDarkMode ? 'bg-slate-700 text-slate-200 hover:bg-slate-600' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}
+                    >
+                      Edit Advanced
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <div className="space-y-3">
-                  <div className="relative"><div className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none ${textSub}`}><Coins size={14} /></div><input type="number" min="0" value={monthlyRunCost} onChange={(e) => setMonthlyRunCost(e.target.value)} placeholder="0" className={`w-full px-3 py-2 ${isDarkMode ? 'bg-[#0F172A] border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-800'} border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono pl-8 transition-colors`} /></div>
-                  <div><label className={`block text-[10px] font-bold ${textSub} uppercase mb-1`}>YOY Inflation</label><div className="relative"><div className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none ${textSub}`}><TrendingUp size={14} /></div><input type="number" min="0" value={runCostInflation} onChange={(e) => setRunCostInflation(e.target.value)} placeholder="0" className={`w-full px-3 py-2 ${isDarkMode ? 'bg-[#0F172A] border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-800'} border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono pl-8 pr-8 transition-colors`} /><span className={`absolute inset-y-0 right-0 pr-3 flex items-center ${textSub} font-bold text-xs`}>%</span></div></div>
+                  <div className="relative">
+                    <div className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none ${textSub}`}><Coins size={14} /></div>
+                    <input type="number" min="0" value={monthlyRunCost} onChange={(e) => setMonthlyRunCost(e.target.value)} placeholder="0" className={`w-full px-3 py-2 ${isDarkMode ? 'bg-[#0F172A] border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-800'} border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono pl-8 transition-colors`} />
+                  </div>
+                  <div>
+                    <label className={`block text-[10px] font-bold ${textSub} uppercase mb-1`}>YOY Inflation</label>
+                    <div className="relative">
+                      <div className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none ${textSub}`}><TrendingUp size={14} /></div>
+                      <input type="number" min="0" value={runCostInflation} onChange={(e) => setRunCostInflation(e.target.value)} placeholder="0" className={`w-full px-3 py-2 ${isDarkMode ? 'bg-[#0F172A] border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-800'} border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono pl-8 pr-8 transition-colors`} />
+                      <span className={`absolute inset-y-0 right-0 pr-3 flex items-center ${textSub} font-bold text-xs`}>%</span>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -162,7 +188,7 @@ export default function QuantitativeSection() {
                   </label>
                   <p className={`text-[10px] ${textSub} leading-tight`}>Dedicated operational oversight.</p>
                 </div>
-                <button onClick={() => setHasSre(!hasSre)} className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${hasSre ? 'bg-orange-500' : 'bg-slate-300 dark:bg-slate-600'}`}>
+                <button onClick={() => setHasSre(!hasSre)} className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${hasSre ? 'bg-orange-500' : 'bg-slate-300 dark:bg-slate-600'}`}>
                   <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${hasSre ? 'translate-x-5' : 'translate-x-1'}`} />
                 </button>
               </div>
@@ -185,7 +211,6 @@ export default function QuantitativeSection() {
                         </div>
                       </div>
                     </div>
-
                     <div className={`pt-2 border-t ${isDarkMode ? 'border-orange-900/50' : 'border-orange-200'} flex justify-between items-center`}>
                         <div className="flex items-center space-x-2">
                            {isAdvancedSre ? (
