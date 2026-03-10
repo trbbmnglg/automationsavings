@@ -1,9 +1,17 @@
 import React from 'react';
-import { Sparkles, AlertTriangle, X } from 'lucide-react';
+import { Sparkles, AlertTriangle, Shield } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
+const PROVIDER_LABELS = {
+  pollinations: 'Pollinations.ai',
+  groq: 'Groq',
+  openrouter: 'OpenRouter',
+};
+
 export default function AIConfirmModal({ onConfirm, onCancel }) {
-  const { isDarkMode, textHeading, textSub, borderMuted } = useApp();
+  const { isDarkMode, textHeading, textSub, aiProvider } = useApp();
+
+  const providerName = PROVIDER_LABELS[aiProvider] || aiProvider;
 
   return (
     <div
@@ -30,14 +38,26 @@ export default function AIConfirmModal({ onConfirm, onCancel }) {
         <h2 id="ai-confirm-title" className={`text-xl font-bold ${textHeading} text-center mb-2`}>
           AI-Generated Content
         </h2>
-
-        {/* Body */}
-        <p className={`text-sm ${textSub} text-center leading-relaxed mb-3`}>
-          The <strong className="text-amber-500">Auto-Fill Details</strong> feature will use AI to generate suggestions for your KPIs, Challenges, and Qualitative Benefits based on your Automation Name and Use Case.
+        <p className={`text-sm ${textSub} text-center leading-relaxed mb-4`}>
+          <strong className="text-amber-500">Auto-Fill Details</strong> will use AI to suggest KPIs, Challenges, and Qualitative Benefits based on your inputs.
         </p>
+
+        {/* What gets sent */}
+        <div className={`${isDarkMode ? 'bg-blue-950/20 border-blue-900/40' : 'bg-blue-50 border-blue-100'} border rounded-2xl p-4 mb-3`}>
+          <div className={`text-[10px] font-bold uppercase tracking-widest ${isDarkMode ? 'text-blue-400' : 'text-blue-600'} mb-2 flex items-center gap-1.5`}>
+            <Shield size={11} /> Data Transmitted
+          </div>
+          <p className={`text-xs font-medium ${isDarkMode ? 'text-blue-200' : 'text-blue-800'} leading-relaxed`}>
+            Your <strong>Automation Name</strong> and <strong>Use Case</strong> will be sent to{' '}
+            <strong className="text-amber-500">{providerName}</strong> to generate suggestions.
+            Financial figures and cost data are <strong>not</strong> transmitted.
+          </p>
+        </div>
+
+        {/* Review warning */}
         <div className={`${isDarkMode ? 'bg-amber-950/20 border-amber-900/40' : 'bg-amber-50 border-amber-200/60'} border rounded-2xl p-4 mb-6`}>
           <p className={`text-xs font-semibold ${isDarkMode ? 'text-amber-300' : 'text-amber-700'} leading-relaxed`}>
-            ⚠️ AI-generated content may be inaccurate or incomplete. Always review and edit the generated fields before using them in a business case.
+            ⚠️ AI-generated content may be inaccurate. Always review and edit the generated fields before using them in a business case.
           </p>
         </div>
 
@@ -57,6 +77,7 @@ export default function AIConfirmModal({ onConfirm, onCancel }) {
             Cancel
           </button>
         </div>
+
       </div>
     </div>
   );
