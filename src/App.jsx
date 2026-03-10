@@ -7,6 +7,7 @@ import ResultsPanel from './components/ResultsPanel';
 import CurrentVsFuturePanel from './components/CurrentVsFuturePanel';
 import OperationalImpactPanel from './components/OperationalImpactPanel';
 import PitchPanel from './components/PitchPanel';
+import PrivacyPanel from './components/PrivacyPanel';
 import MethodologyPanel from './components/MethodologyPanel';
 import ClearConfirmModal from './components/modals/ClearConfirmModal';
 import SettingsModal from './components/modals/SettingsModal';
@@ -15,17 +16,12 @@ import AdvancedRunCostModal from './components/modals/AdvancedRunCostModal';
 import MonthlyBreakdownModal from './components/modals/MonthlyBreakdownModal';
 
 function AppLayout() {
-  const {
-    bgMain, textMain,
-    showClearConfirm, isSettingsOpen, isSreModalOpen,
-    isRunCostModalOpen, isMonthlyBreakdownOpen
-  } = useApp();
-
+  const { bgMain, textMain, showClearConfirm, isSettingsOpen, isSreModalOpen, isRunCostModalOpen, isMonthlyBreakdownOpen } = useApp();
+  
   return (
     <div className={`min-h-screen ${bgMain} ${textMain} font-sans p-4 md:p-6 lg:p-8 selection:bg-blue-100 transition-colors duration-300`}>
       <div className="max-w-[1400px] mx-auto space-y-6 relative">
         <Header />
-
         {showClearConfirm && <ClearConfirmModal />}
         {isSettingsOpen && <SettingsModal />}
         {isSreModalOpen && <SreConfigurationModal />}
@@ -44,6 +40,8 @@ function AppLayout() {
             <PitchPanel />
           </div>
         </div>
+
+        <PrivacyPanel />
         <MethodologyPanel />
       </div>
     </div>
