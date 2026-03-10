@@ -1,11 +1,6 @@
-import { useMemo, useContext, useEffect } from 'react';
-import { AppContext } from '../context/AppContext';
+import { useMemo, useEffect } from 'react';
 
-export function useTheme(isDarkMode) {
-  const context = useContext(AppContext);
-  const themeColor = context?.themeColor || 'default';
-
-  // Apply a data attribute to the body to control external CSS (e.g. scrollbars) based on theme
+export function useTheme(isDarkMode, themeColor = 'default') {
   useEffect(() => {
     document.body.setAttribute('data-theme', themeColor);
   }, [themeColor]);
@@ -25,7 +20,6 @@ export function useTheme(isDarkMode) {
       };
     }
 
-    // Default Theme (Blue/Slate)
     return {
       bgMain: isDarkMode ? "bg-[#0B0F19]" : "bg-[#F8FAFC]",
       textMain: isDarkMode ? "text-slate-200" : "text-slate-800",
