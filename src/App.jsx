@@ -12,12 +12,10 @@ import ClearConfirmModal from './components/modals/ClearConfirmModal';
 import SettingsModal from './components/modals/SettingsModal';
 import SreConfigurationModal from './components/modals/SreConfigurationModal';
 import AdvancedRunCostModal from './components/modals/AdvancedRunCostModal';
-
-// NOTE: The .custom-scrollbar CSS rules have been moved to src/index.css
-// so they are parsed once at load time rather than re-injected on every render.
+import MonthlyBreakdownModal from './components/modals/MonthlyBreakdownModal';
 
 function AppLayout() {
-  const { bgMain, textMain, showClearConfirm, isSettingsOpen, isSreModalOpen, isRunCostModalOpen } = useApp();
+  const { bgMain, textMain, showClearConfirm, isSettingsOpen, isSreModalOpen, isRunCostModalOpen, isMonthlyBreakdownOpen } = useApp();
   
   return (
     <div className={`min-h-screen ${bgMain} ${textMain} font-sans p-4 md:p-6 lg:p-8 selection:bg-blue-100 transition-colors duration-300`}>
@@ -27,6 +25,7 @@ function AppLayout() {
         {isSettingsOpen && <SettingsModal />}
         {isSreModalOpen && <SreConfigurationModal />}
         {isRunCostModalOpen && <AdvancedRunCostModal />}
+        {isMonthlyBreakdownOpen && <MonthlyBreakdownModal />}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 z-10">
           <div className="lg:col-span-7 space-y-6">
