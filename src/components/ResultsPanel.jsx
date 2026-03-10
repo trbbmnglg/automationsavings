@@ -37,7 +37,11 @@ export default function ResultsPanel() {
 
         <div className="relative z-10">
           <div className="flex items-center space-x-3 mb-3">
-            <Tooltip text="Net Savings = (Gross Monthly Save × Duration) - Total Dynamic Run/SRE Costs - Implementation Cost"><span className="bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl text-xs font-bold uppercase tracking-widest text-blue-100 border border-white/10 shadow-sm flex items-center cursor-help">Est. Lifetime Net Savings <Info size={14} className="ml-1.5 opacity-70 cursor-help" /></span></Tooltip>
+            <Tooltip text="Net Savings = (Gross Monthly Save × Duration) - Total Dynamic Run/SRE Costs - Implementation Cost">
+              <span className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl text-sm font-bold uppercase tracking-widest text-blue-100 border border-white/10 shadow-sm flex items-center cursor-help">
+                Est. Lifetime Net Savings <Info size={16} className="ml-1.5 opacity-70 cursor-help" />
+              </span>
+            </Tooltip>
             <span className="text-blue-200 text-sm font-semibold flex items-center"><Clock size={14} className="mr-1.5 opacity-70"/> {Number(durationMonths) || 0} Mo Project</span>
           </div>
           <div className={`text-[3.5rem] leading-none xl:text-7xl font-extrabold tracking-tighter mt-6 mb-10 drop-shadow-2xl ${results.netSavings < 0 ? 'text-red-400' : 'text-white'}`}>{formatCurrency(results.netSavings)}</div>
