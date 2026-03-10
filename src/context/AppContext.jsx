@@ -64,3 +64,6 @@ export function useAppContext() {
   }
   return context;
 }
+
+// Export an alias to satisfy imports expecting `useApp`
+export const useApp = useAppContext;
