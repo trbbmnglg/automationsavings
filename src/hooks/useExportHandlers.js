@@ -103,10 +103,8 @@ export function useExportHandlers({
       pptx.layout = 'LAYOUT_WIDE';
       const slide = pptx.addSlide();
 
-      let scoreColor = '10B981';
-      if (results.automationScore < 80 && results.automationScore >= 60) scoreColor = '3B82F6';
-      if (results.automationScore < 60 && results.automationScore >= 40) scoreColor = 'F59E0B';
-      if (results.automationScore < 40) scoreColor = 'EF4444';
+      // FIX: Viability score badge is always green regardless of score value
+      const scoreColor = '10B981';
 
       const cTheme = '7C3AED';
       const cBg = 'F8FAFC';
@@ -187,7 +185,6 @@ export function useExportHandlers({
       setIsExportingPPTX(false);
     }
   }, [
-    // FIX: qualitativeBenefits added — was missing, causing stale closure on PPTX export
     isReadyToExport, toolName, useCase, challenges, qualitativeBenefits, kpis, results,
     formatCurrency, scenario, automationPercent, setIsExportingPPTX
   ]);
