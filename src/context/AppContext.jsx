@@ -27,67 +27,45 @@ const safeRate = (value, fallback) =>
   (typeof value === 'number' && isFinite(value) && value > 0) ? value : fallback;
 
 export function AppProvider({ children }) {
-
-  // ─────────────────────────────────────────────────────────────────
-  // CONFIG / PREFERENCES — persisted to localStorage (non-sensitive)
-  // These are safe to persist: they are user preferences, not project data.
-  // ─────────────────────────────────────────────────────────────────
+  const [baseLcr, setBaseLcr] = useState(DEFAULT_LCR);
   const [lcrRates, setLcrRates] = useStickyState(DEFAULT_LCR, 'as_lcrRates');
+  const [toolName, setToolName] = useStickyState('', 'as_toolName');
+  const [useCase, setUseCase] = useStickyState('', 'as_useCase');
+  const [challenges, setChallenges] = useStickyState('', 'as_challenges');
+  const [qualitativeBenefits, setQualitativeBenefits] = useStickyState('', 'as_qualitativeBenefits');
+  const [kpis, setKpis] = useStickyState('', 'as_kpis');
+  const [aiGeneratedFields, setAiGeneratedFields] = useStickyState({ kpis: false, challenges: false, benefits: false }, 'as_aiGeneratedFields');
+  const [laborBreakdown, setLaborBreakdown] = useStickyState(createDefaultLabor, 'as_laborBreakdown');
+  const [automationPercent, setAutomationPercent] = useStickyState(0, 'as_automationPercent');
+  const [durationMonths, setDurationMonths] = useStickyState('', 'as_durationMonths');
+  const [implementationCost, setImplementationCost] = useStickyState('', 'as_implementationCost');
+  const [isAdvancedRunCost, setIsAdvancedRunCost] = useStickyState(false, 'as_isAdvancedRunCost');
+  const [monthlyRunCost, setMonthlyRunCost] = useStickyState('', 'as_monthlyRunCost');
+  const [runCostInflation, setRunCostInflation] = useStickyState('', 'as_runCostInflation');
+  const [runCostBreakdown, setRunCostBreakdown] = useStickyState(defaultRunCostBreakdown, 'as_runCostBreakdown');
+  const [hasSre, setHasSre] = useStickyState(false, 'as_hasSre');
+  const [isAdvancedSre, setIsAdvancedSre] = useStickyState(false, 'as_isAdvancedSre');
+  const [sreCostY1, setSreCostY1] = useStickyState('', 'as_sreCostY1');
+  const [sreCostY2, setSreCostY2] = useStickyState('', 'as_sreCostY2');
+  const [sreBreakdown, setSreBreakdown] = useStickyState(createDefaultSre, 'as_sreBreakdown');
+  const [sreUseCase, setSreUseCase] = useStickyState('', 'as_sreUseCase');
   const [currency, setCurrency] = useStickyState('USD', 'as_currency');
   const [scenario, setScenario] = useStickyState('realistic', 'as_scenario');
   const [workingDays, setWorkingDays] = useStickyState(DEFAULT_WORKING_DAYS, 'as_workingDays');
   const [hoursPerDay, setHoursPerDay] = useStickyState(DEFAULT_HOURS_PER_DAY, 'as_hoursPerDay');
   const [isDarkMode, setIsDarkMode] = useStickyState(false, 'as_theme_dark');
   const [themeColor, setThemeColor] = useStickyState('default', 'as_themeColor');
-  const [showScore, setShowScore] = useStickyState(true, 'as_showScore');
-  const [aiProvider, setAiProvider] = useStickyState('pollinations', 'as_aiProvider');
-  const [aiModel, setAiModel] = useStickyState(providerOptions['pollinations'].models[0], 'as_aiModel');
-
-  // ─────────────────────────────────────────────────────────────────
-  // PROJECT DATA — plain useState (session-only, NOT persisted)
-  // These may contain sensitive business context. They are cleared on
-  // page refresh intentionally — users should start fresh each session.
-  // ─────────────────────────────────────────────────────────────────
-  const [toolName, setToolName] = useState('');
-  const [useCase, setUseCase] = useState('');
-  const [challenges, setChallenges] = useState('');
-  const [qualitativeBenefits, setQualitativeBenefits] = useState('');
-  const [kpis, setKpis] = useState('');
-  const [aiGeneratedFields, setAiGeneratedFields] = useState({ kpis: false, challenges: false, benefits: false });
-  const [laborBreakdown, setLaborBreakdown] = useState(createDefaultLabor);
-  const [automationPercent, setAutomationPercent] = useState(0);
-  const [durationMonths, setDurationMonths] = useState('');
-  const [implementationCost, setImplementationCost] = useState('');
-  const [isAdvancedRunCost, setIsAdvancedRunCost] = useState(false);
-  const [monthlyRunCost, setMonthlyRunCost] = useState('');
-  const [runCostInflation, setRunCostInflation] = useState('');
-  const [runCostBreakdown, setRunCostBreakdown] = useState(defaultRunCostBreakdown);
-  const [hasSre, setHasSre] = useState(false);
-  const [isAdvancedSre, setIsAdvancedSre] = useState(false);
-  const [sreCostY1, setSreCostY1] = useState('');
-  const [sreCostY2, setSreCostY2] = useState('');
-  const [sreBreakdown, setSreBreakdown] = useState(createDefaultSre);
-  const [sreUseCase, setSreUseCase] = useState('');
-  const [aiPitch, setAiPitch] = useState('');
-  const [roiInsights, setRoiInsights] = useState('');
-
-  // ─────────────────────────────────────────────────────────────────
-  // SECURITY: API key — memory-only, NEVER touches localStorage
-  // ─────────────────────────────────────────────────────────────────
-  const [aiApiKey, setAiApiKey] = useState('');
-
-  // ─────────────────────────────────────────────────────────────────
-  // UI STATE — transient, no persistence needed
-  // ─────────────────────────────────────────────────────────────────
-  const [baseLcr, setBaseLcr] = useState(DEFAULT_LCR);
   const [exchangeRates, setExchangeRates] = useState({ USD: 1, PHP: 56.5, EUR: 0.92, JPY: 150.5 });
   const [ratesStatus, setRatesStatus] = useState('loading');
   const [copied, setCopied] = useState(false);
+  const [aiPitch, setAiPitch] = useStickyState('', 'as_aiPitch');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
   const [isGeneratingSreUseCase, setIsGeneratingSreUseCase] = useState(false);
+  const [roiInsights, setRoiInsights] = useStickyState('', 'as_roiInsights');
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
+  const [showScore, setShowScore] = useStickyState(true, 'as_showScore');
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSreModalOpen, setIsSreModalOpen] = useState(false);
@@ -95,13 +73,14 @@ export function AppProvider({ children }) {
   const [isMonthlyBreakdownOpen, setIsMonthlyBreakdownOpen] = useState(false);
   const [isExportingXLSX, setIsExportingXLSX] = useState(false);
   const [isExportingPPTX, setIsExportingPPTX] = useState(false);
+  const [aiProvider, setAiProvider] = useStickyState('pollinations', 'as_aiProvider');
+  const [aiApiKey, setAiApiKey] = useState('');
+  const [aiModel, setAiModel] = useStickyState(providerOptions['pollinations'].models[0], 'as_aiModel');
+  // NEW: security error state — { safe: false, category, reason, field } or null
+  const [securityError, setSecurityError] = useState(null);
 
-  // ─────────────────────────────────────────────────────────────────
-  // NETWORK
-  // ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     const controller = new AbortController();
-
     const fetchLiveRates = async () => {
       try {
         const response = await fetch('https://api.frankfurter.app/latest?from=USD', { signal: controller.signal });
@@ -121,7 +100,6 @@ export function AppProvider({ children }) {
         if (error.name !== 'AbortError') setRatesStatus('fallback');
       }
     };
-
     const fetchRemoteLcr = async () => {
       try {
         const response = await fetch(
@@ -141,15 +119,11 @@ export function AppProvider({ children }) {
         }
       }
     };
-
     fetchLiveRates();
     fetchRemoteLcr();
     return () => controller.abort();
   }, []);
 
-  // ─────────────────────────────────────────────────────────────────
-  // COMPOSED HOOKS
-  // ─────────────────────────────────────────────────────────────────
   const results = useCalculationEngine({
     laborBreakdown, automationPercent, durationMonths, implementationCost,
     monthlyRunCost, runCostInflation, isAdvancedRunCost, runCostBreakdown,
@@ -173,7 +147,8 @@ export function AppProvider({ children }) {
     setAiPitch, setIsGenerating,
     setIsGeneratingSuggestions, setKpis, setChallenges, setQualitativeBenefits, setAiGeneratedFields,
     setIsGeneratingInsights, setRoiInsights,
-    setIsGeneratingSreUseCase, setSreUseCase
+    setIsGeneratingSreUseCase, setSreUseCase,
+    setSecurityError // NEW
   });
 
   const { isReadyToExport, handleExportXLSX, handleExportPPTX } = useExportHandlers({
@@ -185,9 +160,6 @@ export function AppProvider({ children }) {
 
   const themeStyles = useTheme(isDarkMode, themeColor);
 
-  // ─────────────────────────────────────────────────────────────────
-  // HANDLERS
-  // ─────────────────────────────────────────────────────────────────
   const handleProviderChange = useCallback((e) => {
     const newProvider = e.target.value;
     setAiProvider(newProvider);
@@ -277,9 +249,14 @@ export function AppProvider({ children }) {
     setSreUseCase('• Maintain API integrations.\n• Optimize bot rulesets.');
     setAiPitch('');
     setRoiInsights('');
+    setSecurityError(null);
     setAiGeneratedFields({ kpis: false, challenges: false, benefits: false });
   }, [
-    setCurrency, setWorkingDays, setHoursPerDay
+    setCurrency, setToolName, setUseCase, setChallenges, setQualitativeBenefits,
+    setKpis, setLaborBreakdown, setWorkingDays, setHoursPerDay, setAutomationPercent,
+    setDurationMonths, setImplementationCost, setIsAdvancedRunCost, setRunCostBreakdown,
+    setHasSre, setIsAdvancedSre, setSreBreakdown, setSreUseCase,
+    setAiPitch, setRoiInsights, setAiGeneratedFields
   ]);
 
   const handleClearAll = useCallback(() => {
@@ -293,9 +270,17 @@ export function AppProvider({ children }) {
     setSreBreakdown(createDefaultSre()); setSreUseCase('');
     setCurrency('USD'); setScenario('realistic');
     setAiPitch(''); setRoiInsights('');
+    setSecurityError(null);
     setShowClearConfirm(false);
     setAiGeneratedFields({ kpis: false, challenges: false, benefits: false });
-  }, [setCurrency, setScenario, setShowClearConfirm]);
+  }, [
+    setToolName, setUseCase, setChallenges, setQualitativeBenefits, setKpis,
+    setLaborBreakdown, setAutomationPercent, setDurationMonths, setImplementationCost,
+    setMonthlyRunCost, setRunCostInflation, setIsAdvancedRunCost, setRunCostBreakdown,
+    setHasSre, setIsAdvancedSre, setSreCostY1, setSreCostY2, setSreBreakdown,
+    setSreUseCase, setCurrency, setScenario, setAiPitch, setRoiInsights,
+    setShowClearConfirm, setAiGeneratedFields
+  ]);
 
   const fallbackCopyTextToClipboard = (text) => {
     const textArea = document.createElement('textarea');
@@ -327,15 +312,11 @@ export function AppProvider({ children }) {
     }
   };
 
-  // ─────────────────────────────────────────────────────────────────
-  // CONTEXT VALUE
-  // ─────────────────────────────────────────────────────────────────
   const contextValue = {
-    // Project data (session-only)
     toolName, setToolName, useCase, setUseCase, challenges, setChallenges,
     qualitativeBenefits, setQualitativeBenefits, kpis, setKpis,
     aiGeneratedFields, setAiGeneratedFields,
-    laborBreakdown, setLaborBreakdown,
+    laborBreakdown, setLaborBreakdown, lcrRates, setLcrRates, baseLcr,
     automationPercent, setAutomationPercent, durationMonths, setDurationMonths,
     implementationCost, setImplementationCost,
     monthlyRunCost, setMonthlyRunCost, runCostInflation, setRunCostInflation,
@@ -343,36 +324,30 @@ export function AppProvider({ children }) {
     hasSre, setHasSre, isAdvancedSre, setIsAdvancedSre,
     sreCostY1, setSreCostY1, sreCostY2, setSreCostY2,
     sreBreakdown, setSreBreakdown, sreUseCase, setSreUseCase,
-    aiPitch, setAiPitch, roiInsights, setRoiInsights,
-
-    // Config (persisted)
-    lcrRates, setLcrRates, baseLcr,
+    isSreModalOpen, setIsSreModalOpen, isRunCostModalOpen, setIsRunCostModalOpen,
+    isMonthlyBreakdownOpen, setIsMonthlyBreakdownOpen,
     currency, setCurrency, scenario, setScenario,
     workingDays, setWorkingDays, hoursPerDay, setHoursPerDay,
-    isDarkMode, setIsDarkMode, themeColor, setThemeColor,
-    showScore, setShowScore,
-    aiProvider, setAiProvider, aiModel, setAiModel,
-
-    // Security
-    aiApiKey, setAiApiKey,
-
-    // UI state
+    isDarkMode, setIsDarkMode,
+    themeColor, setThemeColor,
     exchangeRates, ratesStatus,
     copied, setCopied,
+    aiPitch, setAiPitch,
     isGenerating, setIsGenerating,
     isGeneratingSuggestions, setIsGeneratingSuggestions,
     isGeneratingInsights, setIsGeneratingInsights,
     isGeneratingSreUseCase, setIsGeneratingSreUseCase,
+    roiInsights, setRoiInsights,
     isHowItWorksOpen, setIsHowItWorksOpen,
+    showScore, setShowScore,
     showClearConfirm, setShowClearConfirm,
     isSettingsOpen, setIsSettingsOpen,
-    isSreModalOpen, setIsSreModalOpen,
-    isRunCostModalOpen, setIsRunCostModalOpen,
-    isMonthlyBreakdownOpen, setIsMonthlyBreakdownOpen,
     isExportingXLSX, setIsExportingXLSX,
     isExportingPPTX, setIsExportingPPTX,
-
-    // Computed / handlers
+    aiProvider, setAiProvider,
+    aiApiKey, setAiApiKey,
+    aiModel, setAiModel,
+    securityError, setSecurityError, // NEW
     currencyConfig, isReadyToExport, results,
     handleCurrencyChange, handleLaborMinutesChange, handleLaborHoursChange,
     handleSreMinutesChange, handleSreHoursChange,
