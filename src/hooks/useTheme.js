@@ -1,6 +1,7 @@
 import { useMemo, useEffect } from 'react';
 
 export function useTheme(isDarkMode, themeColor = 'default') {
+
   useEffect(() => {
     document.body.setAttribute('data-theme', themeColor);
   }, [themeColor]);
@@ -20,6 +21,7 @@ export function useTheme(isDarkMode, themeColor = 'default') {
       };
     }
 
+    // Default Theme (Blue/Slate)
     return {
       bgMain: isDarkMode ? "bg-[#0B0F19]" : "bg-[#F8FAFC]",
       textMain: isDarkMode ? "text-slate-200" : "text-slate-800",
