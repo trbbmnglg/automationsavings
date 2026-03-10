@@ -7,13 +7,19 @@ export default function Header() {
   const { 
     cardStyle, textHeading, textSub, ratesStatus, currencyConfig, handleCurrencyChange, currency, isDarkMode, 
     isReadyToExport, isExportingXLSX, isExportingPPTX, setIsDarkMode, handleGenerateMockData, setShowClearConfirm, setIsSettingsOpen,
-    handleExportXLSX, handleExportPPTX
+    handleExportXLSX, handleExportPPTX, themeColor
   } = useApp();
+
+  const calcIconClass = themeColor === 'violet'
+    ? 'bg-gradient-to-br from-violet-600 to-purple-700 shadow-violet-500/20'
+    : 'bg-gradient-to-br from-blue-600 to-indigo-600 shadow-blue-500/20';
 
   return (
     <header className={`${cardStyle} p-4 pr-6 flex items-center justify-between z-20`}>
       <div className="flex items-center space-x-4">
-        <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-3.5 rounded-[20px] text-white shadow-lg shadow-blue-500/20"><Calculator size={26} strokeWidth={2.5} /></div>
+        <div className={`${calcIconClass} p-3.5 rounded-[20px] text-white shadow-lg`}>
+          <Calculator size={26} strokeWidth={2.5} />
+        </div>
         <div>
           <h1 className={`text-xl md:text-2xl font-extrabold ${textHeading} tracking-tight`}>Automation Savings</h1>
           <p className={`${textSub} text-sm font-medium hidden sm:block`}>Quantify ROI, time recaptured, and dynamic operational impact.</p>
