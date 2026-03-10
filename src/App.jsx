@@ -15,12 +15,17 @@ import AdvancedRunCostModal from './components/modals/AdvancedRunCostModal';
 import MonthlyBreakdownModal from './components/modals/MonthlyBreakdownModal';
 
 function AppLayout() {
-  const { bgMain, textMain, showClearConfirm, isSettingsOpen, isSreModalOpen, isRunCostModalOpen, isMonthlyBreakdownOpen } = useApp();
-  
+  const {
+    bgMain, textMain,
+    showClearConfirm, isSettingsOpen, isSreModalOpen,
+    isRunCostModalOpen, isMonthlyBreakdownOpen
+  } = useApp();
+
   return (
     <div className={`min-h-screen ${bgMain} ${textMain} font-sans p-4 md:p-6 lg:p-8 selection:bg-blue-100 transition-colors duration-300`}>
       <div className="max-w-[1400px] mx-auto space-y-6 relative">
         <Header />
+
         {showClearConfirm && <ClearConfirmModal />}
         {isSettingsOpen && <SettingsModal />}
         {isSreModalOpen && <SreConfigurationModal />}
