@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Moon, Sun, Settings2, Palette, Coins, Calendar, Clock, Key, RotateCcw } from 'lucide-react';
+import { X, Moon, Sun, Settings2, Palette, Coins, Calendar, Clock, Key, RotateCcw, Shield } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
 export default function SettingsModal() {
@@ -114,9 +114,7 @@ export default function SettingsModal() {
             </h3>
             <div className={`${isDarkMode ? 'bg-[#0F172A] border-slate-700' : 'bg-slate-50 border-slate-200'} border rounded-2xl p-4 grid grid-cols-2 gap-4`}>
               <div>
-                <label className={`block text-xs font-bold ${textSub} uppercase mb-2`}>
-                  Working Days / Mo
-                </label>
+                <label className={`block text-xs font-bold ${textSub} uppercase mb-2`}>Working Days / Mo</label>
                 <input
                   type="number"
                   min="1"
@@ -128,9 +126,7 @@ export default function SettingsModal() {
                 <p className={`text-[10px] font-medium ${textSub} mt-1`}>Default: 22 days</p>
               </div>
               <div>
-                <label className={`block text-xs font-bold ${textSub} uppercase mb-2`}>
-                  Hours / Day
-                </label>
+                <label className={`block text-xs font-bold ${textSub} uppercase mb-2`}>Hours / Day</label>
                 <input
                   type="number"
                   min="1"
@@ -227,6 +223,16 @@ export default function SettingsModal() {
                   </div>
                 </>
               )}
+
+              {/* Data transmission disclosure */}
+              <div className={`pt-3 border-t ${isDarkMode ? 'border-slate-700' : 'border-slate-200'}`}>
+                <div className={`${isDarkMode ? 'bg-slate-800/60 border-slate-700' : 'bg-slate-100 border-slate-200'} border rounded-xl p-3 flex gap-2.5`}>
+                  <Shield size={14} className={`shrink-0 mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} />
+                  <p className={`text-[11px] font-medium ${textSub} leading-relaxed`}>
+                    When using AI features, your <strong>Automation Name</strong> and <strong>Use Case</strong> are sent to the selected provider. Financial figures are stripped before transmission. Avoid entering confidential project names if data residency is a concern.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
