@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useStickyState } from '../hooks/useStickyState';
+import { useSessionState } from '../hooks/useSessionState'; // FIX #2
 import { useCalculationEngine } from '../hooks/useCalculationEngine';
 import { useCurrencyHandlers } from '../hooks/useCurrencyHandlers';
 import { useAIHandlers } from '../hooks/useAIHandlers';
@@ -28,44 +29,60 @@ const safeRate = (value, fallback) =>
 
 export function AppProvider({ children }) {
   const [baseLcr, setBaseLcr] = useState(DEFAULT_LCR);
+
+  // ─── Persistent preferences (localStorage via useStickyState) ───────────────
+  // These are UI preferences and configuration — not project data.
+  // They legitimately survive page refresh as disclosed in the privacy panel.
   const [lcrRates, setLcrRates] = useStickyState(DEFAULT_LCR, 'as_lcrRates');
-  const [toolName, setToolName] = useStickyState('', 'as_toolName');
-  const [useCase, setUseCase] = useStickyState('', 'as_useCase');
-  const [challenges, setChallenges] = useStickyState('', 'as_challenges');
-  const [qualitativeBenefits, setQualitativeBenefits] = useStickyState('', 'as_qualitativeBenefits');
-  const [kpis, setKpis] = useStickyState('', 'as_kpis');
-  const [aiGeneratedFields, setAiGeneratedFields] = useStickyState({ kpis: false, challenges: false, benefits: false }, 'as_aiGeneratedFields');
-  const [laborBreakdown, setLaborBreakdown] = useStickyState(createDefaultLabor, 'as_laborBreakdown');
-  const [automationPercent, setAutomationPercent] = useStickyState(0, 'as_automationPercent');
-  const [durationMonths, setDurationMonths] = useStickyState('', 'as_durationMonths');
-  const [implementationCost, setImplementationCost] = useStickyState('', 'as_implementationCost');
-  const [isAdvancedRunCost, setIsAdvancedRunCost] = useStickyState(false, 'as_isAdvancedRunCost');
-  const [monthlyRunCost, setMonthlyRunCost] = useStickyState('', 'as_monthlyRunCost');
-  const [runCostInflation, setRunCostInflation] = useStickyState('', 'as_runCostInflation');
-  const [runCostBreakdown, setRunCostBreakdown] = useStickyState(defaultRunCostBreakdown, 'as_runCostBreakdown');
-  const [hasSre, setHasSre] = useStickyState(false, 'as_hasSre');
-  const [isAdvancedSre, setIsAdvancedSre] = useStickyState(false, 'as_isAdvancedSre');
-  const [sreCostY1, setSreCostY1] = useStickyState('', 'as_sreCostY1');
-  const [sreCostY2, setSreCostY2] = useStickyState('', 'as_sreCostY2');
-  const [sreBreakdown, setSreBreakdown] = useStickyState(createDefaultSre, 'as_sreBreakdown');
-  const [sreUseCase, setSreUseCase] = useStickyState('', 'as_sreUseCase');
   const [currency, setCurrency] = useStickyState('USD', 'as_currency');
-  const [scenario, setScenario] = useStickyState('realistic', 'as_scenario');
   const [workingDays, setWorkingDays] = useStickyState(DEFAULT_WORKING_DAYS, 'as_workingDays');
   const [hoursPerDay, setHoursPerDay] = useStickyState(DEFAULT_HOURS_PER_DAY, 'as_hoursPerDay');
   const [isDarkMode, setIsDarkMode] = useStickyState(false, 'as_theme_dark');
   const [themeColor, setThemeColor] = useStickyState('default', 'as_themeColor');
+  const [showScore, setShowScore] = useStickyState(true, 'as_showScore');
+  const [aiProvider, setAiProvider] = useStickyState('pollinations', 'as_aiProvider');
+  const [aiModel, setAiModel] = useStickyState(providerOptions['pollinations'].models[0], 'as_aiModel');
+
+  // ─── Session-only project data (sessionStorage via useSessionState) ──────────
+  // FIX #2: These fields were previously persisted to localStorage, which
+  // contradicted the explicit privacy disclosure in ConsentGate and PrivacyPanel
+  // stating that project data is "session-only (cleared on page refresh, never
+  // persisted)". They now use sessionStorage which the browser clears on tab/
+  // window close, matching the stated behaviour exactly.
+  const [toolName, setToolName] = useSessionState('', 'as_toolName');
+  const [useCase, setUseCase] = useSessionState('', 'as_useCase');
+  const [challenges, setChallenges] = useSessionState('', 'as_challenges');
+  const [qualitativeBenefits, setQualitativeBenefits] = useSessionState('', 'as_qualitativeBenefits');
+  const [kpis, setKpis] = useSessionState('', 'as_kpis');
+  const [aiGeneratedFields, setAiGeneratedFields] = useSessionState({ kpis: false, challenges: false, benefits: false }, 'as_aiGeneratedFields');
+  const [laborBreakdown, setLaborBreakdown] = useSessionState(createDefaultLabor, 'as_laborBreakdown');
+  const [automationPercent, setAutomationPercent] = useSessionState(0, 'as_automationPercent');
+  const [durationMonths, setDurationMonths] = useSessionState('', 'as_durationMonths');
+  const [implementationCost, setImplementationCost] = useSessionState('', 'as_implementationCost');
+  const [isAdvancedRunCost, setIsAdvancedRunCost] = useSessionState(false, 'as_isAdvancedRunCost');
+  const [monthlyRunCost, setMonthlyRunCost] = useSessionState('', 'as_monthlyRunCost');
+  const [runCostInflation, setRunCostInflation] = useSessionState('', 'as_runCostInflation');
+  const [runCostBreakdown, setRunCostBreakdown] = useSessionState(defaultRunCostBreakdown, 'as_runCostBreakdown');
+  const [hasSre, setHasSre] = useSessionState(false, 'as_hasSre');
+  const [isAdvancedSre, setIsAdvancedSre] = useSessionState(false, 'as_isAdvancedSre');
+  const [sreCostY1, setSreCostY1] = useSessionState('', 'as_sreCostY1');
+  const [sreCostY2, setSreCostY2] = useSessionState('', 'as_sreCostY2');
+  const [sreBreakdown, setSreBreakdown] = useSessionState(createDefaultSre, 'as_sreBreakdown');
+  const [sreUseCase, setSreUseCase] = useSessionState('', 'as_sreUseCase');
+  const [scenario, setScenario] = useSessionState('realistic', 'as_scenario');
+  const [aiPitch, setAiPitch] = useSessionState('', 'as_aiPitch');
+  const [roiInsights, setRoiInsights] = useSessionState('', 'as_roiInsights');
+
+  // ─── Pure React state (never persisted) ─────────────────────────────────────
+  // API key intentionally never touches any storage layer.
   const [exchangeRates, setExchangeRates] = useState({ USD: 1, PHP: 56.5, EUR: 0.92, JPY: 150.5 });
   const [ratesStatus, setRatesStatus] = useState('loading');
   const [copied, setCopied] = useState(false);
-  const [aiPitch, setAiPitch] = useStickyState('', 'as_aiPitch');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
   const [isGeneratingSreUseCase, setIsGeneratingSreUseCase] = useState(false);
-  const [roiInsights, setRoiInsights] = useStickyState('', 'as_roiInsights');
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
-  const [showScore, setShowScore] = useStickyState(true, 'as_showScore');
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSreModalOpen, setIsSreModalOpen] = useState(false);
@@ -73,17 +90,19 @@ export function AppProvider({ children }) {
   const [isMonthlyBreakdownOpen, setIsMonthlyBreakdownOpen] = useState(false);
   const [isExportingXLSX, setIsExportingXLSX] = useState(false);
   const [isExportingPPTX, setIsExportingPPTX] = useState(false);
-  const [aiProvider, setAiProvider] = useStickyState('pollinations', 'as_aiProvider');
   const [aiApiKey, setAiApiKey] = useState('');
-  const [aiModel, setAiModel] = useStickyState(providerOptions['pollinations'].models[0], 'as_aiModel');
-  // NEW: security error state — { safe: false, category, reason, field } or null
   const [securityError, setSecurityError] = useState(null);
 
+  // ─── Side effects ────────────────────────────────────────────────────────────
   useEffect(() => {
-    const controller = new AbortController();
+    // FIX (from review #5): Use separate AbortControllers for each fetch so
+    // aborting one does not silently cancel the other.
+    const ratesController = new AbortController();
+    const lcrController = new AbortController();
+
     const fetchLiveRates = async () => {
       try {
-        const response = await fetch('https://api.frankfurter.app/latest?from=USD', { signal: controller.signal });
+        const response = await fetch('https://api.frankfurter.app/latest?from=USD', { signal: ratesController.signal });
         const data = await response.json();
         if (data && data.rates) {
           setExchangeRates({
@@ -100,11 +119,12 @@ export function AppProvider({ children }) {
         if (error.name !== 'AbortError') setRatesStatus('fallback');
       }
     };
+
     const fetchRemoteLcr = async () => {
       try {
         const response = await fetch(
           'https://raw.githubusercontent.com/trbbmnglg/automationsavings/main/src/lcr.json',
-          { signal: controller.signal }
+          { signal: lcrController.signal }
         );
         if (response.ok) {
           const data = await response.json();
@@ -119,11 +139,17 @@ export function AppProvider({ children }) {
         }
       }
     };
+
     fetchLiveRates();
     fetchRemoteLcr();
-    return () => controller.abort();
+
+    return () => {
+      ratesController.abort();
+      lcrController.abort();
+    };
   }, []);
 
+  // ─── Derived state / engines ─────────────────────────────────────────────────
   const results = useCalculationEngine({
     laborBreakdown, automationPercent, durationMonths, implementationCost,
     monthlyRunCost, runCostInflation, isAdvancedRunCost, runCostBreakdown,
@@ -148,7 +174,7 @@ export function AppProvider({ children }) {
     setIsGeneratingSuggestions, setKpis, setChallenges, setQualitativeBenefits, setAiGeneratedFields,
     setIsGeneratingInsights, setRoiInsights,
     setIsGeneratingSreUseCase, setSreUseCase,
-    setSecurityError // NEW
+    setSecurityError
   });
 
   const { isReadyToExport, handleExportXLSX, handleExportPPTX } = useExportHandlers({
@@ -166,6 +192,7 @@ export function AppProvider({ children }) {
     setAiModel(providerOptions[newProvider].models[0]);
   }, [providerOptions, setAiProvider, setAiModel]);
 
+  // ─── Labor helpers ───────────────────────────────────────────────────────────
   const updateLabor = (id, field, value) =>
     setLaborBreakdown(prev => prev.map(item => item.id === id ? { ...item, [field]: value } : item));
   const addLabor = () =>
@@ -189,6 +216,7 @@ export function AppProvider({ children }) {
     }));
   };
 
+  // ─── SRE helpers ─────────────────────────────────────────────────────────────
   const updateSreRole = (id, field, value) =>
     setSreBreakdown(prev => prev.map(item => item.id === id ? { ...item, [field]: value } : item));
   const addSreRole = () =>
@@ -215,6 +243,7 @@ export function AppProvider({ children }) {
   const updateRunCostBreakdown = (category, field, value) =>
     setRunCostBreakdown(prev => ({ ...prev, [category]: { ...prev[category], [field]: value } }));
 
+  // ─── Mock data / clear ───────────────────────────────────────────────────────
   const handleGenerateMockData = useCallback(() => {
     setCurrency('USD');
     setToolName('GenWizard Batch Automation');
@@ -249,14 +278,18 @@ export function AppProvider({ children }) {
     setSreUseCase('• Maintain API integrations.\n• Optimize bot rulesets.');
     setAiPitch('');
     setRoiInsights('');
-    setSecurityError(null);
+    setSecurityError(null); // FIX #3: was present in body but missing from deps below
     setAiGeneratedFields({ kpis: false, challenges: false, benefits: false });
   }, [
+    // FIX #3: Added setSecurityError to the dependency array. Previously it was
+    // called inside the callback but omitted here, creating a stale closure that
+    // could reference an outdated setter if the component tree ever remounts.
     setCurrency, setToolName, setUseCase, setChallenges, setQualitativeBenefits,
     setKpis, setLaborBreakdown, setWorkingDays, setHoursPerDay, setAutomationPercent,
     setDurationMonths, setImplementationCost, setIsAdvancedRunCost, setRunCostBreakdown,
     setHasSre, setIsAdvancedSre, setSreBreakdown, setSreUseCase,
-    setAiPitch, setRoiInsights, setAiGeneratedFields
+    setAiPitch, setRoiInsights, setAiGeneratedFields,
+    setSecurityError, // FIX #3
   ]);
 
   const handleClearAll = useCallback(() => {
@@ -279,9 +312,11 @@ export function AppProvider({ children }) {
     setMonthlyRunCost, setRunCostInflation, setIsAdvancedRunCost, setRunCostBreakdown,
     setHasSre, setIsAdvancedSre, setSreCostY1, setSreCostY2, setSreBreakdown,
     setSreUseCase, setCurrency, setScenario, setAiPitch, setRoiInsights,
-    setShowClearConfirm, setAiGeneratedFields
+    setShowClearConfirm, setAiGeneratedFields,
+    setSecurityError,
   ]);
 
+  // ─── Clipboard ───────────────────────────────────────────────────────────────
   const fallbackCopyTextToClipboard = (text) => {
     const textArea = document.createElement('textarea');
     textArea.value = text;
@@ -312,6 +347,7 @@ export function AppProvider({ children }) {
     }
   };
 
+  // ─── Context value ───────────────────────────────────────────────────────────
   const contextValue = {
     toolName, setToolName, useCase, setUseCase, challenges, setChallenges,
     qualitativeBenefits, setQualitativeBenefits, kpis, setKpis,
@@ -347,7 +383,7 @@ export function AppProvider({ children }) {
     aiProvider, setAiProvider,
     aiApiKey, setAiApiKey,
     aiModel, setAiModel,
-    securityError, setSecurityError, // NEW
+    securityError, setSecurityError,
     currencyConfig, isReadyToExport, results,
     handleCurrencyChange, handleLaborMinutesChange, handleLaborHoursChange,
     handleSreMinutesChange, handleSreHoursChange,
