@@ -7,7 +7,7 @@ export function useAIHandlers({
   setAiPitch, setIsGenerating, setIsGeneratingSuggestions, setKpis, setChallenges,
   setQualitativeBenefits, setAiGeneratedFields, setIsGeneratingInsights, setRoiInsights,
   setIsGeneratingSreUseCase, setSreUseCase,
-  setSecurityError // NEW: setter to push security errors up to UI
+  setSecurityError
 }) {
 
   const callAIWrapper = useCallback(async (prompt) => {
@@ -57,7 +57,7 @@ export function useAIHandlers({
     if (!ok) return;
 
     setIsGenerating(true);
-    const prompt = `Act as a professional business analyst. Write a persuasive, general business case pitch for an automation project. Details: Tool Name: """${sanitizeStr(toolName)}""" | Use Case: """${sanitizeStr(useCase)}""" | Scenario: ${scenario.charAt(0).toUpperCase() + scenario.slice(1)} Forecast. Financials: Lifetime Net Savings: ${formatCurrency(results.netSavings)} over ${durationMonths} months | ROI: ${Math.round(results.roi)}%. Write a compelling executive summary (2-3 paragraphs). Do NOT include greetings.`;
+    const prompt = `Act as a professional business analyst. Write a persuasive, general business case pitch for an automation project. Details: Tool Name: """${sanitizeStr(toolName)}""" | Use Case: """${sanitizeStr(useCase)}""" | Scenario: ${scenario.charAt(0).toUpperCase() + scenario.slice(1)} Forecast. Financials: Lifetime Net Savings: ${formatCurrency(results.netSavings)} over ${durationMonths} months | ROI: ${results.roi === Infinity ? '>1000' : Math.round(results.roi)}%. Write a compelling executive summary (2-3 paragraphs). Do NOT include greetings.`;
     try {
       const text = await callAIWrapper(prompt);
       if (text) setAiPitch(text.trim());
@@ -102,7 +102,17 @@ export function useAIHandlers({
     if (!ok) return;
 
     setIsGeneratingInsights(true);
-    const prompt = `Act as a financial strategist. Analyze these metrics: Net Savings: ${formatCurrency(results.netSavings)}, ROI: ${Math.round(results.roi)}%, Payback: ${results.paybackPeriod.toFixed(1)} mo. Provide 2-3 brief, actionable bullet points to improve ROI. Use simple dashes for bullets, no bold markdown.`;
+
+    // FIX: Guard against Infinity before calling .toFixed() or interpolating
+    // into the prompt string. paybackPeriod is Infinity when the automation
+    // never recoups its costs within the project duration (e.g. no savings
+    // configured yet). Passing "Infinity" literally into an AI prompt produces
+    // confusing or hallucinated output. We substitute a human-readable string
+    // instead. Same guard applied to roi for consistency.
+    const roiDisplay = results.roi === Infinity ? '>1000%' : `${Math.round(results.roi)}%`;
+    const paybackDisplay = results.paybackPeriod === Infinity ? 'N/A (does not pay back within project duration)' : `${results.paybackPeriod.toFixed(1)} months`;
+
+    const prompt = `Act as a financial strategist. Analyze these metrics: Net Savings: ${formatCurrency(results.netSavings)}, ROI: ${roiDisplay}, Payback: ${paybackDisplay}. Provide 2-3 brief, actionable bullet points to improve ROI. Use simple dashes for bullets, no bold markdown.`;
     try {
       const text = await callAIWrapper(prompt);
       if (text) setRoiInsights(text.trim());
