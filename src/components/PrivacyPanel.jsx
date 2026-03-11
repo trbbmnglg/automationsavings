@@ -11,15 +11,18 @@ export default function PrivacyPanel() {
       icon: <Database size={16} />,
       color: 'text-blue-500',
       bg: isDarkMode ? 'bg-blue-950/30' : 'bg-blue-50',
-      title: 'Local Storage Only',
-      body: 'All project data (inputs, results, settings) is saved exclusively in your browser\'s localStorage. No data is ever transmitted to any server operated by this tool.'
+      // FIX: Retitled from "Local Storage Only" — the app now uses two distinct
+      // storage layers. The old title and body were factually wrong after the
+      // localStorage → sessionStorage migration for project data (Fix #2).
+      title: 'Browser Storage — Two Layers',
+      body: 'UI preferences (theme, LCR rates, currency, work schedule, AI provider) are saved in localStorage and persist across sessions. All project data — inputs, cost figures, labor breakdown, AI-generated content — is stored in sessionStorage only and is automatically cleared when you close or refresh the tab. No project data is ever transmitted to any server operated by this tool.'
     },
     {
       icon: <Lock size={16} />,
       color: 'text-emerald-500',
       bg: isDarkMode ? 'bg-emerald-950/30' : 'bg-emerald-50',
       title: 'API Keys Never Stored',
-      body: 'If you configure a third-party AI provider (Groq, OpenRouter), your API key is held in React state only and is permanently cleared when you close or refresh the page. It never touches localStorage or any server.'
+      body: 'If you configure a third-party AI provider (Groq, OpenRouter), your API key is held in React state only and is permanently cleared when you close or refresh the page. It never touches localStorage, sessionStorage, or any server.'
     },
     {
       icon: <Eye size={16} />,
