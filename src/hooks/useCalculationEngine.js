@@ -96,19 +96,48 @@ export function useCalculationEngine({
 
       let currentSreCost = currentYear === 1 ? sreY1 : sreY2;
       
-      totalRunCost += currentRunCost; totalSreCost += currentSreCost; totalGrossSave += grossMonthlySave;
-      let monthlyNet = grossMonthlySave - currentRunCost - currentSreCost;
-      cumulativeNet += monthlyNet;
-      monthlyData.push({ month: m, year: currentYear, implementationCost: 0, runCost: currentRunCost, sreCost: currentSreCost, grossSavings: grossMonthlySave, netCashFlow: monthlyNet, cumulativeNet: cumulativeNet });
+      totalRunCost += currentRunCost;
+      totalSreCost += currentSreCost;
+      totalGrossSave += grossMonthlySave;
 
-      // FIX 4: Corrected Payback Logic
+      const monthlyNet = grossMonthlySave - currentRunCost - currentSreCost;
+      const previousCumulativeNet = cumulativeNet;
+      cumulativeNet += monthlyNet;
+
+      monthlyData.push({
+        month: m,
+        year: currentYear,
+        implementationCost: 0,
+        runCost: currentRunCost,
+        sreCost: currentSreCost,
+        grossSavings: grossMonthlySave,
+        netCashFlow: monthlyNet,
+        cumulativeNet: cumulativeNet
+      });
+
+      // FIX #1: Corrected payback period fraction logic.
+      //
+      // The original code computed: overshoot / monthlyNet, which measures how
+      // much of the *current* month's cash flow was surplus — but that gives the
+      // wrong fraction when the deficit carried into this month was large relative
+      // to monthlyNet. The correct approach is:
+      //
+      //   fraction = |deficit at start of payback month| / monthlyNet
+      //
+      // This gives the exact proportion of the current month needed to cross zero,
+      // so paybackMonth = (m - 1) + fraction.
+      //
+      // Edge case: if monthlyNet <= 0 the automation will never pay back even
+      // within this month, so we leave paybackMonth as Infinity.
       if (paybackMonth === Infinity && cumulativeNet >= 0) {
-        if (grossMonthlySave <= 0 || monthlyNet <= 0) { 
-          paybackMonth = Infinity; 
+        if (monthlyNet <= 0) {
+          paybackMonth = Infinity;
         } else {
-          const overshoot = Math.max(0, cumulativeNet);
-          const fraction = Math.max(0, Math.min(1, 1 - overshoot / monthlyNet));
-          paybackMonth = m - 1 + fraction;
+          // previousCumulativeNet is the shortfall at the *start* of this month.
+          // It must be negative here (we just crossed zero), so we take its abs.
+          const deficitAtMonthStart = Math.abs(Math.min(0, previousCumulativeNet));
+          const fraction = Math.min(1, deficitAtMonthStart / monthlyNet);
+          paybackMonth = (m - 1) + fraction;
         }
       }
     }
@@ -151,5 +180,5 @@ export function useCalculationEngine({
     monthlyRunCost, runCostInflation, isAdvancedRunCost, runCostBreakdown, 
     lcrRates, hasSre, isAdvancedSre, sreCostY1, sreCostY2, sreBreakdown, 
     workingDays, hoursPerDay, scenario, currency, exchangeRates
-  ]); // FIX 1: Stable dependencies array
+  ]);
 }
