@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useStickyState } from '../hooks/useStickyState';
-import { useSessionState } from '../hooks/useSessionState'; // FIX #2
+import { useSessionState } from '../hooks/useSessionState';
 import { useCalculationEngine } from '../hooks/useCalculationEngine';
 import { useCurrencyHandlers } from '../hooks/useCurrencyHandlers';
 import { useAIHandlers } from '../hooks/useAIHandlers';
@@ -31,8 +31,8 @@ export function AppProvider({ children }) {
   const [baseLcr, setBaseLcr] = useState(DEFAULT_LCR);
 
   // ─── Persistent preferences (localStorage via useStickyState) ───────────────
-  // These are UI preferences and configuration — not project data.
-  // They legitimately survive page refresh as disclosed in the privacy panel.
+  // UI preferences and configuration — not project data.
+  // These legitimately survive page refresh as disclosed in the privacy panel.
   const [lcrRates, setLcrRates] = useStickyState(DEFAULT_LCR, 'as_lcrRates');
   const [currency, setCurrency] = useStickyState('USD', 'as_currency');
   const [workingDays, setWorkingDays] = useStickyState(DEFAULT_WORKING_DAYS, 'as_workingDays');
@@ -42,13 +42,20 @@ export function AppProvider({ children }) {
   const [showScore, setShowScore] = useStickyState(true, 'as_showScore');
   const [aiProvider, setAiProvider] = useStickyState('pollinations', 'as_aiProvider');
   const [aiModel, setAiModel] = useStickyState(providerOptions['pollinations'].models[0], 'as_aiModel');
+  // FIX: scenario restored to useStickyState (localStorage).
+  // It was incorrectly moved to useSessionState in the previous fix pass.
+  // Scenario is a UI preference (Optimistic / Realistic / Conservative) — the
+  // user's chosen stress-test mode for their analysis — not sensitive project
+  // data. Resetting it on every page refresh silently reverts the Results panel
+  // to "Realistic", breaking the user's deliberately chosen analysis setting.
+  // It contains no PII and is correctly listed as a preference in the privacy
+  // disclosure alongside theme and currency.
+  const [scenario, setScenario] = useStickyState('realistic', 'as_scenario');
 
   // ─── Session-only project data (sessionStorage via useSessionState) ──────────
-  // FIX #2: These fields were previously persisted to localStorage, which
-  // contradicted the explicit privacy disclosure in ConsentGate and PrivacyPanel
-  // stating that project data is "session-only (cleared on page refresh, never
-  // persisted)". They now use sessionStorage which the browser clears on tab/
-  // window close, matching the stated behaviour exactly.
+  // These fields match the privacy disclosure: "session-only, cleared on page
+  // refresh, never persisted". sessionStorage is cleared automatically by the
+  // browser on tab/window close.
   const [toolName, setToolName] = useSessionState('', 'as_toolName');
   const [useCase, setUseCase] = useSessionState('', 'as_useCase');
   const [challenges, setChallenges] = useSessionState('', 'as_challenges');
@@ -69,7 +76,6 @@ export function AppProvider({ children }) {
   const [sreCostY2, setSreCostY2] = useSessionState('', 'as_sreCostY2');
   const [sreBreakdown, setSreBreakdown] = useSessionState(createDefaultSre, 'as_sreBreakdown');
   const [sreUseCase, setSreUseCase] = useSessionState('', 'as_sreUseCase');
-  const [scenario, setScenario] = useSessionState('realistic', 'as_scenario');
   const [aiPitch, setAiPitch] = useSessionState('', 'as_aiPitch');
   const [roiInsights, setRoiInsights] = useSessionState('', 'as_roiInsights');
 
@@ -95,8 +101,7 @@ export function AppProvider({ children }) {
 
   // ─── Side effects ────────────────────────────────────────────────────────────
   useEffect(() => {
-    // FIX (from review #5): Use separate AbortControllers for each fetch so
-    // aborting one does not silently cancel the other.
+    // Separate AbortControllers so aborting one does not cancel the other.
     const ratesController = new AbortController();
     const lcrController = new AbortController();
 
@@ -278,18 +283,15 @@ export function AppProvider({ children }) {
     setSreUseCase('• Maintain API integrations.\n• Optimize bot rulesets.');
     setAiPitch('');
     setRoiInsights('');
-    setSecurityError(null); // FIX #3: was present in body but missing from deps below
+    setSecurityError(null);
     setAiGeneratedFields({ kpis: false, challenges: false, benefits: false });
   }, [
-    // FIX #3: Added setSecurityError to the dependency array. Previously it was
-    // called inside the callback but omitted here, creating a stale closure that
-    // could reference an outdated setter if the component tree ever remounts.
     setCurrency, setToolName, setUseCase, setChallenges, setQualitativeBenefits,
     setKpis, setLaborBreakdown, setWorkingDays, setHoursPerDay, setAutomationPercent,
     setDurationMonths, setImplementationCost, setIsAdvancedRunCost, setRunCostBreakdown,
     setHasSre, setIsAdvancedSre, setSreBreakdown, setSreUseCase,
     setAiPitch, setRoiInsights, setAiGeneratedFields,
-    setSecurityError, // FIX #3
+    setSecurityError,
   ]);
 
   const handleClearAll = useCallback(() => {
