@@ -79,7 +79,7 @@ export function useExportHandlers({
       const monthlySheet = XLSX.utils.json_to_sheet(monthlySheetData);
       XLSX.utils.book_append_sheet(wb, monthlySheet, 'Monthly Cash Flow');
 
-      XLSX.writeFile(wb, 'Automation Savings.xlsx');
+      XLSX.writeFile(wb, `${toolName || 'Automation'} Automation Savings.xlsx`);
     } catch (e) {
       console.error(e);
       alert(`Failed to generate Excel file. Error: ${e.message}`);
