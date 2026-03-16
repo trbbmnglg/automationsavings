@@ -54,7 +54,31 @@ export default function MethodologyPanel() {
               </div>
               <div>
                 <h3 className={`text-sm font-bold ${textHeading} uppercase tracking-wider mb-2`}>Scenario Modeling</h3>
-                <p className={`text-sm ${textSub} leading-relaxed font-medium`}>The <strong>Forecast Scenario</strong> toggle stress-tests your business case. <em>Realistic</em> uses your exact inputs. <em>Conservative</em> inflates all implementation and run costs by 25% while shrinking the expected automation yield by 25% (simulating delays/complexity). <em>Optimistic</em> reduces costs by 10% and boosts automation yield by 10%.</p>
+                <p className={`text-sm ${textSub} leading-relaxed font-medium`}>
+                  The <strong>Forecast Scenario</strong> toggle stress-tests your business case by applying two independent modifiers simultaneously:
+                </p>
+                <ul className={`list-disc pl-5 mt-2 text-sm ${textSub} leading-relaxed font-medium space-y-2`}>
+                  <li>
+                    <strong>Realistic</strong> — uses your exact inputs with no adjustments. This is your baseline.
+                  </li>
+                  <li>
+                    <strong>Conservative</strong> — inflates implementation and run costs by <strong>25%</strong> and
+                    simultaneously reduces the automation yield (% automated) by <strong>25%</strong>, simulating
+                    project delays, scope creep, and lower-than-expected bot performance. Because both the cost
+                    and benefit sides are adjusted at the same time, the <strong>compound effect on Net Savings
+                    will be greater than 25%</strong> — this is intentional and reflects a realistic worst-case.
+                  </li>
+                  <li>
+                    <strong>Optimistic</strong> — reduces all costs by <strong>10%</strong> and boosts automation
+                    yield by <strong>10%</strong>, simulating smooth delivery and higher-than-expected performance.
+                    Similarly, the <strong>compound upside on Net Savings will exceed 10%</strong> as both levers
+                    work in your favor simultaneously.
+                  </li>
+                </ul>
+                <p className={`text-sm ${textSub} leading-relaxed font-medium mt-2`}>
+                  To isolate the effect of a single lever, use the Realistic scenario as your baseline and
+                  manually adjust either the automation percentage or the cost inputs independently.
+                </p>
               </div>
             </div>
 
