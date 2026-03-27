@@ -5,7 +5,7 @@ export function useExportHandlers({
   toolName, useCase, laborBreakdown, durationMonths, implementationCost,
   isAdvancedRunCost, monthlyRunCost, results, scenario, automationPercent,
   challenges, qualitativeBenefits, kpis, formatCurrency,
-  setIsExportingXLSX, setIsExportingPPTX
+  setIsExportingXLSX, setIsExportingPPTX, addToast
 }) {
 
   const isReadyToExport = useMemo(() => !!(
@@ -82,8 +82,7 @@ export function useExportHandlers({
 
       XLSX.writeFile(wb, `${sanitizeFilename(toolName) || 'Automation'} Automation Savings.xlsx`);
     } catch (e) {
-      console.error(e);
-      alert('Failed to generate Excel file. Please try again.');
+      if (addToast) addToast('Failed to generate Excel file. Please try again.', 'error');
     } finally {
       setIsExportingXLSX(false);
     }
@@ -179,8 +178,7 @@ export function useExportHandlers({
 
       await pptx.writeFile({ fileName: `${sanitizeFilename(toolName) || 'Automation'} Automation 1 Slider.pptx` });
     } catch (e) {
-      console.error(e);
-      alert('Failed to generate PPTX file. Please try again.');
+      if (addToast) addToast('Failed to generate PPTX file. Please try again.', 'error');
     } finally {
       setIsExportingPPTX(false);
     }

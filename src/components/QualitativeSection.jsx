@@ -64,7 +64,7 @@ export default function QualitativeSection() {
         <div className={`px-6 md:px-8 py-5 flex flex-col sm:flex-row sm:items-center justify-between border-b ${borderMuted} gap-4`}>
           <div className="flex items-center space-x-3">
             <div className={`${isDarkMode ? 'bg-purple-500/20 text-purple-400' : 'bg-purple-50 text-purple-600'} p-2.5 rounded-[14px]`}>
-              <FileText size={20} />
+              <FileText size={20} aria-hidden="true" />
             </div>
             <h2 className={`text-xl font-bold ${textHeading} tracking-tight`}>Qualitative Details</h2>
           </div>

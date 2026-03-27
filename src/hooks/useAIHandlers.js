@@ -10,7 +10,7 @@ export function useAIHandlers({
   setAiPitch, setIsGenerating, setIsGeneratingSuggestions, setKpis, setChallenges,
   setQualitativeBenefits, setAiGeneratedFields, setIsGeneratingInsights, setRoiInsights,
   setIsGeneratingSreUseCase, setSreUseCase,
-  setSecurityError
+  setSecurityError, addToast
 }) {
 
   const callAIWrapper = useCallback(async (prompt) => {
@@ -65,7 +65,7 @@ export function useAIHandlers({
       const text = await callAIWrapper(prompt);
       if (text) setAiPitch(text.trim());
     } catch (error) {
-      console.error('generateAIPitch failed:', error);
+      if (addToast) addToast('Failed to generate pitch. Please try again.', 'error');
     } finally {
       setIsGenerating(false);
     }
@@ -94,7 +94,7 @@ export function useAIHandlers({
         setAiGeneratedFields({ kpis: true, challenges: true, benefits: true });
       }
     } catch (error) {
-      console.warn('AI suggestions parsing failed:', error);
+      if (addToast) addToast('AI suggestions failed to parse. Try again.', 'warning');
     } finally {
       setIsGeneratingSuggestions(false);
     }
@@ -120,7 +120,7 @@ export function useAIHandlers({
       const text = await callAIWrapper(prompt);
       if (text) setRoiInsights(text.trim());
     } catch (error) {
-      console.error('generateROIInsights failed:', error);
+      if (addToast) addToast('Failed to generate insights. Please try again.', 'error');
     } finally {
       setIsGeneratingInsights(false);
     }
@@ -138,7 +138,7 @@ export function useAIHandlers({
       const text = await callAIWrapper(prompt);
       if (text) setSreUseCase(sanitizeStr(text));
     } catch (error) {
-      console.warn('generateSreUseCase failed:', error);
+      if (addToast) addToast('Failed to generate SRE use case. Try again.', 'warning');
     } finally {
       setIsGeneratingSreUseCase(false);
     }

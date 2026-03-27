@@ -3,7 +3,7 @@ import { Activity, Briefcase, Info, Plus, Trash2, Wrench, Coins, TrendingUp, Che
 import { useApp } from '../context/AppContext';
 import Tooltip from './Tooltip';
 
-export default function QuantitativeSection() {
+function QuantitativeSection() {
   const { 
     cardStyle, borderMuted, isDarkMode, textHeading, panelBg, textMain, textSub, inputStyle, inputErrorStyle,
     laborBreakdown, addLabor, removeLabor, updateLabor, handleLaborMinutesChange, handleLaborHoursChange, lcrRates, results, formatCurrency, workingDays,
@@ -15,7 +15,7 @@ export default function QuantitativeSection() {
     <section className={cardStyle}>
       <div className={`px-6 md:px-8 py-5 flex items-center justify-between border-b ${borderMuted}`}>
         <div className="flex items-center space-x-3">
-          <div className={`${isDarkMode ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-50 text-blue-600'} p-2.5 rounded-[14px]`}><Activity size={20} /></div>
+          <div className={`${isDarkMode ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-50 text-blue-600'} p-2.5 rounded-[14px]`}><Activity size={20} aria-hidden="true" /></div>
           <h2 className={`text-xl font-bold ${textHeading} tracking-tight`}>Labor & Task Breakdown</h2>
         </div>
       </div>
@@ -234,3 +234,5 @@ export default function QuantitativeSection() {
     </section>
   );
 }
+
+export default React.memo(QuantitativeSection);

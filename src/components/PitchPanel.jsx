@@ -2,7 +2,7 @@ import React from 'react';
 import { FileText, Check, Copy, Sparkles, Loader2, Cpu } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
-export default function PitchPanel() {
+function PitchPanel() {
   const { toolName, useCase, aiPitch, handleCopy, copied, isGenerating, generateAIPitch, setAiPitch, challenges, kpis, qualitativeBenefits, formatCurrency, implementationCost, durationMonths, results, automationPercent } = useApp();
   return (
     <div className="bg-slate-900 rounded-[28px] shadow-xl text-slate-100 p-6 md:p-8 flex flex-col h-auto relative overflow-hidden border border-slate-800">
@@ -37,3 +37,5 @@ export default function PitchPanel() {
     </div>
   );
 }
+
+export default React.memo(PitchPanel);

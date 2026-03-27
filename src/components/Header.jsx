@@ -18,7 +18,7 @@ export default function Header() {
     <header className={`${cardStyle} p-4 pr-6 flex items-center justify-between z-20`}>
       <div className="flex items-center space-x-4">
         <div className={`${calcIconClass} p-3.5 rounded-[20px] text-white shadow-lg`}>
-          <Calculator size={26} strokeWidth={2.5} />
+          <Calculator size={26} strokeWidth={2.5} aria-hidden="true" />
         </div>
         <div>
           <h1 className={`text-xl md:text-2xl font-extrabold ${textHeading} tracking-tight`}>Automation Savings</h1>
@@ -41,12 +41,12 @@ export default function Header() {
         <div className="hidden sm:flex items-center">
           <Tooltip text={isReadyToExport ? "Export Options" : "Please fill out basic Qualitative and Quantitative details to enable exports."}>
             <div className={`flex ${isDarkMode ? 'bg-emerald-950/20 border-emerald-900/50' : 'bg-emerald-50 border-emerald-200/60'} border rounded-2xl overflow-hidden shadow-sm transition-opacity ${isReadyToExport ? 'opacity-100' : 'opacity-40 grayscale'}`}>
-              <button onClick={handleExportXLSX} disabled={isExportingXLSX || !isReadyToExport} className={`flex items-center space-x-1.5 text-xs font-bold ${isDarkMode ? 'text-emerald-400 hover:bg-emerald-900/40 border-emerald-900/50' : 'text-emerald-700 hover:bg-emerald-100 border-emerald-200/60'} px-3 py-3 transition-all border-r disabled:cursor-not-allowed`} title="Export Report to Excel">
-                {isExportingXLSX ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+              <button onClick={handleExportXLSX} disabled={isExportingXLSX || !isReadyToExport} className={`flex items-center space-x-1.5 text-xs font-bold ${isDarkMode ? 'text-emerald-400 hover:bg-emerald-900/40 border-emerald-900/50' : 'text-emerald-700 hover:bg-emerald-100 border-emerald-200/60'} px-3 py-3 transition-all border-r disabled:cursor-not-allowed`} aria-label="Export Report to Excel">
+                {isExportingXLSX ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <Download size={16} aria-hidden="true" />}
                 <span className="hidden lg:inline">Excel</span>
               </button>
-              <button onClick={handleExportPPTX} disabled={isExportingPPTX || !isReadyToExport} className={`flex items-center space-x-1.5 text-xs font-bold ${isDarkMode ? 'text-orange-400 bg-orange-950/20 hover:bg-orange-900/40' : 'text-orange-700 bg-orange-50 hover:bg-orange-100'} px-3 py-3 transition-all disabled:cursor-not-allowed`} title="Export 1-Slide Summary to PowerPoint">
-                {isExportingPPTX ? <Loader2 size={16} className="animate-spin" /> : <Presentation size={16} />}
+              <button onClick={handleExportPPTX} disabled={isExportingPPTX || !isReadyToExport} className={`flex items-center space-x-1.5 text-xs font-bold ${isDarkMode ? 'text-orange-400 bg-orange-950/20 hover:bg-orange-900/40' : 'text-orange-700 bg-orange-50 hover:bg-orange-100'} px-3 py-3 transition-all disabled:cursor-not-allowed`} aria-label="Export Summary to PowerPoint">
+                {isExportingPPTX ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <Presentation size={16} aria-hidden="true" />}
                 <span className="hidden lg:inline">PPTX</span>
               </button>
             </div>
@@ -54,10 +54,10 @@ export default function Header() {
         </div>
 
         <div className={`flex items-center space-x-1 ${isDarkMode ? 'bg-[#0F172A] border-slate-700/80' : 'bg-slate-100 border-transparent'} p-1 rounded-[20px] border`}>
-            <Tooltip text={isDarkMode ? "Switch to Day Mode" : "Switch to Night Mode"}><button onClick={() => setIsDarkMode(!isDarkMode)} className={`flex items-center text-sm font-bold ${isDarkMode ? 'text-amber-400 hover:bg-[#1E293B]' : 'text-slate-600 hover:text-amber-600 hover:bg-white shadow-sm'} p-2.5 rounded-[14px] transition-all`}><Sun size={18} /></button></Tooltip>
-            <Tooltip text="Generate Mock Data (Quick Test)"><button onClick={handleGenerateMockData} className={`flex items-center text-sm font-bold ${isDarkMode ? 'text-emerald-400 hover:bg-[#1E293B]' : 'text-slate-600 hover:text-emerald-600 hover:bg-white shadow-sm'} p-2.5 rounded-[14px] transition-all`}><FlaskConical size={18} /></button></Tooltip>
-            <Tooltip text="Clear Project Data"><button onClick={() => setShowClearConfirm(true)} className={`flex items-center text-sm font-bold ${isDarkMode ? 'text-slate-400 hover:text-red-400 hover:bg-[#1E293B]' : 'text-slate-600 hover:text-red-600 hover:bg-white shadow-sm'} p-2.5 rounded-[14px] transition-all`}><Trash2 size={18} /></button></Tooltip>
-            <Tooltip text="Settings"><button onClick={() => setIsSettingsOpen(true)} className={`flex items-center text-sm font-bold ${isDarkMode ? 'text-slate-400 hover:text-blue-400 hover:bg-[#1E293B]' : 'text-slate-600 hover:text-blue-600 hover:bg-white shadow-sm'} p-2.5 rounded-[14px] transition-all`}><Settings size={18} /></button></Tooltip>
+            <Tooltip text={isDarkMode ? "Switch to Day Mode" : "Switch to Night Mode"}><button onClick={() => setIsDarkMode(!isDarkMode)} aria-label={isDarkMode ? "Switch to Day Mode" : "Switch to Night Mode"} className={`flex items-center text-sm font-bold ${isDarkMode ? 'text-amber-400 hover:bg-[#1E293B]' : 'text-slate-600 hover:text-amber-600 hover:bg-white shadow-sm'} p-2.5 rounded-[14px] transition-all`}><Sun size={18} aria-hidden="true" /></button></Tooltip>
+            <Tooltip text="Generate Mock Data (Quick Test)"><button onClick={handleGenerateMockData} aria-label="Generate Mock Data" className={`flex items-center text-sm font-bold ${isDarkMode ? 'text-emerald-400 hover:bg-[#1E293B]' : 'text-slate-600 hover:text-emerald-600 hover:bg-white shadow-sm'} p-2.5 rounded-[14px] transition-all`}><FlaskConical size={18} aria-hidden="true" /></button></Tooltip>
+            <Tooltip text="Clear Project Data"><button onClick={() => setShowClearConfirm(true)} aria-label="Clear Project Data" className={`flex items-center text-sm font-bold ${isDarkMode ? 'text-slate-400 hover:text-red-400 hover:bg-[#1E293B]' : 'text-slate-600 hover:text-red-600 hover:bg-white shadow-sm'} p-2.5 rounded-[14px] transition-all`}><Trash2 size={18} aria-hidden="true" /></button></Tooltip>
+            <Tooltip text="Settings"><button onClick={() => setIsSettingsOpen(true)} aria-label="Settings" className={`flex items-center text-sm font-bold ${isDarkMode ? 'text-slate-400 hover:text-blue-400 hover:bg-[#1E293B]' : 'text-slate-600 hover:text-blue-600 hover:bg-white shadow-sm'} p-2.5 rounded-[14px] transition-all`}><Settings size={18} aria-hidden="true" /></button></Tooltip>
         </div>
       </div>
     </header>

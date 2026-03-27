@@ -94,6 +94,25 @@ export default function PrivacyPanel() {
             ))}
           </div>
 
+          {/* Withdraw Consent */}
+          <div className={`mt-5 p-5 rounded-2xl border ${isDarkMode ? 'bg-red-950/10 border-red-900/30' : 'bg-red-50/50 border-red-200/60'}`}>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <h3 className={`text-sm font-bold ${textHeading} mb-1`}>Withdraw Consent</h3>
+                <p className={`text-xs ${textSub} leading-relaxed`}>Revoke your data processing consent and clear all locally stored data.</p>
+              </div>
+              <button
+                onClick={() => {
+                  try { window.localStorage.clear(); window.sessionStorage.clear(); } catch {}
+                  window.location.reload();
+                }}
+                className={`shrink-0 text-xs font-bold px-4 py-2.5 rounded-2xl transition-colors ${isDarkMode ? 'bg-red-900/30 text-red-400 hover:bg-red-900/50 border border-red-900/50' : 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-200'}`}
+              >
+                Withdraw & Clear Data
+              </button>
+            </div>
+          </div>
+
           <div className={`mt-5 p-4 rounded-2xl border ${isDarkMode ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
             <p className={`text-xs ${textSub} font-medium leading-relaxed text-center`}>
               This tool is open source. You can inspect all network calls, storage usage, and AI prompts in your browser's DevTools.

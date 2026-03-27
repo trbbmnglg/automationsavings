@@ -5,7 +5,8 @@ import { useCalculationEngine } from '../hooks/useCalculationEngine';
 import { useCurrencyHandlers } from '../hooks/useCurrencyHandlers';
 import { useAIHandlers } from '../hooks/useAIHandlers';
 import { useExportHandlers } from '../hooks/useExportHandlers';
-import { useTheme } from '../hooks/useTheme';
+import { useUI } from './UIContext';
+import { useToast } from '../components/Toast';
 import { DEFAULT_LCR, providerOptions, currencyConfig, DEFAULT_WORKING_DAYS, DEFAULT_HOURS_PER_DAY } from '../constants/config';
 import { isValidLcrData } from '../utils/helpers';
 
@@ -39,9 +40,6 @@ export function AppProvider({ children }) {
   const [currency, setCurrency] = useStickyState('USD', 'as_currency');
   const [workingDays, setWorkingDays] = useStickyState(DEFAULT_WORKING_DAYS, 'as_workingDays');
   const [hoursPerDay, setHoursPerDay] = useStickyState(DEFAULT_HOURS_PER_DAY, 'as_hoursPerDay');
-  const [isDarkMode, setIsDarkMode] = useStickyState(false, 'as_theme_dark');
-  const [themeColor, setThemeColor] = useStickyState('default', 'as_themeColor');
-  const [showScore, setShowScore] = useStickyState(true, 'as_showScore');
   const [aiProvider, setAiProvider] = useStickyState('pollinations', 'as_aiProvider');
   const [aiModel, setAiModel] = useStickyState(providerOptions['pollinations'].models[0], 'as_aiModel');
   // FIX: scenario restored to useStickyState (localStorage).
@@ -90,12 +88,6 @@ export function AppProvider({ children }) {
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
   const [isGeneratingSreUseCase, setIsGeneratingSreUseCase] = useState(false);
-  const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
-  const [showClearConfirm, setShowClearConfirm] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isSreModalOpen, setIsSreModalOpen] = useState(false);
-  const [isRunCostModalOpen, setIsRunCostModalOpen] = useState(false);
-  const [isMonthlyBreakdownOpen, setIsMonthlyBreakdownOpen] = useState(false);
   const [isExportingXLSX, setIsExportingXLSX] = useState(false);
   const [isExportingPPTX, setIsExportingPPTX] = useState(false);
   const [aiApiKey, setAiApiKey] = useState('');
@@ -184,17 +176,32 @@ export function AppProvider({ children }) {
     setIsGeneratingSuggestions, setKpis, setChallenges, setQualitativeBenefits, setAiGeneratedFields,
     setIsGeneratingInsights, setRoiInsights,
     setIsGeneratingSreUseCase, setSreUseCase,
-    setSecurityError
+    setSecurityError, addToast
   });
 
   const { isReadyToExport, handleExportXLSX, handleExportPPTX } = useExportHandlers({
     toolName, useCase, laborBreakdown, durationMonths, implementationCost,
     isAdvancedRunCost, monthlyRunCost, results, scenario, automationPercent,
     challenges, qualitativeBenefits, kpis, formatCurrency,
-    setIsExportingXLSX, setIsExportingPPTX
+    setIsExportingXLSX, setIsExportingPPTX, addToast
   });
 
-  const themeStyles = useTheme(isDarkMode, themeColor);
+  // ─── Toast notifications ───────────────────────────────────────────────────
+  const addToast = useToast();
+
+  // ─── UI state from UIContext (theme, modals, score toggle) ─────────────────
+  const ui = useUI();
+  const {
+    isDarkMode, setIsDarkMode, themeColor, setThemeColor,
+    showScore, setShowScore,
+    isHowItWorksOpen, setIsHowItWorksOpen,
+    showClearConfirm, setShowClearConfirm,
+    isSettingsOpen, setIsSettingsOpen,
+    isSreModalOpen, setIsSreModalOpen,
+    isRunCostModalOpen, setIsRunCostModalOpen,
+    isMonthlyBreakdownOpen, setIsMonthlyBreakdownOpen,
+    ...themeStyles
+  } = ui;
 
   const handleProviderChange = useCallback((e) => {
     const newProvider = e.target.value;

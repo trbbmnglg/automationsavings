@@ -3,7 +3,7 @@ import { Activity, TrendingUp, Eye, EyeOff, Clock, Info } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import Tooltip from './Tooltip';
 
-export default function ResultsPanel() {
+function ResultsPanel() {
   const { isDarkMode, textHeading, scenario, setScenario, showScore, setShowScore, results, durationMonths, formatCurrency } = useApp();
 
   return (
@@ -66,3 +66,5 @@ export default function ResultsPanel() {
     </>
   );
 }
+
+export default React.memo(ResultsPanel);

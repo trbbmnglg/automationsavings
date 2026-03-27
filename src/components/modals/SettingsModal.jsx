@@ -225,12 +225,18 @@ export default function SettingsModal() {
               )}
 
               {/* Data transmission disclosure */}
-              <div className={`pt-3 border-t ${isDarkMode ? 'border-slate-700' : 'border-slate-200'}`}>
+              <div className={`pt-3 border-t ${isDarkMode ? 'border-slate-700' : 'border-slate-200'} space-y-3`}>
                 <div className={`${isDarkMode ? 'bg-slate-800/60 border-slate-700' : 'bg-slate-100 border-slate-200'} border rounded-xl p-3 flex gap-2.5`}>
-                  <Shield size={14} className={`shrink-0 mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} />
+                  <Shield size={14} className={`shrink-0 mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} aria-hidden="true" />
                   <p className={`text-[11px] font-medium ${textSub} leading-relaxed`}>
                     When using AI features, your <strong>Automation Name</strong> and <strong>Use Case</strong> are sent to the selected provider. Financial figures are stripped before transmission. Avoid entering confidential project names if data residency is a concern.
                   </p>
+                </div>
+                <div className={`text-[10px] font-medium ${textSub} px-1 space-y-1`}>
+                  <p className="font-bold uppercase tracking-widest mb-1.5">Provider Privacy Policies</p>
+                  <p><a href="https://pollinations.ai/privacy" target="_blank" rel="noopener noreferrer" className={`underline ${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'}`}>Pollinations.ai Privacy Policy</a></p>
+                  <p><a href="https://groq.com/privacy-policy/" target="_blank" rel="noopener noreferrer" className={`underline ${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'}`}>Groq Privacy Policy</a></p>
+                  <p><a href="https://openrouter.ai/privacy" target="_blank" rel="noopener noreferrer" className={`underline ${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'}`}>OpenRouter Privacy Policy</a></p>
                 </div>
               </div>
             </div>

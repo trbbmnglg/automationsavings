@@ -3,7 +3,7 @@ import { ArrowRightLeft, Activity, Sparkles, Info, BarChart3, Award, Cpu, Shield
 import { useApp } from '../context/AppContext';
 import Tooltip from './Tooltip';
 
-export default function CurrentVsFuturePanel() {
+function CurrentVsFuturePanel() {
   const { cardStyle, textHeading, isDarkMode, borderMuted, textSub, textMain, formatCurrency, results, challenges, kpis, qualitativeBenefits, toolName, isGeneratingInsights, generateROIInsights, roiInsights, hasSre, sreUseCase } = useApp();
 
   return (
@@ -46,3 +46,5 @@ export default function CurrentVsFuturePanel() {
     </div>
   );
 }
+
+export default React.memo(CurrentVsFuturePanel);

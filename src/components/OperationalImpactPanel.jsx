@@ -3,7 +3,7 @@ import { Clock, Info, Users, TableProperties } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import Tooltip from './Tooltip';
 
-export default function OperationalImpactPanel() {
+function OperationalImpactPanel() {
   const { cardStyle, isDarkMode, textHeading, results, textSub, borderMuted, setIsMonthlyBreakdownOpen, durationMonths } = useApp();
 
   const hasData = Number(durationMonths) > 0 && results.totalManualHoursMonthly > 0;
@@ -70,3 +70,5 @@ export default function OperationalImpactPanel() {
     </div>
   );
 }
+
+export default React.memo(OperationalImpactPanel);
