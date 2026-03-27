@@ -86,7 +86,7 @@ export default function MonthlyBreakdownModal() {
 
       let paybackFound = false;
       data.forEach((row, i) => {
-        const isPayback = !paybackFound && row.cumulativeNet >= 0;
+        const isPayback = !paybackFound && row.cumulativeNet > 0;
         if (isPayback) paybackFound = true;
         wsData.push([
           row.month,
@@ -128,7 +128,7 @@ export default function MonthlyBreakdownModal() {
       paybackFound = false;
       data.forEach((row, i) => {
         const r = i + 3; // offset: title + blank + header
-        const isPayback = !paybackFound && row.cumulativeNet >= 0;
+        const isPayback = !paybackFound && row.cumulativeNet > 0;
         if (isPayback) paybackFound = true;
         const rowBg = i % 2 === 0 ? 'FFFFFF' : 'F8FAFC';
 
@@ -204,10 +204,11 @@ export default function MonthlyBreakdownModal() {
       };
       XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
 
-      XLSX.writeFile(wb, `${toolName || 'Automation'} Monthly Breakdown.xlsx`);
+      const safeName = (toolName || 'Automation').replace(/[<>:"/\\|?*\x00-\x1F]/g, '_').trim();
+      XLSX.writeFile(wb, `${safeName} Monthly Breakdown.xlsx`);
     } catch (e) {
       console.error('XLSX export failed:', e);
-      alert(`Export failed: ${e.message}`);
+      alert('Export failed. Please try again.');
     } finally {
       setIsExporting(false);
     }

@@ -17,21 +17,20 @@ export default function Tooltip({ text, children }) {
   const hideTooltip = () => setIsVisible(false);
 
   useEffect(() => {
-    if (isVisible) {
-      window.addEventListener('scroll', updateCoords, true);
-      window.addEventListener('resize', updateCoords);
-      return () => {
-        window.removeEventListener('scroll', updateCoords, true);
-        window.removeEventListener('resize', updateCoords);
-      };
-    }
-  }, [isVisible]);
+    if (!isVisible) return;
+    window.addEventListener('scroll', updateCoords, true);
+    window.addEventListener('resize', updateCoords);
+    return () => {
+      window.removeEventListener('scroll', updateCoords, true);
+      window.removeEventListener('resize', updateCoords);
+    };
+  }, [isVisible, updateCoords]);
 
   return (
-    <div ref={triggerRef} className="relative inline-flex items-center ml-1.5 cursor-help" onMouseEnter={showTooltip} onMouseLeave={hideTooltip} onFocus={showTooltip} onBlur={hideTooltip}>
+    <div ref={triggerRef} className="relative inline-flex items-center ml-1.5 cursor-help" tabIndex={0} role="button" aria-describedby={isVisible ? 'tooltip-content' : undefined} onMouseEnter={showTooltip} onMouseLeave={hideTooltip} onFocus={showTooltip} onBlur={hideTooltip}>
       {children}
       {isVisible && createPortal(
-        <div className="fixed z-[99999] p-2.5 bg-slate-800 text-white text-[12px] font-medium rounded-xl text-center shadow-xl leading-relaxed pointer-events-none w-max max-w-[240px] -translate-x-1/2 -translate-y-full" style={{ left: coords.left, top: coords.top }}>
+        <div id="tooltip-content" role="tooltip" className="fixed z-[99999] p-2.5 bg-slate-800 text-white text-[12px] font-medium rounded-xl text-center shadow-xl leading-relaxed pointer-events-none w-max max-w-[240px] -translate-x-1/2 -translate-y-full" style={{ left: coords.left, top: coords.top }}>
           {text}
           <div className="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-slate-800"></div>
         </div>,

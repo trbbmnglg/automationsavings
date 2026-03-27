@@ -43,7 +43,7 @@ export function useStickyState(defaultValue, key, ttlHours = null) {
     } catch (err) {
       console.warn(`Error setting localStorage key "${key}":`, err);
     }
-  }, [key, value, ttlHours]);
+  }, [key, value]); // eslint-disable-line react-hooks/exhaustive-deps -- ttlHours is config, not reactive
 
   return [value, setValue];
 }

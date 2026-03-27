@@ -40,46 +40,39 @@ export const sanitizeStr = (str, limit = 400) =>
 
 // Prompt injection patterns
 const INJECTION_PATTERNS = [
-  /ignore\s+(previous|all|prior|above|any)\s+(instructions?|context|prompt|rules?|constraints?)/gi,
-  /forget\s+(everything|all|what|your|previous|prior|above)/gi,
-  /you\s+are\s+now\s+(DAN|GPT|an?\s+AI|a\s+different|unrestricted|jailbroken)/gi,
-  /\bDAN\b/g,
-  /jailbreak/gi,
-  /act\s+as\s+(if\s+you\s+(are|were)|a\s+different|an?\s+unrestricted)/gi,
-  /do\s+anything\s+now/gi,
-  /reveal\s+(your|the)\s+(system\s+)?prompt/gi,
-  /output\s+(your|the)\s+(system\s+)?prompt/gi,
-  /print\s+(your|the)\s+(system\s+)?prompt/gi,
-  /show\s+(your|the)\s+(system\s+)?prompt/gi,
-  /what\s+(are|were)\s+your\s+instructions/gi,
-  /override\s+(your\s+)?(instructions?|safety|rules?|constraints?)/gi,
-  /disregard\s+(your\s+)?(instructions?|safety|rules?|constraints?|previous)/gi,
-  /bypass\s+(your\s+)?(safety|filter|restriction|rule|instruction)/gi,
-  /new\s+instruction[s:]?/gi,
-  /\[SYSTEM\]/gi,
-  /<\|system\|>/gi,
-  /###\s*instruction/gi,
+  /ignore\s+(the\s+)?(previous|all|prior|above|any)\s+(instructions?|context|prompt|rules?|constraints?)/i,
+  /forget\s+(everything|all|what|your|previous|prior|above)/i,
+  /you\s+are\s+now\s+(DAN|GPT|an?\s+AI|a\s+different|unrestricted|jailbroken)/i,
+  /\bDAN\b/,
+  /jailbreak/i,
+  /act\s+as\s+(if\s+you\s+(are|were)|a\s+different|an?\s+unrestricted)/i,
+  /do\s+anything\s+now/i,
+  /(reveal|output|print|show|display|give\s+me)\s+(your|the)\s+(system\s+)?prompt/i,
+  /what\s+(are|were)\s+your\s+(system\s+)?instructions/i,
+  /(override|disregard|bypass|circumvent)\s+(your\s+)?(instructions?|safety|rules?|constraints?|filters?|restrictions?|previous)/i,
+  /new\s+instruction[s:]/i,
+  /\[SYSTEM\]/i,
+  /<\|system\|>/i,
+  /###\s*instruction/i,
 ];
 
-// PII patterns
+// PII patterns — tightened to reduce false positives on business quantities
 const PII_PATTERNS = [
-  // SSN: 123-45-6789 or 123456789
-  { pattern: /\b\d{3}[-\s]?\d{2}[-\s]?\d{4}\b/, label: 'Social Security Number (SSN)' },
-  // Credit/debit card: 16 digits with optional separators
-  { pattern: /\b(?:\d{4}[-\s]?){3}\d{4}\b/, label: 'Credit/Debit Card Number' },
+  // SSN: strict 123-45-6789 format (requires dashes to avoid matching plain numbers)
+  { pattern: /\b\d{3}-\d{2}-\d{4}\b/, label: 'Social Security Number (SSN)' },
+  // Credit/debit card: 16 digits with separators (requires at least one separator to avoid matching plain numbers)
+  { pattern: /\b\d{4}[-\s]\d{4}[-\s]\d{4}[-\s]\d{4}\b/, label: 'Credit/Debit Card Number' },
   // Passport: 1-2 letters + 6-9 digits
   { pattern: /\b[A-Z]{1,2}\d{6,9}\b/, label: 'Passport Number' },
-  // Philippine TIN: 000-000-000 or 000-000-000-000
+  // Philippine TIN: strict 000-000-000 or 000-000-000-000 (requires dashes)
   { pattern: /\b\d{3}-\d{3}-\d{3}(-\d{3})?\b/, label: 'Tax Identification Number (TIN)' },
-  // UMID / PhilSys ID patterns (12 digits)
-  { pattern: /\b\d{4}[-\s]?\d{4}[-\s]?\d{4}\b/, label: 'Government ID Number' },
   // Email addresses
   { pattern: /\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b/, label: 'Email Address' },
-  // Phone numbers (PH format +63 or 09xx, or generic international)
+  // Phone numbers (PH format +63 or 09xx, or generic international — requires country code prefix)
   { pattern: /(\+63|0)[\s-]?\d{3}[\s-]?\d{3}[\s-]?\d{4}\b/, label: 'Phone Number' },
   { pattern: /\+\d{1,3}[\s-]?\(?\d{1,4}\)?[\s-]?\d{3,4}[\s-]?\d{4}\b/, label: 'Phone Number' },
-  // Bank account: 10-16 digit standalone number blocks
-  { pattern: /\bbank\s+account\s*(number|no\.?)?\s*:?\s*\d{8,16}\b/gi, label: 'Bank Account Number' },
+  // Bank account: requires keyword context
+  { pattern: /\bbank\s+account\s*(number|no\.?)?\s*:?\s*\d{8,16}\b/i, label: 'Bank Account Number' },
 ];
 
 // XSS / code injection patterns
@@ -102,10 +95,10 @@ const XSS_PATTERNS = [
  * Returns { safe: true } or { safe: false, reason: string, category: string }
  */
 export const checkInputSecurity = (str) => {
-  if (!str || typeof str !== 'string') return { safe: true };
+  if (typeof str !== 'string') return { safe: true, skipped: true };
+  if (!str.trim()) return { safe: true };
 
   for (const pattern of INJECTION_PATTERNS) {
-    pattern.lastIndex = 0; // reset global regex state
     if (pattern.test(str)) {
       return {
         safe: false,
@@ -116,8 +109,7 @@ export const checkInputSecurity = (str) => {
   }
 
   for (const { pattern, label } of PII_PATTERNS) {
-    const p = new RegExp(pattern.source, pattern.flags);
-    if (p.test(str)) {
+    if (pattern.test(str)) {
       return {
         safe: false,
         category: 'pii',

@@ -26,7 +26,7 @@ export function useCurrencyHandlers({
     const multiplier = exchangeRates[newCurrency] / exchangeRates[currency];
     if (!isFinite(multiplier) || multiplier === 0) return;
 
-    const convert = (val) => val === '' ? '' : Number((val * multiplier).toFixed(2));
+    const convert = (val) => val === '' ? '' : Math.round(val * multiplier * 100) / 100;
 
     setRunCostBreakdown(prev => {
       const updated = { ...prev };

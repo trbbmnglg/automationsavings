@@ -24,7 +24,7 @@ export default function ResultsPanel() {
         
         <div className="relative z-10 border-b border-white/10 pb-5 mb-5 flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <button onClick={() => setShowScore(!showScore)} className="text-blue-400 hover:text-white transition-colors bg-white/5 p-2 rounded-xl" title={showScore ? "Hide Score" : "Show Score"}>{showScore ? <Eye size={18} /> : <EyeOff size={18} />}</button>
+            <button onClick={() => setShowScore(!showScore)} className="text-blue-400 hover:text-white transition-colors bg-white/5 p-2 rounded-xl" aria-label={showScore ? "Hide Score" : "Show Score"}>{showScore ? <Eye size={18} /> : <EyeOff size={18} />}</button>
             <span className="text-xs font-bold uppercase tracking-widest text-blue-300">Viability Score</span>
           </div>
           {showScore ? (

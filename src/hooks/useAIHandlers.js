@@ -1,6 +1,9 @@
 import { useCallback } from 'react';
 import { fetchWithRetry, sanitizeStr, checkAllFieldsSecurity } from '../utils/aiUtils';
 
+const sanitizeAIArrayItems = (items) =>
+  items.filter(item => typeof item === 'string').map(item => item.substring(0, 500));
+
 export function useAIHandlers({
   aiProvider, aiApiKey, aiModel, providerOptions, toolName, useCase, scenario, durationMonths,
   results, formatCurrency, automationPercent, challenges, kpis, qualitativeBenefits,
@@ -85,9 +88,9 @@ export function useAIHandlers({
         let jsonStr = cleanText.substring(startIndex, endIndex + 1);
         jsonStr = jsonStr.replace(/,\s*([\]}])/g, '$1').replace(/[\x00-\x1F\x7F-\x9F]/g, '');
         const parsed = JSON.parse(jsonStr);
-        if (parsed.kpis && Array.isArray(parsed.kpis)) setKpis(parsed.kpis.map(k => '• ' + k).join('\n'));
-        if (parsed.challenges && Array.isArray(parsed.challenges)) setChallenges(parsed.challenges.map(c => '• ' + c).join('\n'));
-        if (parsed.benefits && Array.isArray(parsed.benefits)) setQualitativeBenefits(parsed.benefits.map(b => '• ' + b).join('\n'));
+        if (parsed.kpis && Array.isArray(parsed.kpis)) setKpis(sanitizeAIArrayItems(parsed.kpis).map(k => '• ' + k).join('\n'));
+        if (parsed.challenges && Array.isArray(parsed.challenges)) setChallenges(sanitizeAIArrayItems(parsed.challenges).map(c => '• ' + c).join('\n'));
+        if (parsed.benefits && Array.isArray(parsed.benefits)) setQualitativeBenefits(sanitizeAIArrayItems(parsed.benefits).map(b => '• ' + b).join('\n'));
         setAiGeneratedFields({ kpis: true, challenges: true, benefits: true });
       }
     } catch (error) {
@@ -133,7 +136,7 @@ export function useAIHandlers({
     const prompt = `Based on the automation tool named """${tName}""" and use case """${uCase}""", generate 2 very short, simple bullet points (maximum 5-8 words per point) justifying the need for ongoing SRE/maintenance. Keep it extremely brief. Start each point with '• '. Return ONLY the text without markdown formatting or quotes.`;
     try {
       const text = await callAIWrapper(prompt);
-      if (text) setSreUseCase(text.replace(/["']/g, '').trim());
+      if (text) setSreUseCase(sanitizeStr(text));
     } catch (error) {
       console.warn('generateSreUseCase failed:', error);
     } finally {

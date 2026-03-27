@@ -7,9 +7,9 @@ export const providerOptions = {
   'openrouter': { name: 'OpenRouter Free', models: ['meta-llama/llama-3-8b-instruct:free', 'google/gemini-2.5-flash:free'], url: 'https://openrouter.ai/keys', needsKey: true }
 };
 
-export const DEFAULT_LCR = {
+export const DEFAULT_LCR = Object.freeze({
   'CL12': 15, 'CL11': 25, 'CL10': 40, 'CL9': 60, 'CL8': 85, 'CL7': 110, 'CL6': 150
-};
+});
 
 export const currencyConfig = { 
   USD: { locale: 'en-US', code: 'USD' }, 

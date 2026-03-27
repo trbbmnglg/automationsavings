@@ -58,13 +58,13 @@ export default function SreConfigurationModal() {
                     <div className="grid grid-cols-2 gap-4 mb-5">
                        <div>
                           <label className={`block text-[10px] font-bold ${textSub} uppercase mb-1.5`}>Maintenance Tasks / Mo</label>
-                          <input type="number" min="0" value={entry.tasksPerMonth} onChange={(e) => updateSreRole(entry.id, 'tasksPerMonth', e.target.value)} placeholder="0" className={`${entry.tasksPerMonth !== '' && entry.tasksPerMonth < 0 ? inputErrorStyle : inputStyle} py-2.5 text-sm font-mono`} />
+                          <input type="number" min="0" value={entry.tasksPerMonth} onChange={(e) => { const val = e.target.value; if (val === '' || Number(val) >= 0) updateSreRole(entry.id, 'tasksPerMonth', val); }} placeholder="0" className={`${entry.tasksPerMonth !== '' && Number(entry.tasksPerMonth) < 0 ? inputErrorStyle : inputStyle} py-2.5 text-sm font-mono`} />
                        </div>
                        <div>
                           <label className={`block text-[10px] font-bold ${textSub} uppercase mb-1.5`}>Time per Task</label>
                           <div className="flex space-x-2">
-                            <div className="relative flex-1"><input type="number" min="0" value={entry.effortMinutes} onChange={(e) => handleSreMinutesChange(entry.id, e.target.value)} placeholder="0" className={`${entry.effortMinutes !== '' && entry.effortMinutes < 0 ? inputErrorStyle : inputStyle} py-2.5 pr-8 text-sm font-mono`} /><span className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 font-bold text-[10px] pointer-events-none">M</span></div>
-                            <div className="relative flex-1"><input type="number" min="0" step="0.01" value={entry.effortHours} onChange={(e) => handleSreHoursChange(entry.id, e.target.value)} placeholder="0.0" className={`${entry.effortHours !== '' && entry.effortHours < 0 ? inputErrorStyle : inputStyle} py-2.5 pr-8 text-sm font-mono ${isDarkMode ? 'bg-slate-900/50' : 'bg-slate-50/50'}`} /><span className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 font-bold text-[10px] pointer-events-none">H</span></div>
+                            <div className="relative flex-1"><input type="number" min="0" value={entry.effortMinutes} onChange={(e) => handleSreMinutesChange(entry.id, e.target.value)} placeholder="0" className={`${entry.effortMinutes !== '' && entry.effortMinutes < 0 ? inputErrorStyle : inputStyle} py-2.5 pr-8 text-sm font-mono`} /><span className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 font-bold text-[10px] pointer-events-none">MIN</span></div>
+                            <div className="relative flex-1"><input type="number" min="0" step="0.01" value={entry.effortHours} onChange={(e) => handleSreHoursChange(entry.id, e.target.value)} placeholder="0.0" className={`${entry.effortHours !== '' && entry.effortHours < 0 ? inputErrorStyle : inputStyle} py-2.5 pr-8 text-sm font-mono ${isDarkMode ? 'bg-slate-900/50' : 'bg-slate-50/50'}`} /><span className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 font-bold text-[10px] pointer-events-none">HR</span></div>
                           </div>
                        </div>
                     </div>

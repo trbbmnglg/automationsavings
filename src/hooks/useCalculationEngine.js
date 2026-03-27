@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { getScoreColor, getScoreLabel } from '../utils/helpers';
 
 export function useCalculationEngine({
   laborBreakdown, automationPercent, durationMonths, implementationCost, 
@@ -80,15 +81,15 @@ export function useCalculationEngine({
     const monthlyData = [{ month: 0, year: 0, implementationCost: implCost, runCost: 0, sreCost: 0, grossSavings: 0, netCashFlow: -implCost, cumulativeNet: cumulativeNet }];
 
     for (let m = 1; m <= months; m++) {
-      let currentYear = Math.ceil(m / 12);
+      let currentYear = Math.floor((m - 1) / 12) + 1;
       let currentRunCost = 0;
       if (isAdvancedRunCost) {
          let tempRunCost = 0;
-         tempRunCost += Number(runCostBreakdown.productLicense.cost || 0) * Math.pow(1 + Number(runCostBreakdown.productLicense.inflation || 0) / 100, currentYear - 1);
-         if (runCostBreakdown.ai.enabled) tempRunCost += Number(runCostBreakdown.ai.cost || 0) * Math.pow(1 + Number(runCostBreakdown.ai.inflation || 0) / 100, currentYear - 1);
-         if (runCostBreakdown.splunk.enabled) tempRunCost += Number(runCostBreakdown.splunk.cost || 0) * Math.pow(1 + Number(runCostBreakdown.splunk.inflation || 0) / 100, currentYear - 1);
-         if (runCostBreakdown.infra.enabled) tempRunCost += Number(runCostBreakdown.infra.cost || 0) * Math.pow(1 + Number(runCostBreakdown.infra.inflation || 0) / 100, currentYear - 1);
-         if (runCostBreakdown.other.enabled) tempRunCost += Number(runCostBreakdown.other.cost || 0) * Math.pow(1 + Number(runCostBreakdown.other.inflation || 0) / 100, currentYear - 1);
+         for (const [key, entry] of Object.entries(runCostBreakdown)) {
+           if (key === 'productLicense' || entry.enabled) {
+             tempRunCost += Number(entry.cost || 0) * Math.pow(1 + Number(entry.inflation || 0) / 100, currentYear - 1);
+           }
+         }
          currentRunCost = tempRunCost * sc.cost;
       } else {
          currentRunCost = baseRunCost * Math.pow(1 + inflationRate, currentYear - 1);
@@ -161,11 +162,8 @@ export function useCalculationEngine({
     score = Math.min(100, Math.max(0, score));
     if (netSave <= 0) score = 0;
 
-    let scoreLabel = "", scoreColor = "";
-    if (score >= 80) { scoreLabel = "Strong Investment"; scoreColor = "text-emerald-400"; }
-    else if (score >= 60) { scoreLabel = "Good Investment"; scoreColor = "text-blue-400"; }
-    else if (score >= 40) { scoreLabel = "Marginal Return"; scoreColor = "text-amber-400"; }
-    else { scoreLabel = "High Risk / Reject"; scoreColor = "text-red-400"; }
+    const scoreLabel = getScoreLabel(score);
+    const scoreColor = getScoreColor(score, 'tailwind');
 
     return {
       totalEffectiveExecutions, currentMonthlyCost, futureMonthlyCostAvg, grossMonthlySave, avgNetMonthlySave, totalGrossSavings: totalGrossSave, 

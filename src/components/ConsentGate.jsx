@@ -321,18 +321,22 @@ export default function ConsentGate({ children }) {
                     : 'bg-slate-800/40 border-slate-700 hover:border-slate-600'
                 }`}
               >
-                <div className={`shrink-0 mt-0.5 w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all ${
+                <input
+                  type="checkbox"
+                  checked={checkboxes[key]}
+                  onChange={() => toggle(key)}
+                  className="sr-only"
+                  aria-label={text}
+                />
+                <div className={`shrink-0 mt-0.5 w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all pointer-events-none ${
                   checkboxes[key]
                     ? 'bg-emerald-500 border-emerald-500'
                     : 'border-slate-600 bg-transparent'
-                }`}
-                  onClick={() => toggle(key)}
-                >
+                }`}>
                   {checkboxes[key] && <CheckCircle2 size={14} className="text-white" strokeWidth={3} />}
                 </div>
                 <span
                   className={`text-xs leading-relaxed font-medium ${checkboxes[key] ? 'text-emerald-200' : 'text-slate-400'}`}
-                  onClick={() => toggle(key)}
                 >
                   {text}
                 </span>

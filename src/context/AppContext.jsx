@@ -7,6 +7,7 @@ import { useAIHandlers } from '../hooks/useAIHandlers';
 import { useExportHandlers } from '../hooks/useExportHandlers';
 import { useTheme } from '../hooks/useTheme';
 import { DEFAULT_LCR, providerOptions, currencyConfig, DEFAULT_WORKING_DAYS, DEFAULT_HOURS_PER_DAY } from '../constants/config';
+import { isValidLcrData } from '../utils/helpers';
 
 const AppContext = createContext(null);
 export const useApp = () => useContext(AppContext);
@@ -29,6 +30,7 @@ const safeRate = (value, fallback) =>
 
 export function AppProvider({ children }) {
   const [baseLcr, setBaseLcr] = useState(DEFAULT_LCR);
+  const [hasUserModifiedLcr, setHasUserModifiedLcr] = useState(false);
 
   // ─── Persistent preferences (localStorage via useStickyState) ───────────────
   // UI preferences and configuration — not project data.
@@ -133,9 +135,12 @@ export function AppProvider({ children }) {
         );
         if (response.ok) {
           const data = await response.json();
-          if (data && typeof data === 'object') {
+          if (isValidLcrData(data)) {
             setBaseLcr(data);
-            setLcrRates(prev => (JSON.stringify(prev) === JSON.stringify(DEFAULT_LCR)) ? data : prev);
+            setHasUserModifiedLcr(current => {
+              if (!current) setLcrRates(data);
+              return current;
+            });
           }
         }
       } catch (error) {
@@ -193,9 +198,10 @@ export function AppProvider({ children }) {
 
   const handleProviderChange = useCallback((e) => {
     const newProvider = e.target.value;
+    if (!providerOptions[newProvider]) return;
     setAiProvider(newProvider);
     setAiModel(providerOptions[newProvider].models[0]);
-  }, [providerOptions, setAiProvider, setAiModel]);
+  }, [setAiProvider, setAiModel]);
 
   // ─── Labor helpers ───────────────────────────────────────────────────────────
   const updateLabor = (id, field, value) =>

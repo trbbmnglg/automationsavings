@@ -1,4 +1,5 @@
 import { useMemo, useCallback } from 'react';
+import { getScoreColor, sanitizeFilename } from '../utils/helpers';
 
 export function useExportHandlers({
   toolName, useCase, laborBreakdown, durationMonths, implementationCost,
@@ -79,10 +80,10 @@ export function useExportHandlers({
       const monthlySheet = XLSX.utils.json_to_sheet(monthlySheetData);
       XLSX.utils.book_append_sheet(wb, monthlySheet, 'Monthly Cash Flow');
 
-      XLSX.writeFile(wb, `${toolName || 'Automation'} Automation Savings.xlsx`);
+      XLSX.writeFile(wb, `${sanitizeFilename(toolName) || 'Automation'} Automation Savings.xlsx`);
     } catch (e) {
       console.error(e);
-      alert(`Failed to generate Excel file. Error: ${e.message}`);
+      alert('Failed to generate Excel file. Please try again.');
     } finally {
       setIsExportingXLSX(false);
     }
@@ -103,11 +104,7 @@ export function useExportHandlers({
       pptx.layout = 'LAYOUT_WIDE';
       const slide = pptx.addSlide();
 
-      // FIX: Viability score badge is always green regardless of score value
-      let scoreColor = '10B981';
-      if (results.automationScore < 80 && results.automationScore >= 60) scoreColor = '3B82F6';
-      if (results.automationScore < 60 && results.automationScore >= 40) scoreColor = 'F59E0B';
-      if (results.automationScore < 40) scoreColor = 'EF4444';
+      const scoreColor = getScoreColor(results.automationScore, 'hex');
 
       const cTheme = '7C3AED';
       const cBg = 'F8FAFC';
@@ -180,10 +177,10 @@ export function useExportHandlers({
         }
       });
 
-      await pptx.writeFile({ fileName: `${toolName || 'Automation'} Automation 1 Slider.pptx` });
+      await pptx.writeFile({ fileName: `${sanitizeFilename(toolName) || 'Automation'} Automation 1 Slider.pptx` });
     } catch (e) {
       console.error(e);
-      alert(`Failed to generate PPTX file. Error: ${e.message}`);
+      alert('Failed to generate PPTX file. Please try again.');
     } finally {
       setIsExportingPPTX(false);
     }
