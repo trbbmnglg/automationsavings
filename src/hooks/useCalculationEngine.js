@@ -2,20 +2,18 @@ import { useMemo } from 'react';
 import { getScoreColor, getScoreLabel } from '../utils/helpers';
 
 /**
- * Core calculation engine that computes ROI, net savings, payback period,
- * viability score, and month-by-month cash flow projections.
- * Applies scenario modifiers (optimistic/conservative) and compounds
- * run cost inflation and variable SRE costs over the project lifetime.
- * @param {Object} params - All input state from AppContext
- * @returns {Object} Derived financial metrics including netSavings, roi, paybackPeriod, automationScore, monthlyData, etc.
+ * Pure calculation function (no React dependency) that computes ROI, net savings,
+ * payback period, viability score, and month-by-month cash flow projections.
+ * Extracted from useCalculationEngine for direct unit testing.
+ * @param {Object} params - All input state
+ * @returns {Object} Derived financial metrics
  */
-export function useCalculationEngine({
-  laborBreakdown, automationPercent, durationMonths, implementationCost, 
-  monthlyRunCost, runCostInflation, isAdvancedRunCost, runCostBreakdown, 
-  lcrRates, hasSre, isAdvancedSre, sreCostY1, sreCostY2, sreBreakdown, 
+export function calculateEngine({
+  laborBreakdown, automationPercent, durationMonths, implementationCost,
+  monthlyRunCost, runCostInflation, isAdvancedRunCost, runCostBreakdown,
+  lcrRates, hasSre, isAdvancedSre, sreCostY1, sreCostY2, sreBreakdown,
   workingDays, hoursPerDay, scenario, currency, exchangeRates
 }) {
-  return useMemo(() => {
     const fteHoursPerMonth = Math.max(1, Number(workingDays)) * Math.max(1, Number(hoursPerDay));
     const currencyMultiplier = exchangeRates[currency] / exchangeRates['USD'];
 
@@ -174,17 +172,25 @@ export function useCalculationEngine({
     const scoreColor = getScoreColor(score, 'tailwind');
 
     return {
-      totalEffectiveExecutions, currentMonthlyCost, futureMonthlyCostAvg, grossMonthlySave, avgNetMonthlySave, totalGrossSavings: totalGrossSave, 
-      totalInvestment, totalRunCost, totalSreCost, netSavings: netSave, roi, paybackPeriod: paybackMonth, hoursSavedMonthly: hoursMonthlySaved, 
+      totalEffectiveExecutions, currentMonthlyCost, futureMonthlyCostAvg, grossMonthlySave, avgNetMonthlySave, totalGrossSavings: totalGrossSave,
+      totalInvestment, totalRunCost, totalSreCost, netSavings: netSave, roi, paybackPeriod: paybackMonth, hoursSavedMonthly: hoursMonthlySaved,
       hoursSavedTotal: hoursSavedTotal, fteSavings, currentFte: hoursMonthlyCurrent / fteHoursPerMonth, toBeFte: Math.max(0, hoursMonthlyCurrent - hoursMonthlySaved) / fteHoursPerMonth,
       totalManualHoursMonthly: hoursMonthlyCurrent, remainingManualHoursMonthly: Math.max(0, hoursMonthlyCurrent - hoursMonthlySaved),
       monthlyData, automationScore: score, scoreLabel, scoreColor, fteHoursPerMonth, currencyMultiplier, blendedEffortPerHour, blendedResourceCostPerHour,
       uiSreY1, uiSreY2, uiRunCostY1
     };
-  }, [
-    laborBreakdown, automationPercent, durationMonths, implementationCost, 
-    monthlyRunCost, runCostInflation, isAdvancedRunCost, runCostBreakdown, 
-    lcrRates, hasSre, isAdvancedSre, sreCostY1, sreCostY2, sreBreakdown, 
-    workingDays, hoursPerDay, scenario, currency, exchangeRates
+}
+
+/**
+ * React hook wrapper around calculateEngine. Memoizes the result.
+ * @param {Object} params - All input state from AppContext
+ * @returns {Object} Derived financial metrics
+ */
+export function useCalculationEngine(params) {
+  return useMemo(() => calculateEngine(params), [
+    params.laborBreakdown, params.automationPercent, params.durationMonths, params.implementationCost,
+    params.monthlyRunCost, params.runCostInflation, params.isAdvancedRunCost, params.runCostBreakdown,
+    params.lcrRates, params.hasSre, params.isAdvancedSre, params.sreCostY1, params.sreCostY2, params.sreBreakdown,
+    params.workingDays, params.hoursPerDay, params.scenario, params.currency, params.exchangeRates
   ]);
 }
