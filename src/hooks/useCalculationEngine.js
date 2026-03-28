@@ -1,6 +1,14 @@
 import { useMemo } from 'react';
 import { getScoreColor, getScoreLabel } from '../utils/helpers';
 
+/**
+ * Core calculation engine that computes ROI, net savings, payback period,
+ * viability score, and month-by-month cash flow projections.
+ * Applies scenario modifiers (optimistic/conservative) and compounds
+ * run cost inflation and variable SRE costs over the project lifetime.
+ * @param {Object} params - All input state from AppContext
+ * @returns {Object} Derived financial metrics including netSavings, roi, paybackPeriod, automationScore, monthlyData, etc.
+ */
 export function useCalculationEngine({
   laborBreakdown, automationPercent, durationMonths, implementationCost, 
   monthlyRunCost, runCostInflation, isAdvancedRunCost, runCostBreakdown, 

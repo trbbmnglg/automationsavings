@@ -1,6 +1,13 @@
 import { useMemo, useCallback } from 'react';
 import { getScoreColor, sanitizeFilename } from '../utils/helpers';
 
+/**
+ * Handles lazy-loaded Excel (XLSX) and PowerPoint (PPTX) export generation.
+ * XLSX includes a summary sheet and month-by-month cash flow.
+ * PPTX generates a single-slide executive summary with doughnut chart.
+ * @param {Object} params - Project data, results, formatCurrency, setters, and addToast
+ * @returns {{ isReadyToExport: boolean, handleExportXLSX: Function, handleExportPPTX: Function }}
+ */
 export function useExportHandlers({
   toolName, useCase, laborBreakdown, durationMonths, implementationCost,
   isAdvancedRunCost, monthlyRunCost, results, scenario, automationPercent,

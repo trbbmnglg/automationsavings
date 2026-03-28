@@ -1,3 +1,11 @@
+/**
+ * Fetches a URL with exponential backoff retry (up to 5 attempts).
+ * Each attempt has a 30-second timeout. Client errors (4xx except 429) are not retried.
+ * @param {string} url - The URL to fetch
+ * @param {RequestInit} options - Fetch options (method, headers, body, etc.)
+ * @returns {Promise<Response>} The successful response
+ * @throws {Error} After all retries are exhausted or on non-retryable errors
+ */
 export const fetchWithRetry = async (url, options) => {
   const delays = [1000, 2000, 4000, 8000, 16000];
   for (let i = 0; i < delays.length; i++) {
@@ -27,6 +35,13 @@ export const fetchWithRetry = async (url, options) => {
   }
 };
 
+/**
+ * Sanitizes user input for safe inclusion in AI prompts.
+ * Removes HTML tags, trims whitespace, and truncates to the specified character limit.
+ * @param {string} str - Raw user input
+ * @param {number} [limit=400] - Maximum character length
+ * @returns {string} Sanitized string safe for prompt interpolation
+ */
 export const sanitizeStr = (str, limit = 400) => 
   (str || '')
     .substring(0, limit)

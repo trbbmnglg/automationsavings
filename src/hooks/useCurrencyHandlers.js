@@ -1,5 +1,12 @@
 import { useMemo, useCallback } from 'react';
 
+/**
+ * Manages currency formatting and live conversion between USD, PHP, EUR, JPY.
+ * When the user switches currency, all monetary inputs are recalculated
+ * using exchange rates from Frankfurter API (or fallback defaults).
+ * @param {Object} params - Currency state, exchange rates, monetary inputs and their setters
+ * @returns {{ formatCurrency: (value: number) => string, handleCurrencyChange: (newCurrency: string) => void }}
+ */
 export function useCurrencyHandlers({
   currency, setCurrency, exchangeRates, implementationCost, setImplementationCost,
   monthlyRunCost, setMonthlyRunCost, setRunCostBreakdown, currencyConfig,

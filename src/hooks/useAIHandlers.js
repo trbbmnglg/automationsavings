@@ -4,6 +4,14 @@ import { fetchWithRetry, sanitizeStr, checkAllFieldsSecurity } from '../utils/ai
 const sanitizeAIArrayItems = (items) =>
   items.filter(item => typeof item === 'string').map(item => item.substring(0, 500));
 
+/**
+ * Provides AI-powered content generators: business pitches, KPI/challenge
+ * suggestions, ROI strategy insights, and SRE use case justifications.
+ * Handles provider abstraction (Pollinations, Groq, OpenRouter), input
+ * security scanning, and error notification via toast.
+ * @param {Object} params - AI config, input state, setters, and addToast
+ * @returns {{ generateAIPitch: Function, generateSuggestions: Function, generateROIInsights: Function, generateSreUseCase: Function }}
+ */
 export function useAIHandlers({
   aiProvider, aiApiKey, aiModel, providerOptions, toolName, useCase, scenario, durationMonths,
   results, formatCurrency, automationPercent, challenges, kpis, qualitativeBenefits,

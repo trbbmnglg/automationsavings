@@ -1,5 +1,13 @@
 import { useMemo, useEffect } from 'react';
 
+/**
+ * Generates memoized Tailwind class strings for the active theme combination.
+ * Supports two color schemes (default blue, electric violet) in both light and dark modes.
+ * Sets data-theme attribute on document.body for CSS targeting.
+ * @param {boolean} isDarkMode - Whether dark mode is active
+ * @param {string} [themeColor='default'] - Color scheme ('default' | 'violet')
+ * @returns {Object} Theme style strings: bgMain, textMain, textHeading, textSub, borderMuted, panelBg, cardStyle, inputStyle, inputErrorStyle
+ */
 export function useTheme(isDarkMode, themeColor = 'default') {
 
   useEffect(() => {
