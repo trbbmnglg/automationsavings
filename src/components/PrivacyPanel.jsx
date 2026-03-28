@@ -66,7 +66,7 @@ export default function PrivacyPanel() {
             <ShieldCheck size={24} />
           </div>
           <div>
-            <h2 className={`text-lg font-extrabold ${textHeading} tracking-tight`}>Privacy & Security</h2>
+            <h2 id="privacy-heading" className={`text-lg font-extrabold ${textHeading} tracking-tight`}>Privacy & Security</h2>
             <p className={`text-sm ${textSub} font-medium`}>How your data is handled and protected</p>
           </div>
         </div>
@@ -75,7 +75,13 @@ export default function PrivacyPanel() {
         </div>
       </button>
 
-      <div className={`transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+      <div
+        role="region"
+        aria-labelledby="privacy-heading"
+        hidden={!isOpen}
+        className={`transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}
+        style={!isOpen ? { display: 'none' } : undefined}
+      >
         <div className={`p-6 md:p-8 pt-0 border-t ${borderMuted}`}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
             {items.map(({ icon, color, bg, title, body }) => (

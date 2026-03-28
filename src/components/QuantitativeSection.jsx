@@ -85,17 +85,17 @@ function QuantitativeSection() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-7 pt-4">
           {/* Duration */}
           <div>
-            <label className={`flex items-center text-sm font-bold ${textMain} mb-2`}>Remaining Duration <Tooltip text='How many months will this automation run before the project ends or needs a rebuild?'><Info size={14} className={`${textSub} hover:text-blue-500 transition-colors cursor-help`}/></Tooltip></label>
-            <div className="relative"><div className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none ${textSub}`}><Briefcase size={18} /></div><input type="number" value={durationMonths} onChange={(e) => setDurationMonths(e.target.value)} placeholder="0" className={`${durationMonths !== '' && durationMonths < 0 ? inputErrorStyle : inputStyle} pl-10 pr-20 font-mono text-lg`} /><span className={`absolute inset-y-0 right-0 pr-4 flex items-center ${textSub} font-bold text-xs pointer-events-none`}>MONTHS</span></div>
+            <label htmlFor="duration-input" className={`flex items-center text-sm font-bold ${textMain} mb-2`}>Remaining Duration <Tooltip text='How many months will this automation run before the project ends or needs a rebuild?'><Info size={14} className={`${textSub} hover:text-blue-500 transition-colors cursor-help`}/></Tooltip></label>
+            <div className="relative"><div className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none ${textSub}`}><Briefcase size={18} aria-hidden="true" /></div><input id="duration-input" aria-describedby="duration-hint" type="number" value={durationMonths} onChange={(e) => setDurationMonths(e.target.value)} placeholder="0" className={`${durationMonths !== '' && durationMonths < 0 ? inputErrorStyle : inputStyle} pl-10 pr-20 font-mono text-lg`} /><span id="duration-hint" className={`absolute inset-y-0 right-0 pr-4 flex items-center ${textSub} font-bold text-xs pointer-events-none`}>MONTHS</span></div>
           </div>
 
           {/* Percent Automated Slider */}
           <div className="pt-1">
             <div className="flex justify-between items-center mb-3">
-              <label className={`flex items-center text-sm font-bold ${textMain}`}>Percentage Automated <Tooltip text='What percentage of the manual work is being completely eliminated by the bot?'><Info size={14} className={`${textSub} hover:text-blue-500 transition-colors cursor-help`}/></Tooltip></label>
-              <span className={`font-extrabold ${isDarkMode ? 'text-blue-400 bg-blue-950/50' : 'text-blue-700 bg-blue-100'} px-4 py-1.5 rounded-xl text-sm shadow-sm`}>{automationPercent}%</span>
+              <label htmlFor="automation-pct" className={`flex items-center text-sm font-bold ${textMain}`}>Percentage Automated <Tooltip text='What percentage of the manual work is being completely eliminated by the bot?'><Info size={14} className={`${textSub} hover:text-blue-500 transition-colors cursor-help`}/></Tooltip></label>
+              <span id="automation-pct-value" className={`font-extrabold ${isDarkMode ? 'text-blue-400 bg-blue-950/50' : 'text-blue-700 bg-blue-100'} px-4 py-1.5 rounded-xl text-sm shadow-sm`}>{automationPercent}%</span>
             </div>
-            <input type="range" aria-label="Percentage Automated" min="0" max="100" value={automationPercent} onChange={(e) => setAutomationPercent(e.target.value)} className={`w-full h-3 ${isDarkMode ? 'bg-slate-700' : 'bg-slate-200'} rounded-full appearance-none cursor-pointer accent-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/30`} />
+            <input id="automation-pct" type="range" aria-label="Percentage Automated" aria-describedby="automation-pct-value" min="0" max="100" value={automationPercent} onChange={(e) => setAutomationPercent(e.target.value)} className={`w-full h-3 ${isDarkMode ? 'bg-slate-700' : 'bg-slate-200'} rounded-full appearance-none cursor-pointer accent-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/30`} />
             <div className={`flex justify-between text-[10px] font-bold ${textSub} mt-2 px-1`}><span>0%</span><span>50%</span><span>100%</span></div>
           </div>
         </div>

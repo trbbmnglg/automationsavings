@@ -17,7 +17,7 @@ export default function MethodologyPanel() {
             <HelpCircle size={24} />
           </div>
           <div>
-            <h2 className={`text-lg font-extrabold ${textHeading} tracking-tight`}>Methodology & Calculation Details</h2>
+            <h2 id="methodology-heading" className={`text-lg font-extrabold ${textHeading} tracking-tight`}>Methodology & Calculation Details</h2>
             <p className={`text-sm ${textSub} font-medium`}>How these numbers are calculated</p>
           </div>
         </div>
@@ -27,10 +27,13 @@ export default function MethodologyPanel() {
       </button>
 
       <div
-        aria-hidden={!isHowItWorksOpen}
+        role="region"
+        aria-labelledby="methodology-heading"
+        hidden={!isHowItWorksOpen}
         className={`transition-all duration-300 ease-in-out ${isHowItWorksOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}
+        style={!isHowItWorksOpen ? { display: 'none' } : undefined}
       >
-        <div className={`p-6 md:p-8 pt-0 border-t ${borderMuted}`} tabIndex={isHowItWorksOpen ? 0 : -1}>
+        <div className={`p-6 md:p-8 pt-0 border-t ${borderMuted}`}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6">
 
             <div className="space-y-6">

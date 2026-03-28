@@ -114,8 +114,10 @@ export default function SettingsModal() {
             </h3>
             <div className={`${isDarkMode ? 'bg-[#0F172A] border-slate-700' : 'bg-slate-50 border-slate-200'} border rounded-2xl p-4 grid grid-cols-2 gap-4`}>
               <div>
-                <label className={`block text-xs font-bold ${textSub} uppercase mb-2`}>Working Days / Mo</label>
+                <label htmlFor="working-days-input" className={`block text-xs font-bold ${textSub} uppercase mb-2`}>Working Days / Mo</label>
                 <input
+                  id="working-days-input"
+                  aria-describedby="working-days-hint"
                   type="number"
                   min="1"
                   max="31"
@@ -123,11 +125,13 @@ export default function SettingsModal() {
                   onChange={(e) => setWorkingDays(Number(e.target.value))}
                   className={`${inputStyle} py-2.5 text-sm font-mono`}
                 />
-                <p className={`text-[10px] font-medium ${textSub} mt-1`}>Default: 22 days</p>
+                <p id="working-days-hint" className={`text-[10px] font-medium ${textSub} mt-1`}>Default: 22 days</p>
               </div>
               <div>
-                <label className={`block text-xs font-bold ${textSub} uppercase mb-2`}>Hours / Day</label>
+                <label htmlFor="hours-per-day-input" className={`block text-xs font-bold ${textSub} uppercase mb-2`}>Hours / Day</label>
                 <input
+                  id="hours-per-day-input"
+                  aria-describedby="hours-per-day-hint"
                   type="number"
                   min="1"
                   max="24"
@@ -135,7 +139,7 @@ export default function SettingsModal() {
                   onChange={(e) => setHoursPerDay(Number(e.target.value))}
                   className={`${inputStyle} py-2.5 text-sm font-mono`}
                 />
-                <p className={`text-[10px] font-medium ${textSub} mt-1`}>Default: 8 hrs</p>
+                <p id="hours-per-day-hint" className={`text-[10px] font-medium ${textSub} mt-1`}>Default: 8 hrs</p>
               </div>
             </div>
             <p className={`text-[11px] font-medium ${textSub} px-1`}>
@@ -202,15 +206,17 @@ export default function SettingsModal() {
               {aiProvider !== 'pollinations' && (
                 <>
                   <div>
-                    <label className={`block text-xs font-bold ${textSub} uppercase mb-2`}>API Key</label>
+                    <label htmlFor="api-key-input" className={`block text-xs font-bold ${textSub} uppercase mb-2`}>API Key</label>
                     <input
+                      id="api-key-input"
+                      aria-describedby="api-key-hint"
                       type="password"
                       value={aiApiKey}
                       onChange={(e) => setAiApiKey(e.target.value)}
                       placeholder="Paste your API key here..."
                       className={`w-full px-3 py-2.5 text-sm font-mono rounded-xl border outline-none transition-colors ${isDarkMode ? 'bg-[#1E293B] border-slate-700 text-slate-200 placeholder-slate-600' : 'bg-white border-slate-200 text-slate-800 placeholder-slate-400'}`}
                     />
-                    <p className={`text-[10px] font-medium ${textSub} mt-1.5`}>Never stored — cleared on page refresh for security.</p>
+                    <p id="api-key-hint" className={`text-[10px] font-medium ${textSub} mt-1.5`}>Never stored — cleared on page refresh for security.</p>
                   </div>
                   <div>
                     <label className={`block text-xs font-bold ${textSub} uppercase mb-2`}>Model</label>
