@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { X, Download, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, BarChart3 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { useToast } from '../Toast';
 
 const ROWS_PER_PAGE = 12;
 
@@ -10,6 +11,7 @@ export default function MonthlyBreakdownModal() {
     results, formatCurrency, toolName, scenario, durationMonths
   } = useApp();
 
+  const addToast = useToast();
   const [page, setPage] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -208,7 +210,7 @@ export default function MonthlyBreakdownModal() {
       XLSX.writeFile(wb, `${safeName} Monthly Breakdown.xlsx`);
     } catch (e) {
       console.error('XLSX export failed:', e);
-      alert('Export failed. Please try again.');
+      addToast('Export failed. Please try again.', 'error');
     } finally {
       setIsExporting(false);
     }
