@@ -151,6 +151,23 @@ export function AppProvider({ children }) {
     };
   }, []);
 
+  // ─── Toast notifications ───────────────────────────────────────────────────
+  const addToast = useToast();
+
+  // ─── UI state from UIContext (theme, modals, score toggle) ─────────────────
+  const ui = useUI();
+  const {
+    isDarkMode, setIsDarkMode, themeColor, setThemeColor,
+    showScore, setShowScore,
+    isHowItWorksOpen, setIsHowItWorksOpen,
+    showClearConfirm, setShowClearConfirm,
+    isSettingsOpen, setIsSettingsOpen,
+    isSreModalOpen, setIsSreModalOpen,
+    isRunCostModalOpen, setIsRunCostModalOpen,
+    isMonthlyBreakdownOpen, setIsMonthlyBreakdownOpen,
+    ...themeStyles
+  } = ui;
+
   // ─── Derived state / engines ─────────────────────────────────────────────────
   const results = useCalculationEngine({
     laborBreakdown, automationPercent, durationMonths, implementationCost,
@@ -185,23 +202,6 @@ export function AppProvider({ children }) {
     challenges, qualitativeBenefits, kpis, formatCurrency,
     setIsExportingXLSX, setIsExportingPPTX, addToast
   });
-
-  // ─── Toast notifications ───────────────────────────────────────────────────
-  const addToast = useToast();
-
-  // ─── UI state from UIContext (theme, modals, score toggle) ─────────────────
-  const ui = useUI();
-  const {
-    isDarkMode, setIsDarkMode, themeColor, setThemeColor,
-    showScore, setShowScore,
-    isHowItWorksOpen, setIsHowItWorksOpen,
-    showClearConfirm, setShowClearConfirm,
-    isSettingsOpen, setIsSettingsOpen,
-    isSreModalOpen, setIsSreModalOpen,
-    isRunCostModalOpen, setIsRunCostModalOpen,
-    isMonthlyBreakdownOpen, setIsMonthlyBreakdownOpen,
-    ...themeStyles
-  } = ui;
 
   const handleProviderChange = useCallback((e) => {
     const newProvider = e.target.value;
