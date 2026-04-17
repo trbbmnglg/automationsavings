@@ -9,7 +9,7 @@ import { useMemo, useEffect } from 'react';
  * Design decisions per Accenture July 2025 v4:
  *   - Light is default; background = #F1F1EF (gray-off-white)
  *   - Dark uses pure #000000 expanse
- *   - Cards: sharp corners (no rounded-[28px] / )
+ *   - Cards: sharp corners (no rounded-2xl or arbitrary-pixel radii)
  *   - Inputs: sharp, single ring, focus = accenture-purple
  *   - No gradients on chrome (only for decorative accents if any)
  */

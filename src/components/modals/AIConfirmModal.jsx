@@ -20,15 +20,15 @@ export default function AIConfirmModal({ onConfirm, onCancel }) {
       aria-labelledby="ai-confirm-title"
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[300] p-4"
     >
-      <div className={`${isDarkMode ? 'bg-[#1E293B] border-accenture-gray-dark' : 'bg-white border-accenture-gray-light'} rounded-[32px] shadow-2xl w-full max-w-sm border p-8`}>
+      <div className={`${isDarkMode ? 'bg-[#1E293B] border-accenture-gray-dark' : 'bg-white border-accenture-gray-light'} rounded-none shadow-2xl w-full max-w-sm border p-8`}>
 
         {/* Icon */}
         <div className="flex justify-center mb-5">
           <div className="relative">
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center ${isDarkMode ? 'bg-accenture-purple' : 'bg-accenture-purple-lightest'}`}>
+            <div className={`w-16 h-16  flex items-center justify-center ${isDarkMode ? 'bg-accenture-purple' : 'bg-accenture-purple-lightest'}`}>
               <Sparkles size={30} className="text-accenture-purple-dark" />
             </div>
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-accenture-purple flex items-center justify-center">
+            <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-accenture-purple flex items-center justify-center">
               <AlertTriangle size={13} className="text-white" />
             </div>
           </div>

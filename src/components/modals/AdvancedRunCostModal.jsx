@@ -23,15 +23,15 @@ export default function AdvancedRunCostModal() {
       const isEnabled = hasToggle ? data.enabled : true;
 
       return (
-         <div className={`p-4 rounded-[20px] border ${isDarkMode ? 'bg-[#0F172A] border-accenture-gray-dark/80' : 'bg-accenture-gray-off-white border-accenture-gray-light'} shadow-sm transition-all duration-300 ${hasToggle && !isEnabled ? 'opacity-50 grayscale' : ''}`}>
+         <div className={`p-4 rounded-none border ${isDarkMode ? 'bg-[#0F172A] border-accenture-gray-dark/80' : 'bg-accenture-gray-off-white border-accenture-gray-light'} shadow-sm transition-all duration-300 ${hasToggle && !isEnabled ? 'opacity-50 grayscale' : ''}`}>
             <div className="flex justify-between items-center mb-3">
                <div>
                   <h4 className={`text-sm font-bold ${textHeading}`}>{title}</h4>
                   {subtitle && <p className={`text-[10px] ${textSub}`}>{subtitle}</p>}
                </div>
                {hasToggle && (
-                  <button onClick={() => updateRunCostBreakdown(key, 'enabled', !data.enabled)} className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${data.enabled ? 'bg-accenture-purple' : 'bg-accenture-gray-light dark:bg-accenture-gray-dark'}`}>
-                     <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${data.enabled ? 'translate-x-5' : 'translate-x-1'}`} />
+                  <button onClick={() => updateRunCostBreakdown(key, 'enabled', !data.enabled)} className={`relative inline-flex h-5 w-9 items-center  transition-colors ${data.enabled ? 'bg-accenture-purple' : 'bg-accenture-gray-light dark:bg-accenture-gray-dark'}`}>
+                     <span className={`inline-block h-3 w-3 transform  bg-white transition-transform ${data.enabled ? 'translate-x-5' : 'translate-x-1'}`} />
                   </button>
                )}
             </div>
@@ -66,7 +66,7 @@ export default function AdvancedRunCostModal() {
        aria-labelledby="modal-title" 
        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4 transition-opacity"
      >
-       <div className={`${isDarkMode ? 'bg-[#1E293B] border-accenture-gray-dark' : 'bg-white border-accenture-gray-light'} rounded-[32px] shadow-2xl w-full max-w-xl overflow-hidden border flex flex-col max-h-[90vh]`}>
+       <div className={`${isDarkMode ? 'bg-[#1E293B] border-accenture-gray-dark' : 'bg-white border-accenture-gray-light'} rounded-none shadow-2xl w-full max-w-xl overflow-hidden border flex flex-col max-h-[90vh]`}>
          <div className={`${isDarkMode ? 'bg-[#0F172A] border-accenture-gray-dark' : 'bg-accenture-gray-off-white border-accenture-gray-light'} border-b px-6 py-5 flex items-center justify-between shrink-0`}>
            <div className="flex items-center space-x-3"><div className="bg-accenture-purple/20 p-2 text-accenture-purple"><Server size={18} /></div><h2 id="modal-title" className={`text-xl font-bold ${textHeading}`}>Advanced Run Cost</h2></div>
            <button onClick={() => setIsRunCostModalOpen(false)} className={`${isDarkMode ? 'text-accenture-gray-dark hover:text-white hover:bg-[#0a0a0a]' : 'text-accenture-gray-dark hover:text-black bg-white hover:bg-accenture-gray-off-white shadow-sm'} p-2 rounded-full transition-colors`}><X size={20} /></button>

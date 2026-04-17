@@ -10,7 +10,7 @@ export default function MethodologyPanel() {
       <button
         onClick={() => setIsHowItWorksOpen(!isHowItWorksOpen)}
         aria-expanded={isHowItWorksOpen}
-        className={`w-full p-6 md:p-8 flex items-center justify-between ${isDarkMode ? 'hover:bg-[#0a0a0a]/50' : 'hover:bg-accenture-gray-off-white'} transition-colors text-left outline-none rounded-[28px]`}
+        className={`w-full p-6 md:p-8 flex items-center justify-between ${isDarkMode ? 'hover:bg-[#0a0a0a]/50' : 'hover:bg-accenture-gray-off-white'} transition-colors text-left outline-none rounded-none`}
       >
         <div className="flex items-center space-x-4">
           <div className={`${isDarkMode ? 'bg-[#0F172A]' : 'bg-accenture-gray-off-white'} p-3  ${textSub}`}>

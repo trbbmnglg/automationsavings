@@ -15,16 +15,16 @@ function QuantitativeSection() {
     <section className={cardStyle}>
       <div className={`px-6 md:px-8 py-5 flex items-center justify-between border-b ${borderMuted}`}>
         <div className="flex items-center space-x-3">
-          <div className={`${isDarkMode ? 'bg-accenture-purple/20 text-accenture-purple' : 'bg-accenture-purple-lightest text-accenture-purple-dark'} p-2.5 rounded-[14px]`}><Activity size={20} aria-hidden="true" /></div>
+          <div className={`${isDarkMode ? 'bg-accenture-purple/20 text-accenture-purple' : 'bg-accenture-purple-lightest text-accenture-purple-dark'} p-2.5 rounded-none`}><Activity size={20} aria-hidden="true" /></div>
           <h2 className={`text-xl font-bold ${textHeading} tracking-tight`}>Labor & Task Breakdown</h2>
         </div>
       </div>
-      <div className={`p-6 md:p-8 space-y-7 ${panelBg} rounded-b-[28px]`}>
+      <div className={`p-6 md:p-8 space-y-7 ${panelBg} rounded-none`}>
         
         {/* Dynamic Labor Rows */}
         <div className="space-y-4">
           {laborBreakdown.map((entry, index) => (
-            <div key={entry.id} className={`p-5 rounded-[20px] border ${isDarkMode ? 'bg-[#0F172A] border-accenture-gray-dark/80' : 'bg-white border-accenture-gray-light'} relative space-y-4 shadow-sm`}>
+            <div key={entry.id} className={`p-5 rounded-none border ${isDarkMode ? 'bg-[#0F172A] border-accenture-gray-dark/80' : 'bg-white border-accenture-gray-light'} relative space-y-4 shadow-sm`}>
                <div className="flex justify-between items-center">
                   <div className="flex items-center space-x-2">
                      <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-1  ${isDarkMode ? 'bg-[#0a0a0a] text-accenture-gray-light' : 'bg-accenture-gray-off-white text-accenture-gray-dark'}`}>Resource {index + 1}</span>
@@ -66,7 +66,7 @@ function QuantitativeSection() {
                </div>
             </div>
           ))}
-          <button onClick={addLabor} className={`w-full py-3 flex items-center justify-center space-x-2 border-2 border-dashed rounded-[20px] text-sm font-bold transition-all ${isDarkMode ? 'border-accenture-gray-dark text-accenture-gray-dark hover:border-accenture-purple hover:text-accenture-purple hover:bg-accenture-purple-darkest/20' : 'border-accenture-gray-light text-accenture-gray-dark hover:border-accenture-purple hover:text-accenture-purple-dark hover:bg-accenture-purple-lightest'}`}>
+          <button onClick={addLabor} className={`w-full py-3 flex items-center justify-center space-x-2 border-2 border-dashed rounded-none text-sm font-bold transition-all ${isDarkMode ? 'border-accenture-gray-dark text-accenture-gray-dark hover:border-accenture-purple hover:text-accenture-purple hover:bg-accenture-purple-darkest/20' : 'border-accenture-gray-light text-accenture-gray-dark hover:border-accenture-purple hover:text-accenture-purple-dark hover:bg-accenture-purple-lightest'}`}>
              <Plus size={16} /><span>Add Resource Role</span>
           </button>
         </div>
@@ -130,9 +130,9 @@ function QuantitativeSection() {
                   </label>
                   <button
                     onClick={() => { setIsAdvancedRunCost(!isAdvancedRunCost); if(!isAdvancedRunCost) setIsRunCostModalOpen(true); }}
-                    className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${isAdvancedRunCost ? 'bg-accenture-purple' : 'bg-accenture-gray-light dark:bg-accenture-gray-dark'}`}
+                    className={`relative inline-flex h-5 w-9 shrink-0 items-center  transition-colors ${isAdvancedRunCost ? 'bg-accenture-purple' : 'bg-accenture-gray-light dark:bg-accenture-gray-dark'}`}
                   >
-                    <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${isAdvancedRunCost ? 'translate-x-5' : 'translate-x-1'}`} />
+                    <span className={`inline-block h-3 w-3 transform  bg-white transition-transform ${isAdvancedRunCost ? 'translate-x-5' : 'translate-x-1'}`} />
                   </button>
                 </div>
                 <p className={`text-[10px] ${textSub} mb-3 leading-tight`}>Recurring licenses/infra.</p>
@@ -188,8 +188,8 @@ function QuantitativeSection() {
                   </label>
                   <p className={`text-[10px] ${textSub} leading-tight`}>Dedicated operational oversight.</p>
                 </div>
-                <button onClick={() => setHasSre(!hasSre)} className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${hasSre ? 'bg-accenture-purple-dark' : 'bg-accenture-gray-light dark:bg-accenture-gray-dark'}`}>
-                  <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${hasSre ? 'translate-x-5' : 'translate-x-1'}`} />
+                <button onClick={() => setHasSre(!hasSre)} className={`relative inline-flex h-5 w-9 shrink-0 items-center  transition-colors ${hasSre ? 'bg-accenture-purple-dark' : 'bg-accenture-gray-light dark:bg-accenture-gray-dark'}`}>
+                  <span className={`inline-block h-3 w-3 transform  bg-white transition-transform ${hasSre ? 'translate-x-5' : 'translate-x-1'}`} />
                 </button>
               </div>
               

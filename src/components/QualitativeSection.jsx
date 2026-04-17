@@ -63,7 +63,7 @@ export default function QualitativeSection() {
       <section className={cardStyle}>
         <div className={`px-6 md:px-8 py-5 flex flex-col sm:flex-row sm:items-center justify-between border-b ${borderMuted} gap-4`}>
           <div className="flex items-center space-x-3">
-            <div className={`${isDarkMode ? 'bg-accenture-purple/20 text-accenture-purple' : 'bg-accenture-purple-lightest text-accenture-purple-dark'} p-2.5 rounded-[14px]`}>
+            <div className={`${isDarkMode ? 'bg-accenture-purple/20 text-accenture-purple' : 'bg-accenture-purple-lightest text-accenture-purple-dark'} p-2.5 rounded-none`}>
               <FileText size={20} aria-hidden="true" />
             </div>
             <h2 className={`text-xl font-bold ${textHeading} tracking-tight`}>Qualitative Details</h2>
@@ -80,7 +80,7 @@ export default function QualitativeSection() {
           </button>
         </div>
 
-        <div className={`p-6 md:p-8 space-y-5 ${panelBg} rounded-b-[28px]`}>
+        <div className={`p-6 md:p-8 space-y-5 ${panelBg} rounded-none`}>
 
           {/* Security Error Banner */}
           {securityError && (

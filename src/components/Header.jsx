@@ -17,7 +17,7 @@ export default function Header() {
   return (
     <header className={`${cardStyle} p-4 pr-6 flex items-center justify-between z-20`}>
       <div className="flex items-center space-x-4">
-        <div className={`${calcIconClass} p-3.5 rounded-[20px] text-white shadow-lg`}>
+        <div className={`${calcIconClass} p-3.5 rounded-none text-white shadow-lg`}>
           <Calculator size={26} strokeWidth={2.5} aria-hidden="true" />
         </div>
         <div>
@@ -53,11 +53,11 @@ export default function Header() {
           </Tooltip>
         </div>
 
-        <div className={`flex items-center space-x-1 ${isDarkMode ? 'bg-[#0F172A] border-accenture-gray-dark/80' : 'bg-accenture-gray-off-white border-transparent'} p-1 rounded-[20px] border`}>
-            <Tooltip text={isDarkMode ? "Switch to Day Mode" : "Switch to Night Mode"}><button onClick={() => setIsDarkMode(!isDarkMode)} aria-label={isDarkMode ? "Switch to Day Mode" : "Switch to Night Mode"} className={`flex items-center text-sm font-bold ${isDarkMode ? 'text-accenture-purple hover:bg-[#1E293B]' : 'text-accenture-gray-dark hover:text-accenture-purple-dark hover:bg-white shadow-sm'} p-2.5 rounded-[14px] transition-all`}><Sun size={18} aria-hidden="true" /></button></Tooltip>
-            <Tooltip text="Generate Mock Data (Quick Test)"><button onClick={handleGenerateMockData} aria-label="Generate Mock Data" className={`flex items-center text-sm font-bold ${isDarkMode ? 'text-accenture-purple hover:bg-[#1E293B]' : 'text-accenture-gray-dark hover:text-accenture-purple-dark hover:bg-white shadow-sm'} p-2.5 rounded-[14px] transition-all`}><FlaskConical size={18} aria-hidden="true" /></button></Tooltip>
-            <Tooltip text="Clear Project Data"><button onClick={() => setShowClearConfirm(true)} aria-label="Clear Project Data" className={`flex items-center text-sm font-bold ${isDarkMode ? 'text-accenture-gray-dark hover:text-accenture-pink hover:bg-[#1E293B]' : 'text-accenture-gray-dark hover:text-accenture-pink hover:bg-white shadow-sm'} p-2.5 rounded-[14px] transition-all`}><Trash2 size={18} aria-hidden="true" /></button></Tooltip>
-            <Tooltip text="Settings"><button onClick={() => setIsSettingsOpen(true)} aria-label="Settings" className={`flex items-center text-sm font-bold ${isDarkMode ? 'text-accenture-gray-dark hover:text-accenture-purple hover:bg-[#1E293B]' : 'text-accenture-gray-dark hover:text-accenture-purple-dark hover:bg-white shadow-sm'} p-2.5 rounded-[14px] transition-all`}><Settings size={18} aria-hidden="true" /></button></Tooltip>
+        <div className={`flex items-center space-x-1 ${isDarkMode ? 'bg-[#0F172A] border-accenture-gray-dark/80' : 'bg-accenture-gray-off-white border-transparent'} p-1 rounded-none border`}>
+            <Tooltip text={isDarkMode ? "Switch to Day Mode" : "Switch to Night Mode"}><button onClick={() => setIsDarkMode(!isDarkMode)} aria-label={isDarkMode ? "Switch to Day Mode" : "Switch to Night Mode"} className={`flex items-center text-sm font-bold ${isDarkMode ? 'text-accenture-purple hover:bg-[#1E293B]' : 'text-accenture-gray-dark hover:text-accenture-purple-dark hover:bg-white shadow-sm'} p-2.5 rounded-none transition-all`}><Sun size={18} aria-hidden="true" /></button></Tooltip>
+            <Tooltip text="Generate Mock Data (Quick Test)"><button onClick={handleGenerateMockData} aria-label="Generate Mock Data" className={`flex items-center text-sm font-bold ${isDarkMode ? 'text-accenture-purple hover:bg-[#1E293B]' : 'text-accenture-gray-dark hover:text-accenture-purple-dark hover:bg-white shadow-sm'} p-2.5 rounded-none transition-all`}><FlaskConical size={18} aria-hidden="true" /></button></Tooltip>
+            <Tooltip text="Clear Project Data"><button onClick={() => setShowClearConfirm(true)} aria-label="Clear Project Data" className={`flex items-center text-sm font-bold ${isDarkMode ? 'text-accenture-gray-dark hover:text-accenture-pink hover:bg-[#1E293B]' : 'text-accenture-gray-dark hover:text-accenture-pink hover:bg-white shadow-sm'} p-2.5 rounded-none transition-all`}><Trash2 size={18} aria-hidden="true" /></button></Tooltip>
+            <Tooltip text="Settings"><button onClick={() => setIsSettingsOpen(true)} aria-label="Settings" className={`flex items-center text-sm font-bold ${isDarkMode ? 'text-accenture-gray-dark hover:text-accenture-purple hover:bg-[#1E293B]' : 'text-accenture-gray-dark hover:text-accenture-purple-dark hover:bg-white shadow-sm'} p-2.5 rounded-none transition-all`}><Settings size={18} aria-hidden="true" /></button></Tooltip>
         </div>
       </div>
     </header>

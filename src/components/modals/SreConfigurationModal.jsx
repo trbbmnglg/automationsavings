@@ -27,7 +27,7 @@ export default function SreConfigurationModal() {
        aria-labelledby="modal-title" 
        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4 transition-opacity"
      >
-       <div className={`${isDarkMode ? 'bg-[#1E293B] border-accenture-gray-dark' : 'bg-white border-accenture-gray-light'} rounded-[32px] shadow-2xl w-full max-w-xl overflow-hidden border flex flex-col max-h-[90vh]`}>
+       <div className={`${isDarkMode ? 'bg-[#1E293B] border-accenture-gray-dark' : 'bg-white border-accenture-gray-light'} rounded-none shadow-2xl w-full max-w-xl overflow-hidden border flex flex-col max-h-[90vh]`}>
          <div className={`${isDarkMode ? 'bg-[#0F172A] border-accenture-gray-dark' : 'bg-accenture-gray-off-white border-accenture-gray-light'} border-b px-6 py-5 flex items-center justify-between shrink-0`}>
            <div className="flex items-center space-x-3"><div className="bg-accenture-purple-dark p-2 text-accenture-purple-dark"><Wrench size={18} /></div><h2 id="modal-title" className={`text-xl font-bold ${textHeading}`}>Advanced SRE / Maintenance</h2></div>
            <button onClick={() => setIsSreModalOpen(false)} className={`${isDarkMode ? 'text-accenture-gray-dark hover:text-white hover:bg-[#0a0a0a]' : 'text-accenture-gray-dark hover:text-black bg-white hover:bg-accenture-gray-off-white shadow-sm'} p-2 rounded-full transition-colors`}><X size={20} /></button>
@@ -37,7 +37,7 @@ export default function SreConfigurationModal() {
             {/* Dynamic SRE Roles */}
             <div className="space-y-4">
               {sreBreakdown.map((entry, index) => (
-                 <div key={entry.id} className={`p-4 rounded-[20px] border ${isDarkMode ? 'bg-[#0F172A] border-accenture-gray-dark/80' : 'bg-accenture-gray-off-white border-accenture-gray-light'} shadow-sm`}>
+                 <div key={entry.id} className={`p-4 rounded-none border ${isDarkMode ? 'bg-[#0F172A] border-accenture-gray-dark/80' : 'bg-accenture-gray-off-white border-accenture-gray-light'} shadow-sm`}>
                     
                     {/* Row 1: Role & Remove btn */}
                     <div className="flex justify-between items-center mb-4">
@@ -79,7 +79,7 @@ export default function SreConfigurationModal() {
                     </div>
                  </div>
               ))}
-              <button onClick={addSreRole} className={`w-full py-3 flex items-center justify-center space-x-2 border-2 border-dashed rounded-[20px] text-sm font-bold transition-all ${isDarkMode ? 'border-accenture-gray-dark text-accenture-gray-dark hover:border-accenture-purple hover:text-accenture-purple hover:bg-accenture-purple' : 'border-accenture-gray-light text-accenture-gray-dark hover:border-accenture-purple hover:text-accenture-purple-dark hover:bg-accenture-purple-lightest'}`}>
+              <button onClick={addSreRole} className={`w-full py-3 flex items-center justify-center space-x-2 border-2 border-dashed rounded-none text-sm font-bold transition-all ${isDarkMode ? 'border-accenture-gray-dark text-accenture-gray-dark hover:border-accenture-purple hover:text-accenture-purple hover:bg-accenture-purple' : 'border-accenture-gray-light text-accenture-gray-dark hover:border-accenture-purple hover:text-accenture-purple-dark hover:bg-accenture-purple-lightest'}`}>
                  <Plus size={16} /><span>Add SRE Role</span>
               </button>
             </div>

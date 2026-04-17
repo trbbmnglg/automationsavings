@@ -24,7 +24,7 @@ export default function SettingsModal() {
       aria-labelledby="settings-modal-title"
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4"
     >
-      <div className={`${isDarkMode ? 'bg-[#1E293B] border-accenture-gray-dark' : 'bg-white border-accenture-gray-light'} rounded-[32px] shadow-2xl w-full max-w-lg overflow-hidden border flex flex-col max-h-[90vh]`}>
+      <div className={`${isDarkMode ? 'bg-[#1E293B] border-accenture-gray-dark' : 'bg-white border-accenture-gray-light'} rounded-none shadow-2xl w-full max-w-lg overflow-hidden border flex flex-col max-h-[90vh]`}>
 
         {/* Header */}
         <div className={`${isDarkMode ? 'bg-[#0F172A] border-accenture-gray-dark' : 'bg-accenture-gray-off-white border-accenture-gray-light'} border-b px-6 py-5 flex items-center justify-between shrink-0`}>

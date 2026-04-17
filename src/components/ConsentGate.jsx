@@ -10,7 +10,7 @@ function NotAllowedPage() {
   return (
     <div className="min-h-screen bg-[#0B0F19] flex items-center justify-center p-6">
       <div className="max-w-md w-full text-center">
-        <div className="mx-auto w-20 h-20 rounded-full bg-accenture-pink/20 flex items-center justify-center mb-6">
+        <div className="mx-auto w-20 h-20 bg-accenture-pink/20 flex items-center justify-center mb-6">
           <ShieldAlert size={40} className="text-accenture-pink" />
         </div>
         <h1 className="text-2xl font-extrabold text-white mb-3 tracking-tight">
@@ -103,12 +103,12 @@ export default function ConsentGate({ children }) {
   // ── Consent modal ──
   return (
     <div className="min-h-screen bg-[#0B0F19] flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl bg-[#1E293B] border border-accenture-gray-dark rounded-[32px] shadow-2xl flex flex-col max-h-[95vh] overflow-hidden">
+      <div className="w-full max-w-2xl bg-[#1E293B] border border-accenture-gray-dark rounded-none shadow-2xl flex flex-col max-h-[95vh] overflow-hidden">
 
         {/* Header */}
         <div className="bg-[#0F172A] border-b border-accenture-gray-dark px-8 py-6 shrink-0">
           <div className="flex items-center gap-4">
-            <div className="bg-accenture-purple/20 p-3 ">
+            <div className="bg-accenture-purple/20 p-3">
               <Shield size={24} className="text-accenture-purple" />
             </div>
             <div>

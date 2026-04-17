@@ -17,14 +17,14 @@ function ResultsPanel() {
         </div>
       </div>
 
-      <div className="bg-gradient-to-br from-[#0F172A] via-[#1E1B4B] to-[#312E81] rounded-[28px] shadow-xl p-8 text-white relative overflow-hidden flex flex-col justify-between">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-accenture-purple opacity-[0.08] rounded-full blur-[80px] pointer-events-none"></div>
-        <div className="absolute bottom-[-20%] left-[-10%] w-64 h-64 bg-accenture-purple opacity-[0.1] rounded-full blur-[80px] pointer-events-none"></div>
+      <div className="bg-gradient-to-br from-[#0F172A] via-[#1E1B4B] to-[#312E81] rounded-none shadow-xl p-8 text-white relative overflow-hidden flex flex-col justify-between">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-accenture-purple opacity-[0.08] blur-[80px] pointer-events-none"></div>
+        <div className="absolute bottom-[-20%] left-[-10%] w-64 h-64 bg-accenture-purple opacity-[0.1] blur-[80px] pointer-events-none"></div>
         <div className="absolute bottom-6 right-6 opacity-5 pointer-events-none"><TrendingUp size={160} /></div>
         
         <div className="relative z-10 border-b border-white/10 pb-5 mb-5 flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <button onClick={() => setShowScore(!showScore)} className="text-accenture-purple hover:text-white transition-colors bg-white/5 p-2 " aria-label={showScore ? "Hide Score" : "Show Score"}>{showScore ? <Eye size={18} /> : <EyeOff size={18} />}</button>
+            <button onClick={() => setShowScore(!showScore)} className="text-accenture-purple hover:text-white transition-colors bg-white/5 p-2" aria-label={showScore ? "Hide Score" : "Show Score"}>{showScore ? <Eye size={18} /> : <EyeOff size={18} />}</button>
             <span className="text-xs font-bold uppercase tracking-widest text-accenture-purple-light">Viability Score</span>
           </div>
           {showScore ? (

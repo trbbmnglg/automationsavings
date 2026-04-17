@@ -5,10 +5,10 @@ import { useApp } from '../context/AppContext';
 function PitchPanel() {
   const { toolName, useCase, aiPitch, handleCopy, copied, isGenerating, generateAIPitch, setAiPitch, challenges, kpis, qualitativeBenefits, formatCurrency, implementationCost, durationMonths, results, automationPercent } = useApp();
   return (
-    <div className="bg-black rounded-[28px] shadow-xl text-accenture-gray-off-white p-6 md:p-8 flex flex-col h-auto relative overflow-hidden border border-[#222]">
-      <div className="absolute top-0 right-0 w-80 h-80 bg-accenture-purple opacity-5 rounded-full blur-[80px] pointer-events-none"></div>
+    <div className="bg-black rounded-none shadow-xl text-accenture-gray-off-white p-6 md:p-8 flex flex-col h-auto relative overflow-hidden border border-[#222]">
+      <div className="absolute top-0 right-0 w-80 h-80 bg-accenture-purple opacity-5 blur-[80px] pointer-events-none"></div>
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 relative z-10">
-        <div className="flex items-center space-x-3"><div className="p-2.5 bg-[#0a0a0a] rounded-[14px] text-accenture-gray-light border border-accenture-gray-dark/50"><FileText size={20} /></div><h3 className="text-lg font-bold text-white tracking-tight">Business Case Pitch</h3></div>
+        <div className="flex items-center space-x-3"><div className="p-2.5 bg-[#0a0a0a] rounded-none text-accenture-gray-light border border-accenture-gray-dark/50"><FileText size={20} /></div><h3 className="text-lg font-bold text-white tracking-tight">Business Case Pitch</h3></div>
         {(toolName || useCase || aiPitch) && (<button onClick={handleCopy} className="flex items-center space-x-2 text-sm font-bold bg-white text-black hover:bg-accenture-gray-off-white px-5 py-2.5 transition-all shadow-sm">{copied ? <Check size={16} className="text-accenture-purple-dark" /> : <Copy size={16} />}<span>{copied ? 'Copied!' : 'Copy Pitch'}</span></button>)}
       </div>
       <div className="flex items-center justify-between bg-[#0a0a0a]/80 p-3 mb-6 gap-3 border border-accenture-gray-dark/50 backdrop-blur-sm relative z-10">
