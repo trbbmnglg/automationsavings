@@ -21,7 +21,7 @@ export default function Header() {
           <Calculator size={26} strokeWidth={2.5} aria-hidden="true" />
         </div>
         <div>
-          <h1 className={`text-xl md:text-2xl font-extrabold ${textHeading} tracking-tight`}>Automation Savings</h1>
+          <h1 className={`font-sectra text-2xl md:text-3xl font-normal ${textHeading} tracking-tight`}>Automation Savings</h1>
           <p className={`${textSub} text-sm font-medium hidden sm:block`}>Quantify ROI, time recaptured, and dynamic operational impact.</p>
         </div>
       </div>

@@ -46,6 +46,7 @@ export default {
       fontFamily: {
         sans: ['"Graphik"', '"Graphik Web"', 'ui-sans-serif', 'system-ui',
                '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+        sectra: ['"GT Sectra"', 'Georgia', 'serif'],
       },
     },
   },
