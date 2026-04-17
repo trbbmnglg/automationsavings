@@ -10,7 +10,7 @@
  */
 export const getScoreColor = (score, format = 'tailwind') => {
   const colors = {
-    tailwind: { green: 'text-emerald-400', blue: 'text-blue-400', amber: 'text-amber-400', red: 'text-red-400' },
+    tailwind: { green: 'text-accenture-purple', blue: 'text-accenture-purple', amber: 'text-accenture-purple', red: 'text-accenture-pink' },
     hex: { green: '10B981', blue: '3B82F6', amber: 'F59E0B', red: 'EF4444' }
   };
   const palette = colors[format] || colors.tailwind;

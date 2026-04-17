@@ -15,7 +15,7 @@ function OperationalImpactPanel() {
       <div className="grid grid-cols-2 gap-6">
         <div>
           <Tooltip text="Total manual hours saved per month based on automation percentage.">
-            <div className={`flex items-center space-x-2 text-emerald-600 mb-3 ${isDarkMode ? 'bg-emerald-950/30' : 'bg-emerald-50'} w-max px-3 py-1.5 rounded-xl font-bold text-sm cursor-help`}>
+            <div className={`flex items-center space-x-2 text-accenture-purple-dark mb-3 ${isDarkMode ? 'bg-emerald-950/30' : 'bg-accenture-purple-lightest'} w-max px-3 py-1.5  font-bold text-sm cursor-help`}>
               <Clock size={16} /><span>Time Recaptured</span><Info size={14} className="opacity-70" />
             </div>
           </Tooltip>
@@ -30,7 +30,7 @@ function OperationalImpactPanel() {
 
         <div className={`border-l ${borderMuted} pl-6`}>
           <Tooltip text={`Full-Time Equivalents (Assumes configured ${results.fteHoursPerMonth} hours/month per employee).`}>
-            <div className={`flex items-center space-x-2 text-indigo-500 mb-3 ${isDarkMode ? 'bg-indigo-950/30' : 'bg-indigo-50'} w-max px-3 py-1.5 rounded-xl font-bold text-sm cursor-help`}>
+            <div className={`flex items-center space-x-2 text-accenture-purple mb-3 ${isDarkMode ? 'bg-accenture-purple-darkest/30' : 'bg-accenture-purple-lightest'} w-max px-3 py-1.5  font-bold text-sm cursor-help`}>
               <Users size={16} /><span>FTE Savings</span><Info size={14} className="opacity-70" />
             </div>
           </Tooltip>
@@ -47,14 +47,14 @@ function OperationalImpactPanel() {
         <button
           onClick={() => hasData && setIsMonthlyBreakdownOpen(true)}
           disabled={!hasData}
-          className={`w-full flex items-center justify-center gap-2.5 text-sm font-bold py-3.5 rounded-2xl border transition-all
+          className={`w-full flex items-center justify-center gap-2.5 text-sm font-bold py-3.5  border transition-all
             ${hasData
               ? isDarkMode
-                ? 'bg-blue-950/30 hover:bg-blue-900/50 text-blue-400 border-blue-900/50 hover:border-blue-700 shadow-sm'
-                : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-100 hover:border-blue-200 shadow-sm'
+                ? 'bg-accenture-purple-darkest/30 hover:bg-accenture-purple-darkest/50 text-accenture-purple border-accenture-purple-dark/50 hover:border-accenture-purple-dark shadow-sm'
+                : 'bg-accenture-purple-lightest hover:bg-accenture-purple-lightest text-accenture-purple-dark border-accenture-purple-light hover:border-accenture-purple-light shadow-sm'
               : 'opacity-40 cursor-not-allowed ' + (isDarkMode
-                  ? 'bg-slate-800/30 text-slate-500 border-slate-800'
-                  : 'bg-slate-50 text-slate-400 border-slate-200')
+                  ? 'bg-[#0a0a0a]/30 text-accenture-gray-dark border-[#222]'
+                  : 'bg-accenture-gray-off-white text-accenture-gray-dark border-accenture-gray-light')
             }`}
         >
           <TableProperties size={16} />

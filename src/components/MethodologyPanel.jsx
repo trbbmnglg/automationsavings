@@ -10,10 +10,10 @@ export default function MethodologyPanel() {
       <button
         onClick={() => setIsHowItWorksOpen(!isHowItWorksOpen)}
         aria-expanded={isHowItWorksOpen}
-        className={`w-full p-6 md:p-8 flex items-center justify-between ${isDarkMode ? 'hover:bg-slate-800/50' : 'hover:bg-slate-50'} transition-colors text-left outline-none rounded-[28px]`}
+        className={`w-full p-6 md:p-8 flex items-center justify-between ${isDarkMode ? 'hover:bg-[#0a0a0a]/50' : 'hover:bg-accenture-gray-off-white'} transition-colors text-left outline-none rounded-[28px]`}
       >
         <div className="flex items-center space-x-4">
-          <div className={`${isDarkMode ? 'bg-[#0F172A]' : 'bg-slate-100'} p-3 rounded-2xl ${textSub}`}>
+          <div className={`${isDarkMode ? 'bg-[#0F172A]' : 'bg-accenture-gray-off-white'} p-3  ${textSub}`}>
             <HelpCircle size={24} />
           </div>
           <div>
@@ -21,7 +21,7 @@ export default function MethodologyPanel() {
             <p className={`text-sm ${textSub} font-medium`}>How these numbers are calculated</p>
           </div>
         </div>
-        <div className={`transform transition-transform duration-300 ${isDarkMode ? 'bg-[#0F172A]' : 'bg-slate-100'} p-2 rounded-full ${isHowItWorksOpen ? 'rotate-180' : ''}`}>
+        <div className={`transform transition-transform duration-300 ${isDarkMode ? 'bg-[#0F172A]' : 'bg-accenture-gray-off-white'} p-2 rounded-full ${isHowItWorksOpen ? 'rotate-180' : ''}`}>
           <ChevronDown size={20} className={textSub} />
         </div>
       </button>

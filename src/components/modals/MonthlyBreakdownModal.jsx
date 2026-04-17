@@ -20,10 +20,10 @@ export default function MonthlyBreakdownModal() {
   const pageData = data.slice(page * ROWS_PER_PAGE, (page + 1) * ROWS_PER_PAGE);
 
   const scenarioColor = {
-    optimistic: isDarkMode ? 'text-emerald-400' : 'text-emerald-600',
-    realistic: isDarkMode ? 'text-blue-400' : 'text-blue-600',
-    conservative: isDarkMode ? 'text-amber-400' : 'text-amber-600',
-  }[scenario] || 'text-blue-400';
+    optimistic: isDarkMode ? 'text-accenture-purple' : 'text-accenture-purple-dark',
+    realistic: isDarkMode ? 'text-accenture-purple' : 'text-accenture-purple-dark',
+    conservative: isDarkMode ? 'text-accenture-purple' : 'text-accenture-purple-dark',
+  }[scenario] || 'text-accenture-purple';
 
   const totalGross = data.reduce((s, r) => s + r.grossSavings, 0);
   const totalRun = data.reduce((s, r) => s + r.runCost, 0);
@@ -221,15 +221,15 @@ export default function MonthlyBreakdownModal() {
       role="dialog"
       aria-modal="true"
       aria-labelledby="breakdown-modal-title"
-      className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center z-[200] p-4"
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[200] p-4"
     >
-      <div className={`${isDarkMode ? 'bg-[#1E293B] border-slate-700' : 'bg-white border-slate-200'} rounded-[32px] shadow-2xl w-full max-w-5xl border flex flex-col max-h-[92vh] overflow-hidden`}>
+      <div className={`${isDarkMode ? 'bg-[#1E293B] border-accenture-gray-dark' : 'bg-white border-accenture-gray-light'} rounded-[32px] shadow-2xl w-full max-w-5xl border flex flex-col max-h-[92vh] overflow-hidden`}>
 
         {/* Header */}
-        <div className={`${isDarkMode ? 'bg-[#0F172A] border-slate-700' : 'bg-slate-50 border-slate-100'} border-b px-6 py-4 flex items-center justify-between shrink-0`}>
+        <div className={`${isDarkMode ? 'bg-[#0F172A] border-accenture-gray-dark' : 'bg-accenture-gray-off-white border-accenture-gray-light'} border-b px-6 py-4 flex items-center justify-between shrink-0`}>
           <div className="flex items-center gap-3">
-            <div className={`${isDarkMode ? 'bg-blue-500/20' : 'bg-blue-50'} p-2 rounded-xl`}>
-              <BarChart3 size={18} className={isDarkMode ? 'text-blue-400' : 'text-blue-600'} />
+            <div className={`${isDarkMode ? 'bg-accenture-purple/20' : 'bg-accenture-purple-lightest'} p-2 `}>
+              <BarChart3 size={18} className={isDarkMode ? 'text-accenture-purple' : 'text-accenture-purple-dark'} />
             </div>
             <div>
               <h2 id="breakdown-modal-title" className={`text-lg font-bold ${textHeading}`}>Monthly Cash Flow Breakdown</h2>
@@ -244,14 +244,14 @@ export default function MonthlyBreakdownModal() {
             <button
               onClick={handleExportXLSX}
               disabled={isExporting}
-              className={`flex items-center gap-2 text-xs font-bold px-4 py-2.5 rounded-2xl transition-all shadow-sm ${isDarkMode ? 'bg-emerald-700 hover:bg-emerald-600 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white'} disabled:opacity-60`}
+              className={`flex items-center gap-2 text-xs font-bold px-4 py-2.5  transition-all shadow-sm ${isDarkMode ? 'bg-accenture-purple-dark hover:bg-accenture-purple-dark text-white' : 'bg-accenture-purple-dark hover:bg-accenture-purple-dark text-white'} disabled:opacity-60`}
             >
               <Download size={14} />
               {isExporting ? 'Exporting...' : 'Export XLSX'}
             </button>
             <button
               onClick={() => setIsMonthlyBreakdownOpen(false)}
-              className={`${isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-400 hover:text-slate-800 hover:bg-slate-100'} p-2 rounded-full transition-colors`}
+              className={`${isDarkMode ? 'text-accenture-gray-dark hover:text-white hover:bg-[#0a0a0a]' : 'text-accenture-gray-dark hover:text-black hover:bg-accenture-gray-off-white'} p-2 rounded-full transition-colors`}
             >
               <X size={20} />
             </button>
@@ -261,13 +261,13 @@ export default function MonthlyBreakdownModal() {
         {/* Summary Stats */}
         <div className={`px-6 py-4 grid grid-cols-2 sm:grid-cols-5 gap-3 shrink-0 border-b ${borderMuted}`}>
           {[
-            { label: 'Impl. Cost', value: formatCurrency(implCost), color: 'text-red-400' },
-            { label: 'Gross Savings', value: formatCurrency(totalGross), color: 'text-emerald-400' },
-            { label: 'Run Costs', value: formatCurrency(totalRun), color: isDarkMode ? 'text-slate-300' : 'text-slate-600' },
-            { label: 'SRE Costs', value: formatCurrency(totalSre), color: isDarkMode ? 'text-slate-300' : 'text-slate-600' },
-            { label: 'Lifetime Net', value: formatCurrency(finalCumulative), color: finalCumulative >= 0 ? 'text-emerald-400' : 'text-red-400' },
+            { label: 'Impl. Cost', value: formatCurrency(implCost), color: 'text-accenture-pink' },
+            { label: 'Gross Savings', value: formatCurrency(totalGross), color: 'text-accenture-purple' },
+            { label: 'Run Costs', value: formatCurrency(totalRun), color: isDarkMode ? 'text-accenture-gray-light' : 'text-accenture-gray-dark' },
+            { label: 'SRE Costs', value: formatCurrency(totalSre), color: isDarkMode ? 'text-accenture-gray-light' : 'text-accenture-gray-dark' },
+            { label: 'Lifetime Net', value: formatCurrency(finalCumulative), color: finalCumulative >= 0 ? 'text-accenture-purple' : 'text-accenture-pink' },
           ].map(({ label, value, color }) => (
-            <div key={label} className={`${isDarkMode ? 'bg-[#0F172A]' : 'bg-slate-50'} rounded-2xl px-4 py-3 border ${borderMuted}`}>
+            <div key={label} className={`${isDarkMode ? 'bg-[#0F172A]' : 'bg-accenture-gray-off-white'}  px-4 py-3 border ${borderMuted}`}>
               <div className={`text-[10px] font-bold uppercase tracking-widest ${textSub} mb-1`}>{label}</div>
               <div className={`text-sm font-extrabold ${color} tracking-tight`}>{value}</div>
             </div>
@@ -277,12 +277,12 @@ export default function MonthlyBreakdownModal() {
         {/* Table */}
         <div className="overflow-auto flex-1 custom-scrollbar">
           <table className="w-full text-sm border-collapse">
-            <thead className={`sticky top-0 z-10 ${isDarkMode ? 'bg-[#0F172A]' : 'bg-slate-50'}`}>
+            <thead className={`sticky top-0 z-10 ${isDarkMode ? 'bg-[#0F172A]' : 'bg-accenture-gray-off-white'}`}>
               <tr>
                 {['Mo', 'Yr', 'Gross Savings', 'Run Cost', 'SRE Cost', 'Net Cash Flow', 'Cumulative Net'].map((h, i) => (
                   <th
                     key={h}
-                    className={`px-4 py-3 text-[10px] font-bold uppercase tracking-widest ${textSub} border-b-2 ${isDarkMode ? 'border-blue-500/50' : 'border-blue-500'} ${i < 2 ? 'text-center' : 'text-right'} whitespace-nowrap`}
+                    className={`px-4 py-3 text-[10px] font-bold uppercase tracking-widest ${textSub} border-b-2 ${isDarkMode ? 'border-accenture-purple/50' : 'border-accenture-purple'} ${i < 2 ? 'text-center' : 'text-right'} whitespace-nowrap`}
                   >
                     {h}
                   </th>
@@ -302,23 +302,23 @@ export default function MonthlyBreakdownModal() {
                     key={row.month}
                     className={`transition-colors
                       ${isPaybackRow
-                        ? (isDarkMode ? 'bg-emerald-950/40' : 'bg-emerald-50')
+                        ? (isDarkMode ? 'bg-emerald-950/40' : 'bg-accenture-purple-lightest')
                         : i % 2 === 0
                           ? (isDarkMode ? 'bg-[#1E293B]' : 'bg-white')
-                          : (isDarkMode ? 'bg-[#162032]' : 'bg-slate-50/60')
+                          : (isDarkMode ? 'bg-[#162032]' : 'bg-accenture-gray-off-white/60')
                       }
-                      ${isDarkMode ? 'hover:bg-slate-700/40' : 'hover:bg-blue-50/40'}
+                      ${isDarkMode ? 'hover:bg-[#1a1a1a]/40' : 'hover:bg-accenture-purple-lightest/40'}
                     `}
                   >
                     <td className={`px-4 py-3 text-center border-b ${borderMuted}`}>
-                      <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs font-extrabold ${isDarkMode ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-700'}`}>
+                      <span className={`inline-flex items-center justify-center w-7 h-7  text-xs font-extrabold ${isDarkMode ? 'bg-[#0a0a0a] text-accenture-gray-light' : 'bg-accenture-gray-off-white text-accenture-gray-dark'}`}>
                         {row.month}
                       </span>
                     </td>
                     <td className={`px-4 py-3 text-center text-xs font-bold ${textSub} border-b ${borderMuted}`}>
                       Y{row.year}
                     </td>
-                    <td className={`px-4 py-3 text-right font-semibold text-emerald-500 border-b ${borderMuted} tabular-nums`}>
+                    <td className={`px-4 py-3 text-right font-semibold text-accenture-purple border-b ${borderMuted} tabular-nums`}>
                       {formatCurrency(row.grossSavings)}
                     </td>
                     <td className={`px-4 py-3 text-right ${textSub} border-b ${borderMuted} tabular-nums`}>
@@ -327,16 +327,16 @@ export default function MonthlyBreakdownModal() {
                     <td className={`px-4 py-3 text-right ${textSub} border-b ${borderMuted} tabular-nums`}>
                       {row.sreCost > 0 ? formatCurrency(row.sreCost) : <span className="opacity-30">—</span>}
                     </td>
-                    <td className={`px-4 py-3 text-right font-bold border-b ${borderMuted} tabular-nums ${net >= 0 ? 'text-emerald-500' : 'text-red-400'}`}>
+                    <td className={`px-4 py-3 text-right font-bold border-b ${borderMuted} tabular-nums ${net >= 0 ? 'text-accenture-purple' : 'text-accenture-pink'}`}>
                       <span className="inline-flex items-center justify-end gap-1">
                         {net >= 0 ? <TrendingUp size={13} className="opacity-70" /> : <TrendingDown size={13} className="opacity-70" />}
                         {formatCurrency(net)}
                       </span>
                     </td>
                     <td className={`px-4 py-3 text-right font-extrabold border-b ${borderMuted} tabular-nums`}>
-                      <span className={`inline-flex items-center justify-end gap-2 ${cum >= 0 ? 'text-emerald-400' : isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                      <span className={`inline-flex items-center justify-end gap-2 ${cum >= 0 ? 'text-accenture-purple' : isDarkMode ? 'text-accenture-gray-light' : 'text-accenture-gray-dark'}`}>
                         {isPaybackRow && (
-                          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md ${isDarkMode ? 'bg-emerald-900/60 text-emerald-400' : 'bg-emerald-100 text-emerald-700'}`}>
+                          <span className={`text-[9px] font-black px-1.5 py-0.5  ${isDarkMode ? 'bg-accenture-purple-dark/60 text-accenture-purple' : 'bg-accenture-purple-lightest text-accenture-purple-dark'}`}>
                             PAYBACK
                           </span>
                         )}
@@ -352,7 +352,7 @@ export default function MonthlyBreakdownModal() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className={`px-6 py-4 border-t ${borderMuted} flex items-center justify-between shrink-0 ${isDarkMode ? 'bg-[#0F172A]' : 'bg-slate-50'}`}>
+          <div className={`px-6 py-4 border-t ${borderMuted} flex items-center justify-between shrink-0 ${isDarkMode ? 'bg-[#0F172A]' : 'bg-accenture-gray-off-white'}`}>
             <span className={`text-xs font-bold ${textSub}`}>
               Page {page + 1} of {totalPages} · {data.length} months total
             </span>
@@ -360,7 +360,7 @@ export default function MonthlyBreakdownModal() {
               <button
                 onClick={() => setPage(p => Math.max(0, p - 1))}
                 disabled={page === 0}
-                className={`p-2 rounded-xl transition-colors disabled:opacity-30 ${isDarkMode ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-slate-200 text-slate-600'}`}
+                className={`p-2  transition-colors disabled:opacity-30 ${isDarkMode ? 'hover:bg-[#0a0a0a] text-accenture-gray-light' : 'hover:bg-accenture-gray-off-white text-accenture-gray-dark'}`}
               >
                 <ChevronLeft size={16} />
               </button>
@@ -368,10 +368,10 @@ export default function MonthlyBreakdownModal() {
                 <button
                   key={i}
                   onClick={() => setPage(i)}
-                  className={`w-8 h-8 rounded-xl text-xs font-bold transition-colors ${
+                  className={`w-8 h-8  text-xs font-bold transition-colors ${
                     page === i
-                      ? 'bg-blue-600 text-white'
-                      : (isDarkMode ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-200 text-slate-500')
+                      ? 'bg-accenture-purple text-white'
+                      : (isDarkMode ? 'hover:bg-[#0a0a0a] text-accenture-gray-dark' : 'hover:bg-accenture-gray-off-white text-accenture-gray-dark')
                   }`}
                 >
                   {i + 1}
@@ -380,7 +380,7 @@ export default function MonthlyBreakdownModal() {
               <button
                 onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
                 disabled={page === totalPages - 1}
-                className={`p-2 rounded-xl transition-colors disabled:opacity-30 ${isDarkMode ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-slate-200 text-slate-600'}`}
+                className={`p-2  transition-colors disabled:opacity-30 ${isDarkMode ? 'hover:bg-[#0a0a0a] text-accenture-gray-light' : 'hover:bg-accenture-gray-off-white text-accenture-gray-dark'}`}
               >
                 <ChevronRight size={16} />
               </button>

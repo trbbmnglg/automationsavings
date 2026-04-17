@@ -23,8 +23,8 @@ function AppLayout() {
   const { bgMain, textMain, showClearConfirm, isSettingsOpen, isSreModalOpen, isRunCostModalOpen, isMonthlyBreakdownOpen } = useApp();
 
   return (
-    <div className={`min-h-screen ${bgMain} ${textMain} font-sans p-4 md:p-6 lg:p-8 selection:bg-blue-100 transition-colors duration-300`}>
-      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[9999] focus:bg-blue-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:font-bold focus:text-sm">Skip to main content</a>
+    <div className={`min-h-screen ${bgMain} ${textMain} font-sans p-4 md:p-6 lg:p-8 selection:bg-accenture-purple-lightest transition-colors duration-300`}>
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[9999] focus:bg-accenture-purple focus:text-white focus:px-4 focus:py-2 focus: focus:font-bold focus:text-sm">Skip to main content</a>
       <main id="main-content" className="max-w-[1400px] mx-auto space-y-6 relative">
         <Header />
         <Suspense fallback={null}>

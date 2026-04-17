@@ -6,7 +6,7 @@ import AIConfirmModal from './modals/AIConfirmModal';
 
 function AiBadge() {
   return (
-    <span className="ml-2 inline-flex items-center space-x-1 px-2 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-600 dark:border-amber-700/60 dark:bg-amber-900/20 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider shadow-sm">
+    <span className="ml-2 inline-flex items-center space-x-1 px-2 py-0.5 rounded border border-accenture-purple-light bg-accenture-purple-lightest text-accenture-purple-dark dark:border-accenture-purple-light dark:bg-accenture-purple dark:text-accenture-purple text-[10px] font-bold uppercase tracking-wider shadow-sm">
       <Sparkles size={10} /><span>AI</span>
     </span>
   );
@@ -31,7 +31,7 @@ export default function QualitativeSection() {
 
   const getFieldStyle = (isGenerated) => {
     if (!isGenerated) return inputStyle;
-    return `${inputStyle} border-amber-300 ring-4 ring-amber-50 dark:border-amber-700/60 dark:ring-amber-900/20 bg-amber-50/10 dark:bg-amber-950/10 transition-all duration-500`;
+    return `${inputStyle} border-accenture-purple-light ring-4 ring-accenture-purple-light dark:border-accenture-purple-light dark:ring-accenture-purple-light bg-accenture-purple-lightest dark:bg-accenture-purple-lightest transition-all duration-500`;
   };
 
   const handleAiChange = (setter, field) => (e) => {
@@ -63,7 +63,7 @@ export default function QualitativeSection() {
       <section className={cardStyle}>
         <div className={`px-6 md:px-8 py-5 flex flex-col sm:flex-row sm:items-center justify-between border-b ${borderMuted} gap-4`}>
           <div className="flex items-center space-x-3">
-            <div className={`${isDarkMode ? 'bg-purple-500/20 text-purple-400' : 'bg-purple-50 text-purple-600'} p-2.5 rounded-[14px]`}>
+            <div className={`${isDarkMode ? 'bg-accenture-purple/20 text-accenture-purple' : 'bg-accenture-purple-lightest text-accenture-purple-dark'} p-2.5 rounded-[14px]`}>
               <FileText size={20} aria-hidden="true" />
             </div>
             <h2 className={`text-xl font-bold ${textHeading} tracking-tight`}>Qualitative Details</h2>
@@ -71,11 +71,11 @@ export default function QualitativeSection() {
           <button
             onClick={handleAutoFillClick}
             disabled={isGeneratingSuggestions || (!toolName && !useCase)}
-            className={`flex items-center justify-center space-x-2 text-sm font-bold ${isDarkMode ? 'bg-amber-950/30 hover:bg-amber-900/50 text-amber-400 border-amber-900/50' : 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200/50'} px-4 py-2.5 rounded-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed border`}
+            className={`flex items-center justify-center space-x-2 text-sm font-bold ${isDarkMode ? 'bg-accenture-purple-lightest hover:bg-accenture-purple text-accenture-purple border-accenture-purple-light' : 'bg-accenture-purple-lightest hover:bg-accenture-purple-lightest text-accenture-purple-dark border-accenture-purple-light'} px-4 py-2.5  transition-all disabled:opacity-50 disabled:cursor-not-allowed border`}
           >
             {isGeneratingSuggestions
-              ? <Loader2 size={16} className="animate-spin text-amber-500" />
-              : <Sparkles size={16} className="text-amber-500" />}
+              ? <Loader2 size={16} className="animate-spin text-accenture-purple-dark" />
+              : <Sparkles size={16} className="text-accenture-purple-dark" />}
             <span>{isGeneratingSuggestions ? 'Auto-Filling...' : 'Auto-Fill Details'}</span>
           </button>
         </div>
@@ -84,26 +84,26 @@ export default function QualitativeSection() {
 
           {/* Security Error Banner */}
           {securityError && (
-            <div className={`flex items-start gap-3 p-4 rounded-2xl border ${
+            <div className={`flex items-start gap-3 p-4  border ${
               isDarkMode
-                ? 'bg-red-950/30 border-red-900/50 text-red-300'
-                : 'bg-red-50 border-red-200 text-red-800'
+                ? 'bg-accenture-pink/30 border-accenture-pink/50 text-accenture-pink'
+                : 'bg-[#fff0f6] border-accenture-pink text-accenture-pink'
             }`}>
               <div className="shrink-0 mt-0.5">
-                <ShieldAlert size={18} className="text-red-500" />
+                <ShieldAlert size={18} className="text-accenture-pink" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-xs font-extrabold uppercase tracking-widest mb-1 text-red-500">
+                <div className="text-xs font-extrabold uppercase tracking-widest mb-1 text-accenture-pink">
                   {CATEGORY_ICON[securityError.category]} AI Feature Blocked
                   {securityError.field && <span className="ml-2 font-bold normal-case tracking-normal opacity-80">— detected in: {securityError.field}</span>}
                 </div>
-                <p className={`text-sm font-medium leading-relaxed ${isDarkMode ? 'text-red-300' : 'text-red-700'}`}>
+                <p className={`text-sm font-medium leading-relaxed ${isDarkMode ? 'text-accenture-pink' : 'text-accenture-pink'}`}>
                   {securityError.reason}
                 </p>
               </div>
               <button
                 onClick={() => setSecurityError(null)}
-                className={`shrink-0 p-1 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-red-900/40 text-red-400' : 'hover:bg-red-100 text-red-500'}`}
+                className={`shrink-0 p-1  transition-colors ${isDarkMode ? 'hover:bg-accenture-pink/40 text-accenture-pink' : 'hover:bg-[#fff0f6] text-accenture-pink'}`}
               >
                 <X size={15} />
               </button>
@@ -115,7 +115,7 @@ export default function QualitativeSection() {
               <label className={`flex items-center text-sm font-bold ${textMain} mb-2`}>
                 Automation Name
                 <Tooltip text="Give your automation project a short, recognizable name.">
-                  <Info size={14} className={`${textSub} hover:text-blue-500 transition-colors cursor-help`}/>
+                  <Info size={14} className={`${textSub} hover:text-accenture-purple transition-colors cursor-help`}/>
                 </Tooltip>
               </label>
               <div className="relative">
@@ -134,7 +134,7 @@ export default function QualitativeSection() {
               <label className={`flex items-center text-sm font-bold ${textMain} mb-2`}>
                 Use Case Description
                 <Tooltip text='What specific manual process is this bot replacing?'>
-                  <Info size={14} className={`${textSub} hover:text-blue-500 transition-colors cursor-help`}/>
+                  <Info size={14} className={`${textSub} hover:text-accenture-purple transition-colors cursor-help`}/>
                 </Tooltip>
               </label>
               <textarea
@@ -148,10 +148,10 @@ export default function QualitativeSection() {
 
             <div className="md:col-span-2">
               <label className={`flex items-center text-sm font-bold ${textMain} mb-2`}>
-                <BarChart3 size={16} className="mr-1.5 text-purple-500" />
+                <BarChart3 size={16} className="mr-1.5 text-accenture-purple" />
                 Target KPIs
                 <Tooltip text='Which business metrics will this improve?'>
-                  <Info size={14} className={`${textSub} hover:text-blue-500 transition-colors cursor-help`}/>
+                  <Info size={14} className={`${textSub} hover:text-accenture-purple transition-colors cursor-help`}/>
                 </Tooltip>
                 {aiGeneratedFields.kpis && <AiBadge />}
               </label>
@@ -166,10 +166,10 @@ export default function QualitativeSection() {
 
             <div>
               <label className={`flex items-center text-sm font-bold ${textMain} mb-2`}>
-                <Target size={16} className="mr-1.5 text-red-500" />
+                <Target size={16} className="mr-1.5 text-accenture-pink" />
                 Challenges Addressed
                 <Tooltip text='What pain points are solved?'>
-                  <Info size={14} className={`${textSub} hover:text-blue-500 transition-colors cursor-help`}/>
+                  <Info size={14} className={`${textSub} hover:text-accenture-purple transition-colors cursor-help`}/>
                 </Tooltip>
                 {aiGeneratedFields.challenges && <AiBadge />}
               </label>
@@ -187,7 +187,7 @@ export default function QualitativeSection() {
                 <Award size={16} className="mr-1.5 text-green-500" />
                 Qualitative Benefits
                 <Tooltip text='What are the soft benefits?'>
-                  <Info size={14} className={`${textSub} hover:text-blue-500 transition-colors cursor-help`}/>
+                  <Info size={14} className={`${textSub} hover:text-accenture-purple transition-colors cursor-help`}/>
                 </Tooltip>
                 {aiGeneratedFields.benefits && <AiBadge />}
               </label>

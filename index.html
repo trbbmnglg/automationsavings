@@ -3,21 +3,47 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Automation Savings Calculator</title>
+    <meta name="theme-color" content="#A100FF" />
+    <title>Automation savings calculator</title>
     <meta name="description" content="Quantify automation ROI, time recaptured, and dynamic operational savings. Build a data-driven business case in minutes." />
     <meta http-equiv="Content-Security-Policy"
       content="default-src 'self';
       script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com;
-      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      style-src 'self' 'unsafe-inline';
       connect-src 'self' https://api.frankfurter.app https://text.pollinations.ai https://api.groq.com https://openrouter.ai https://raw.githubusercontent.com https://static.cloudflareinsights.com;
       img-src 'self' data:;
-      font-src 'self' https://fonts.gstatic.com;
+      font-src 'self';
       frame-src 'none';
       object-src 'none';"
     />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+      /* Graphik is Accenture's brand typeface (Commercial Type license).
+         Uses a locally installed copy if present; otherwise falls back to system fonts. */
+      @font-face {
+        font-family: 'Graphik';
+        src: local('Graphik'), local('Graphik-Regular');
+        font-weight: 400;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'Graphik';
+        src: local('Graphik Medium'), local('Graphik-Medium');
+        font-weight: 500;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'Graphik';
+        src: local('Graphik Semibold'), local('Graphik-Semibold');
+        font-weight: 600;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'Graphik';
+        src: local('Graphik Bold'), local('Graphik-Bold');
+        font-weight: 700;
+        font-display: swap;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

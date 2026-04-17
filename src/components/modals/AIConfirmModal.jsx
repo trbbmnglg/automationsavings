@@ -18,17 +18,17 @@ export default function AIConfirmModal({ onConfirm, onCancel }) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="ai-confirm-title"
-      className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[300] p-4"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[300] p-4"
     >
-      <div className={`${isDarkMode ? 'bg-[#1E293B] border-slate-700' : 'bg-white border-slate-100'} rounded-[32px] shadow-2xl w-full max-w-sm border p-8`}>
+      <div className={`${isDarkMode ? 'bg-[#1E293B] border-accenture-gray-dark' : 'bg-white border-accenture-gray-light'} rounded-[32px] shadow-2xl w-full max-w-sm border p-8`}>
 
         {/* Icon */}
         <div className="flex justify-center mb-5">
           <div className="relative">
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center ${isDarkMode ? 'bg-amber-900/20' : 'bg-amber-50'}`}>
-              <Sparkles size={30} className="text-amber-500" />
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center ${isDarkMode ? 'bg-accenture-purple' : 'bg-accenture-purple-lightest'}`}>
+              <Sparkles size={30} className="text-accenture-purple-dark" />
             </div>
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center">
+            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-accenture-purple flex items-center justify-center">
               <AlertTriangle size={13} className="text-white" />
             </div>
           </div>
@@ -39,24 +39,24 @@ export default function AIConfirmModal({ onConfirm, onCancel }) {
           AI-Generated Content
         </h2>
         <p className={`text-sm ${textSub} text-center leading-relaxed mb-4`}>
-          <strong className="text-amber-500">Auto-Fill Details</strong> will use AI to suggest KPIs, Challenges, and Qualitative Benefits based on your inputs.
+          <strong className="text-accenture-purple-dark">Auto-Fill Details</strong> will use AI to suggest KPIs, Challenges, and Qualitative Benefits based on your inputs.
         </p>
 
         {/* What gets sent */}
-        <div className={`${isDarkMode ? 'bg-blue-950/20 border-blue-900/40' : 'bg-blue-50 border-blue-100'} border rounded-2xl p-4 mb-3`}>
-          <div className={`text-[10px] font-bold uppercase tracking-widest ${isDarkMode ? 'text-blue-400' : 'text-blue-600'} mb-2 flex items-center gap-1.5`}>
+        <div className={`${isDarkMode ? 'bg-accenture-purple-darkest/20 border-accenture-purple-dark/40' : 'bg-accenture-purple-lightest border-accenture-purple-light'} border  p-4 mb-3`}>
+          <div className={`text-[10px] font-bold uppercase tracking-widest ${isDarkMode ? 'text-accenture-purple' : 'text-accenture-purple-dark'} mb-2 flex items-center gap-1.5`}>
             <Shield size={11} /> Data Transmitted
           </div>
-          <p className={`text-xs font-medium ${isDarkMode ? 'text-blue-200' : 'text-blue-800'} leading-relaxed`}>
+          <p className={`text-xs font-medium ${isDarkMode ? 'text-accenture-purple-light' : 'text-accenture-purple-dark'} leading-relaxed`}>
             Your <strong>Automation Name</strong> and <strong>Use Case</strong> will be sent to{' '}
-            <strong className="text-amber-500">{providerName}</strong> to generate suggestions.
+            <strong className="text-accenture-purple-dark">{providerName}</strong> to generate suggestions.
             Financial figures and cost data are <strong>not</strong> transmitted.
           </p>
         </div>
 
         {/* Review warning */}
-        <div className={`${isDarkMode ? 'bg-amber-950/20 border-amber-900/40' : 'bg-amber-50 border-amber-200/60'} border rounded-2xl p-4 mb-6`}>
-          <p className={`text-xs font-semibold ${isDarkMode ? 'text-amber-300' : 'text-amber-700'} leading-relaxed`}>
+        <div className={`${isDarkMode ? 'bg-accenture-purple-lightest border-accenture-purple-light' : 'bg-accenture-purple-lightest border-accenture-purple-light'} border  p-4 mb-6`}>
+          <p className={`text-xs font-semibold ${isDarkMode ? 'text-accenture-purple' : 'text-accenture-purple-dark'} leading-relaxed`}>
             ⚠️ AI-generated content may be inaccurate. Always review and edit the generated fields before using them in a business case.
           </p>
         </div>
@@ -65,14 +65,14 @@ export default function AIConfirmModal({ onConfirm, onCancel }) {
         <div className="flex flex-col gap-3">
           <button
             onClick={onConfirm}
-            className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-2xl font-bold transition-all shadow-md shadow-amber-500/20"
+            className="w-full flex items-center justify-center gap-2 bg-accenture-purple hover:bg-accenture-purple text-white py-3 font-bold transition-all shadow-md shadow-accenture-purple/20"
           >
             <Sparkles size={16} />
             Yes, Auto-Fill with AI
           </button>
           <button
             onClick={onCancel}
-            className={`w-full py-3 rounded-2xl font-bold transition-all ${isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            className={`w-full py-3  font-bold transition-all ${isDarkMode ? 'bg-[#0a0a0a] text-accenture-gray-light hover:bg-[#1a1a1a]' : 'bg-accenture-gray-off-white text-accenture-gray-dark hover:bg-accenture-gray-off-white'}`}
           >
             Cancel
           </button>

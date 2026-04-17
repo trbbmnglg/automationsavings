@@ -2,44 +2,66 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Accenture Branding Guidelines July 2025 v4 — base styles. */
+
+:root {
+  font-family: 'Graphik', 'Graphik Web', ui-sans-serif, system-ui,
+               -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color-scheme: light dark;
+}
+
 body {
   margin: 0;
-  font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+.dark body {
+  /* Brand guide: dark mode benefits from slightly heavier body weight. */
+  font-weight: 450;
+}
+
+code, pre {
+  font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 }
 
 /* Custom scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
+  height: 8px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.03);
-  border-radius: 10px;
+  background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
-  border-radius: 10px;
+  background: #CFCFCF;
+  border-radius: 4px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.25);
-}
-
-/* Dark Mode Scrollbar Base */
-.dark .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.02);
+  background: #A100FF;
 }
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: #818180;
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #C2A3FF;
 }
 
-/* Electric Violet Scrollbar via data attribute */
-body[data-theme="violet"] .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(137, 0, 255, 0.05);
-}
+/* Purple theme scrollbar accents (data-theme="violet" kept for back-compat) */
 body[data-theme="violet"] .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(137, 0, 255, 0.25);
+  background: rgba(161, 0, 255, 0.35);
 }
 body[data-theme="violet"] .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(137, 0, 255, 0.4);
+  background: #A100FF;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fade-in 0.2s ease-out forwards; }
+
+@media print {
+  body { background: white !important; color: black !important; }
 }

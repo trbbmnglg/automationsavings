@@ -10,33 +10,33 @@ function NotAllowedPage() {
   return (
     <div className="min-h-screen bg-[#0B0F19] flex items-center justify-center p-6">
       <div className="max-w-md w-full text-center">
-        <div className="mx-auto w-20 h-20 rounded-full bg-red-900/20 flex items-center justify-center mb-6">
-          <ShieldAlert size={40} className="text-red-400" />
+        <div className="mx-auto w-20 h-20 rounded-full bg-accenture-pink/20 flex items-center justify-center mb-6">
+          <ShieldAlert size={40} className="text-accenture-pink" />
         </div>
         <h1 className="text-2xl font-extrabold text-white mb-3 tracking-tight">
           Access Not Permitted
         </h1>
-        <p className="text-slate-400 text-sm leading-relaxed mb-6">
+        <p className="text-accenture-gray-dark text-sm leading-relaxed mb-6">
           You declined the consent and data processing agreement. Access to the
           Automation Savings Calculator requires acceptance of the terms to proceed.
         </p>
-        <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-5 mb-6 text-left space-y-2">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Why consent is required</p>
-          <p className="text-xs text-slate-400 leading-relaxed">
+        <div className="bg-[#0a0a0a]/60 border border-accenture-gray-dark p-5 mb-6 text-left space-y-2">
+          <p className="text-xs font-bold text-accenture-gray-dark uppercase tracking-widest mb-3">Why consent is required</p>
+          <p className="text-xs text-accenture-gray-dark leading-relaxed">
             This tool uses AI features that may transmit limited text inputs to a third-party
-            AI provider. Under <strong className="text-slate-300">GDPR</strong>,{' '}
-            <strong className="text-slate-300">PDPA (RA 10173)</strong>, and the{' '}
-            <strong className="text-slate-300">EU AI Act</strong>, users must be informed
+            AI provider. Under <strong className="text-accenture-gray-light">GDPR</strong>,{' '}
+            <strong className="text-accenture-gray-light">PDPA (RA 10173)</strong>, and the{' '}
+            <strong className="text-accenture-gray-light">EU AI Act</strong>, users must be informed
             and provide consent before such processing occurs.
           </p>
         </div>
         <button
           onClick={() => window.location.reload()}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-2xl font-bold transition-colors shadow-lg"
+          className="w-full bg-accenture-purple hover:bg-accenture-purple-dark text-white py-3.5 font-bold transition-colors shadow-lg"
         >
           Return & Review Terms
         </button>
-        <p className="text-slate-600 text-xs mt-4">
+        <p className="text-accenture-gray-dark text-xs mt-4">
           No data was stored or transmitted as a result of declining.
         </p>
       </div>
@@ -103,19 +103,19 @@ export default function ConsentGate({ children }) {
   // ── Consent modal ──
   return (
     <div className="min-h-screen bg-[#0B0F19] flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl bg-[#1E293B] border border-slate-700 rounded-[32px] shadow-2xl flex flex-col max-h-[95vh] overflow-hidden">
+      <div className="w-full max-w-2xl bg-[#1E293B] border border-accenture-gray-dark rounded-[32px] shadow-2xl flex flex-col max-h-[95vh] overflow-hidden">
 
         {/* Header */}
-        <div className="bg-[#0F172A] border-b border-slate-700 px-8 py-6 shrink-0">
+        <div className="bg-[#0F172A] border-b border-accenture-gray-dark px-8 py-6 shrink-0">
           <div className="flex items-center gap-4">
-            <div className="bg-blue-500/20 p-3 rounded-2xl">
-              <Shield size={24} className="text-blue-400" />
+            <div className="bg-accenture-purple/20 p-3 ">
+              <Shield size={24} className="text-accenture-purple" />
             </div>
             <div>
               <h1 className="text-xl font-extrabold text-white tracking-tight">
                 Data & Privacy Consent
               </h1>
-              <p className="text-sm text-slate-400 font-medium mt-0.5">
+              <p className="text-sm text-accenture-gray-dark font-medium mt-0.5">
                 Automation Savings Calculator — Please read before proceeding
               </p>
             </div>
@@ -127,7 +127,7 @@ export default function ConsentGate({ children }) {
           className="flex-1 overflow-y-auto custom-scrollbar px-8 py-6 space-y-4"
           onScroll={handleScroll}
         >
-          <p className="text-sm text-slate-300 leading-relaxed">
+          <p className="text-sm text-accenture-gray-light leading-relaxed">
             Before using this tool, please read and acknowledge the following data
             processing and privacy disclosures. This is required under applicable
             privacy and AI regulations.
@@ -248,7 +248,7 @@ export default function ConsentGate({ children }) {
               <li><strong className="text-white">Cross-border transfer:</strong> When AI features are used, text inputs may be transmitted to servers located outside the Philippines (United States and/or EU). You are hereby informed of and consent to this transfer as required under Section 21 of RA 10173.</li>
               <li><strong className="text-white">Security measures:</strong> Appropriate organizational and technical measures are in place including session-only data storage, automatic PII redaction, and memory-only API key handling.</li>
               <li><strong className="text-white">Your rights under RA 10173:</strong> Right to be informed ✓ (this disclosure), right to access (all data is in your browser), right to erasure (Clear Data button), right to object (decline AI features at any prompt).</li>
-              <li><strong className="text-white">NPC:</strong> For concerns, you may contact the National Privacy Commission at <span className="text-blue-400">privacy.gov.ph</span>.</li>
+              <li><strong className="text-white">NPC:</strong> For concerns, you may contact the National Privacy Commission at <span className="text-accenture-purple">privacy.gov.ph</span>.</li>
             </ul>
           </DisclosureSection>
 
@@ -291,7 +291,7 @@ export default function ConsentGate({ children }) {
 
           {/* ── Checkboxes ── */}
           <div className="pt-2 space-y-3">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+            <p className="text-xs font-bold text-accenture-gray-dark uppercase tracking-widest">
               Please confirm each item to proceed
             </p>
 
@@ -315,10 +315,10 @@ export default function ConsentGate({ children }) {
             ].map(({ key, text }) => (
               <label
                 key={key}
-                className={`flex items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${
+                className={`flex items-start gap-3 p-4  border cursor-pointer transition-all ${
                   checkboxes[key]
-                    ? 'bg-emerald-950/20 border-emerald-800/50'
-                    : 'bg-slate-800/40 border-slate-700 hover:border-slate-600'
+                    ? 'bg-emerald-950/20 border-accenture-purple/50'
+                    : 'bg-[#0a0a0a]/40 border-accenture-gray-dark hover:border-accenture-gray-dark'
                 }`}
               >
                 <input
@@ -328,15 +328,15 @@ export default function ConsentGate({ children }) {
                   className="sr-only"
                   aria-label={text}
                 />
-                <div className={`shrink-0 mt-0.5 w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all pointer-events-none ${
+                <div className={`shrink-0 mt-0.5 w-5 h-5  border-2 flex items-center justify-center transition-all pointer-events-none ${
                   checkboxes[key]
-                    ? 'bg-emerald-500 border-emerald-500'
-                    : 'border-slate-600 bg-transparent'
+                    ? 'bg-accenture-purple border-accenture-purple'
+                    : 'border-accenture-gray-dark bg-transparent'
                 }`}>
                   {checkboxes[key] && <CheckCircle2 size={14} className="text-white" strokeWidth={3} />}
                 </div>
                 <span
-                  className={`text-xs leading-relaxed font-medium ${checkboxes[key] ? 'text-emerald-200' : 'text-slate-400'}`}
+                  className={`text-xs leading-relaxed font-medium ${checkboxes[key] ? 'text-accenture-purple-light' : 'text-accenture-gray-dark'}`}
                 >
                   {text}
                 </span>
@@ -346,34 +346,34 @@ export default function ConsentGate({ children }) {
 
           {/* Scroll nudge */}
           {!scrolledToBottom && (
-            <p className="text-center text-[11px] text-slate-500 font-medium animate-pulse pb-2">
+            <p className="text-center text-[11px] text-accenture-gray-dark font-medium animate-pulse pb-2">
               ↓ Scroll down to read all sections and enable the checkboxes
             </p>
           )}
         </div>
 
         {/* Footer */}
-        <div className="bg-[#0F172A] border-t border-slate-700 px-8 py-5 shrink-0">
+        <div className="bg-[#0F172A] border-t border-accenture-gray-dark px-8 py-5 shrink-0">
           <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={handleDecline}
-              className="flex-1 py-3 rounded-2xl font-bold text-sm transition-colors bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200"
+              className="flex-1 py-3 font-bold text-sm transition-colors bg-[#0a0a0a] text-accenture-gray-dark hover:bg-[#1a1a1a] hover:text-accenture-gray-light"
             >
               Decline & Exit
             </button>
             <button
               onClick={handleAgree}
               disabled={!allChecked}
-              className={`flex-1 py-3 rounded-2xl font-bold text-sm transition-all shadow-lg ${
+              className={`flex-1 py-3  font-bold text-sm transition-all shadow-lg ${
                 allChecked
-                  ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/20'
-                  : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                  ? 'bg-accenture-purple hover:bg-accenture-purple text-white shadow-blue-500/20'
+                  : 'bg-[#1a1a1a] text-accenture-gray-dark cursor-not-allowed'
               }`}
             >
               {allChecked ? '✓ I Agree — Proceed to App' : `Confirm all ${Object.values(checkboxes).filter(Boolean).length}/4 items above`}
             </button>
           </div>
-          <p className="text-center text-[10px] text-slate-600 mt-3">
+          <p className="text-center text-[10px] text-accenture-gray-dark mt-3">
             Your consent is stored locally in your browser. You may withdraw by clearing browser data or using the Clear Data button in the app.
           </p>
         </div>
@@ -386,36 +386,36 @@ export default function ConsentGate({ children }) {
 // DisclosureSection — collapsible section component
 // ─────────────────────────────────────────────────────────────────
 const BADGE_COLORS = {
-  blue:   'bg-blue-900/40 text-blue-300',
-  amber:  'bg-amber-900/30 text-amber-300',
-  purple: 'bg-purple-900/30 text-purple-300',
-  red:    'bg-red-900/30 text-red-300',
+  blue:   'bg-accenture-purple-darkest/40 text-accenture-purple-light',
+  amber:  'bg-accenture-purple text-accenture-purple',
+  purple: 'bg-accenture-purple-darkest/30 text-accenture-purple-light',
+  red:    'bg-accenture-pink/30 text-accenture-pink',
 };
 
 function DisclosureSection({ id, title, badge, badgeColor, expanded, onToggle, children }) {
   return (
-    <div className={`border rounded-2xl overflow-hidden transition-all ${
-      expanded ? 'border-slate-600' : 'border-slate-700/60'
+    <div className={`border  overflow-hidden transition-all ${
+      expanded ? 'border-accenture-gray-dark' : 'border-accenture-gray-dark/60'
     }`}>
       <button
         onClick={onToggle}
         className={`w-full flex items-center justify-between px-5 py-4 text-left transition-colors ${
-          expanded ? 'bg-slate-700/40' : 'bg-slate-800/40 hover:bg-slate-800/70'
+          expanded ? 'bg-[#1a1a1a]/40' : 'bg-[#0a0a0a]/40 hover:bg-[#0a0a0a]/70'
         }`}
       >
         <div className="flex items-center gap-3">
-          <span className={`text-[10px] font-bold px-2 py-1 rounded-lg ${BADGE_COLORS[badgeColor] || BADGE_COLORS.blue}`}>
+          <span className={`text-[10px] font-bold px-2 py-1  ${BADGE_COLORS[badgeColor] || BADGE_COLORS.blue}`}>
             {badge}
           </span>
-          <span className="text-sm font-bold text-slate-200">{title}</span>
+          <span className="text-sm font-bold text-accenture-gray-light">{title}</span>
         </div>
         {expanded
-          ? <ChevronUp size={16} className="text-slate-400 shrink-0" />
-          : <ChevronDown size={16} className="text-slate-400 shrink-0" />
+          ? <ChevronUp size={16} className="text-accenture-gray-dark shrink-0" />
+          : <ChevronDown size={16} className="text-accenture-gray-dark shrink-0" />
         }
       </button>
       {expanded && (
-        <div className="px-5 py-4 bg-slate-900/30 text-xs text-slate-400 leading-relaxed space-y-1">
+        <div className="px-5 py-4 bg-black/30 text-xs text-accenture-gray-dark leading-relaxed space-y-1">
           {children}
         </div>
       )}

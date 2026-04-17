@@ -12,10 +12,10 @@ const ICONS = {
 };
 
 const STYLES = {
-  success: 'bg-emerald-600 text-white',
-  error: 'bg-red-600 text-white',
-  warning: 'bg-amber-500 text-white',
-  info: 'bg-blue-600 text-white',
+  success: 'bg-accenture-purple-dark text-white',
+  error: 'bg-accenture-pink text-white',
+  warning: 'bg-accenture-purple text-white',
+  info: 'bg-accenture-purple text-white',
 };
 
 let toastId = 0;
@@ -35,13 +35,13 @@ function ToastItem({ toast, onDismiss }) {
     <div
       role="alert"
       aria-live="assertive"
-      className={`flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl text-sm font-bold max-w-sm transition-all duration-300 ${STYLES[toast.type] || STYLES.info} ${exiting ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0'}`}
+      className={`flex items-center gap-3 px-5 py-3.5  shadow-2xl text-sm font-bold max-w-sm transition-all duration-300 ${STYLES[toast.type] || STYLES.info} ${exiting ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0'}`}
     >
       <span className="shrink-0">{ICONS[toast.type] || ICONS.info}</span>
       <span className="flex-1 leading-snug">{toast.message}</span>
       <button
         onClick={() => { setExiting(true); setTimeout(() => onDismiss(toast.id), 300); }}
-        className="shrink-0 p-1 rounded-lg hover:bg-white/20 transition-colors"
+        className="shrink-0 p-1 hover:bg-white/20 transition-colors"
         aria-label="Dismiss notification"
       >
         <X size={14} />
