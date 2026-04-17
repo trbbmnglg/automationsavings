@@ -3,8 +3,8 @@ export const DEFAULT_HOURS_PER_DAY = 8;
 
 export const providerOptions = {
   'pollinations': { name: 'Pollinations.ai', models: ['openai', 'mistral', 'llama'], url: null, needsKey: false },
-  'groq': { name: 'Groq', models: ['llama3-8b-8192', 'llama3-70b-8192', 'mixtral-8x7b-32768'], url: 'https://console.groq.com/keys', needsKey: true },
-  'openrouter': { name: 'OpenRouter Free', models: ['meta-llama/llama-3-8b-instruct:free', 'google/gemini-2.5-flash:free'], url: 'https://openrouter.ai/keys', needsKey: true }
+  'groq': { name: 'Groq', models: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'llama3-70b-8192'], url: 'https://console.groq.com/keys', needsKey: true },
+  'openrouter': { name: 'OpenRouter Free', models: ['meta-llama/llama-3.3-70b-instruct:free', 'google/gemini-2.5-flash:free'], url: 'https://openrouter.ai/keys', needsKey: true }
 };
 
 export const DEFAULT_LCR = Object.freeze({

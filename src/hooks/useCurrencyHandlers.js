@@ -10,7 +10,7 @@ import { useMemo, useCallback } from 'react';
 export function useCurrencyHandlers({
   currency, setCurrency, exchangeRates, implementationCost, setImplementationCost,
   monthlyRunCost, setMonthlyRunCost, setRunCostBreakdown, currencyConfig,
-  sreCostY1, setSreCostY1, sreCostY2, setSreCostY2
+  sreCostY1, setSreCostY1, sreCostY2, setSreCostY2, addToast
 }) {
 
   const formatter = useMemo(() =>
@@ -31,9 +31,18 @@ export function useCurrencyHandlers({
     if (newCurrency === currency) return;
 
     const multiplier = exchangeRates[newCurrency] / exchangeRates[currency];
-    if (!isFinite(multiplier) || multiplier === 0) return;
+    if (!isFinite(multiplier) || multiplier === 0) {
+      if (addToast) {
+        addToast(`Exchange rate unavailable for ${newCurrency}. Currency not changed.`, 'error');
+      }
+      return;
+    }
 
-    const convert = (val) => val === '' ? '' : Math.round(val * multiplier * 100) / 100;
+    // Round to 6 decimals (not 2) to avoid sub-cent drift when the user
+    // round-trips between currencies. The formatter uses
+    // maximumFractionDigits: 0 for display, but the underlying state keeps
+    // precision so e.g. USD → JPY → USD preserves the original value.
+    const convert = (val) => val === '' ? '' : Math.round(val * multiplier * 1e6) / 1e6;
 
     setRunCostBreakdown(prev => {
       const updated = { ...prev };
@@ -55,7 +64,7 @@ export function useCurrencyHandlers({
     currency, exchangeRates,
     implementationCost, monthlyRunCost, sreCostY1, sreCostY2,
     setCurrency, setImplementationCost, setMonthlyRunCost,
-    setRunCostBreakdown, setSreCostY1, setSreCostY2
+    setRunCostBreakdown, setSreCostY1, setSreCostY2, addToast
   ]);
 
   return { formatCurrency, handleCurrencyChange };

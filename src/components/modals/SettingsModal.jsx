@@ -53,17 +53,19 @@ export default function SettingsModal() {
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => setThemeColor('default')}
+                aria-pressed={themeColor === 'default'}
                 className={`flex items-center gap-3 p-4  border-2 transition-all font-bold text-sm ${
                   themeColor === 'default'
                     ? (isDarkMode ? 'border-accenture-purple bg-accenture-purple-darkest/30 text-accenture-purple' : 'border-accenture-purple bg-accenture-purple-lightest text-accenture-purple-dark')
                     : (isDarkMode ? 'border-accenture-gray-dark bg-[#0a0a0a]/50 text-accenture-gray-dark hover:border-accenture-gray-dark' : 'border-accenture-gray-light bg-accenture-gray-off-white text-accenture-gray-dark hover:border-accenture-gray-light')
                 }`}
               >
-                <div className="w-4 h-4 rounded-full bg-accenture-purple shrink-0" />
-                <span>Default Blue</span>
+                <div className="w-4 h-4 rounded-full bg-accenture-gray-light shrink-0" />
+                <span>Standard</span>
               </button>
               <button
                 onClick={() => setThemeColor('violet')}
+                aria-pressed={themeColor === 'violet'}
                 className={`flex items-center gap-3 p-4  border-2 transition-all font-bold text-sm ${
                   themeColor === 'violet'
                     ? (isDarkMode ? 'border-accenture-purple bg-accenture-purple-darkest/30 text-accenture-purple' : 'border-accenture-purple bg-accenture-purple-lightest text-accenture-purple-dark')
@@ -71,7 +73,7 @@ export default function SettingsModal() {
                 }`}
               >
                 <div className="w-4 h-4 rounded-full bg-accenture-purple shrink-0" />
-                <span>Electric Violet</span>
+                <span>Accent Line</span>
               </button>
             </div>
           </div>
@@ -122,7 +124,14 @@ export default function SettingsModal() {
                   min="1"
                   max="31"
                   value={workingDays}
-                  onChange={(e) => setWorkingDays(Number(e.target.value))}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    // Preserve the empty state while typing; clamp to [1, 31]
+                    // only once the user enters a real number so the field
+                    // doesn't snap to 1 the instant it's cleared.
+                    setWorkingDays(v === '' ? '' : Math.max(1, Math.min(31, Number(v))));
+                  }}
+                  onBlur={(e) => { if (e.target.value === '') setWorkingDays(22); }}
                   className={`${inputStyle} py-2.5 text-sm font-mono`}
                 />
                 <p id="working-days-hint" className={`text-[10px] font-medium ${textSub} mt-1`}>Default: 22 days</p>
@@ -136,7 +145,11 @@ export default function SettingsModal() {
                   min="1"
                   max="24"
                   value={hoursPerDay}
-                  onChange={(e) => setHoursPerDay(Number(e.target.value))}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setHoursPerDay(v === '' ? '' : Math.max(1, Math.min(24, Number(v))));
+                  }}
+                  onBlur={(e) => { if (e.target.value === '') setHoursPerDay(8); }}
                   className={`${inputStyle} py-2.5 text-sm font-mono`}
                 />
                 <p id="hours-per-day-hint" className={`text-[10px] font-medium ${textSub} mt-1`}>Default: 8 hrs</p>
@@ -172,7 +185,17 @@ export default function SettingsModal() {
                       type="number"
                       min="0"
                       value={rate}
-                      onChange={(e) => setLcrRates(prev => ({ ...prev, [cl]: Number(e.target.value) }))}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        // Accept empty string while typing; coerce only on
+                        // non-empty so the field doesn't jump to 0 on clear.
+                        setLcrRates(prev => ({ ...prev, [cl]: v === '' ? '' : Math.max(0, Number(v)) }));
+                      }}
+                      onBlur={(e) => {
+                        if (e.target.value === '') {
+                          setLcrRates(prev => ({ ...prev, [cl]: baseLcr[cl] ?? 0 }));
+                        }
+                      }}
                       className={`${inputStyle} py-2 pl-8 text-sm font-mono`}
                     />
                   </div>

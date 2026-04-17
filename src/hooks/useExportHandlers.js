@@ -1,5 +1,5 @@
 import { useMemo, useCallback } from 'react';
-import { getScoreColor, sanitizeFilename } from '../utils/helpers';
+import { getScoreColor, sanitizeFilename, formatRoi, formatPayback } from '../utils/helpers';
 
 /**
  * Handles lazy-loaded Excel (XLSX) and PowerPoint (PPTX) export generation.
@@ -89,6 +89,7 @@ export function useExportHandlers({
 
       XLSX.writeFile(wb, `${sanitizeFilename(toolName) || 'Automation'} Automation Savings.xlsx`);
     } catch (e) {
+      console.error('XLSX export failed:', e);
       if (addToast) addToast('Failed to generate Excel file. Please try again.', 'error');
     } finally {
       setIsExportingXLSX(false);
@@ -160,17 +161,21 @@ export function useExportHandlers({
       const maxFteW = col2W - 0.6;
       const currentFte = results.currentFte || 1;
       const futureFteW = (results.toBeFte / currentFte) * maxFteW;
+      // Track (As-Is total) in muted gray, overlaid bar (To-Be remaining) in
+      // the accent color. Both endpoints labelled so viewers don't have to
+      // infer which number the bar width represents.
       slide.addShape(pptx.shapes.RECTANGLE, { x: col2X + 0.3, y: colY + 4.7, w: maxFteW, h: 0.3, fill: { color: 'E2E8F0' } });
       slide.addShape(pptx.shapes.RECTANGLE, { x: col2X + 0.3, y: colY + 4.7, w: Math.max(futureFteW, 0.05), h: 0.3, fill: { color: cTheme } });
-      slide.addText(`${results.currentFte.toFixed(1)} FTEs As-Is`, { x: col2X + 0.3, y: colY + 4.7, w: maxFteW, h: 0.3, fontSize: 9, color: cTextMuted, align: 'right', valign: 'middle', pr: 0.1, fontFace: fFace });
+      slide.addText(`To-Be ${results.toBeFte.toFixed(1)}`, { x: col2X + 0.3, y: colY + 4.7, w: maxFteW, h: 0.3, fontSize: 9, color: 'FFFFFF', bold: true, align: 'left', valign: 'middle', pl: 0.1, fontFace: fFace });
+      slide.addText(`As-Is ${results.currentFte.toFixed(1)}`, { x: col2X + 0.3, y: colY + 4.7, w: maxFteW, h: 0.3, fontSize: 9, color: cTextMuted, align: 'right', valign: 'middle', pr: 0.1, fontFace: fFace });
 
       const col3X = 9.0; const col3W = 3.8;
       slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: col3X, y: colY, w: col3W, h: colH, fill: { color: cTheme, transparency: 95 }, line: { color: cTheme, width: 2 }, rectRadius: 0.05 });
       slide.addText('03 / FINANCIAL IMPACT', { x: col3X + 0.2, y: colY + 0.2, w: col3W - 0.4, h: 0.3, fontSize: 12, bold: true, color: cTheme, fontFace: fFace });
       const impactMetrics = [
         { label: 'LIFETIME NET SAVINGS', value: formatCurrency(results.netSavings) },
-        { label: 'RETURN ON INVESTMENT (ROI)', value: results.roi === Infinity ? '>1000%' : `${Math.round(results.roi).toLocaleString()}%` },
-        { label: 'PAYBACK PERIOD', value: results.paybackPeriod === Infinity ? 'Never' : `${results.paybackPeriod.toFixed(1)} months` },
+        { label: 'RETURN ON INVESTMENT (ROI)', value: formatRoi(results.roi) },
+        { label: 'PAYBACK PERIOD', value: formatPayback(results.paybackPeriod).replace(' mo', ' months') },
         { label: 'CAPACITY RECAPTURED', value: `${results.fteSavings.toFixed(1)} FTEs/mo` }
       ];
       let currentY = colY + 0.8;
@@ -185,6 +190,7 @@ export function useExportHandlers({
 
       await pptx.writeFile({ fileName: `${sanitizeFilename(toolName) || 'Automation'} Automation 1 Slider.pptx` });
     } catch (e) {
+      console.error('PPTX export failed:', e);
       if (addToast) addToast('Failed to generate PPTX file. Please try again.', 'error');
     } finally {
       setIsExportingPPTX(false);

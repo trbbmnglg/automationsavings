@@ -9,15 +9,29 @@
  * @returns {string} Color string in the requested format
  */
 export const getScoreColor = (score, format = 'tailwind') => {
+  // Four distinct Accenture-brand tiers so Strong/Good/Marginal/Risk are
+  // visually differentiable in the ResultsPanel viability pill.
+  // Hex values are pulled from the Accenture palette so PPTX/XLSX exports
+  // stay brand-consistent with the on-screen tier.
   const colors = {
-    tailwind: { green: 'text-accenture-purple', blue: 'text-accenture-purple', amber: 'text-accenture-purple', red: 'text-accenture-pink' },
-    hex: { green: '10B981', blue: '3B82F6', amber: 'F59E0B', red: 'EF4444' }
+    tailwind: {
+      strong:   'text-accenture-purple-dark',
+      good:     'text-accenture-purple',
+      marginal: 'text-accenture-purple-light',
+      risk:     'text-accenture-pink'
+    },
+    hex: {
+      strong:   '460073',
+      good:     'A100FF',
+      marginal: 'B455FF',
+      risk:     'E6007E'
+    }
   };
   const palette = colors[format] || colors.tailwind;
-  if (score >= 80) return palette.green;
-  if (score >= 60) return palette.blue;
-  if (score >= 40) return palette.amber;
-  return palette.red;
+  if (score >= 80) return palette.strong;
+  if (score >= 60) return palette.good;
+  if (score >= 40) return palette.marginal;
+  return palette.risk;
 };
 
 /**
@@ -48,6 +62,28 @@ export const sanitizeFilename = (str) =>
  */
 export const isNegativeInput = (value) =>
   value !== '' && Number(value) < 0;
+
+/**
+ * Single source of truth for displaying ROI / payback when the value is
+ * Infinity (no run cost + positive savings) or NaN. Keeps the UI, the XLSX
+ * export, the PPTX export, and the AI prompts aligned on one string shape.
+ * @param {number} roi - ROI percentage (may be Infinity)
+ * @returns {string} Formatted ROI string
+ */
+export const formatRoi = (roi) => {
+  if (!isFinite(roi)) return '>1000%';
+  return `${Math.round(roi).toLocaleString()}%`;
+};
+
+/**
+ * @param {number} months - Payback period in months (may be Infinity or 0)
+ * @returns {string} Formatted payback period
+ */
+export const formatPayback = (months) => {
+  if (!isFinite(months)) return 'Never';
+  if (months === 0) return 'Immediate';
+  return `${months.toFixed(1)} mo`;
+};
 
 /**
  * Validates remote LCR data has the expected shape.

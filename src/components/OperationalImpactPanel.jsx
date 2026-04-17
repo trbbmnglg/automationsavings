@@ -15,7 +15,7 @@ function OperationalImpactPanel() {
       <div className="grid grid-cols-2 gap-6">
         <div>
           <Tooltip text="Total manual hours saved per month based on automation percentage.">
-            <div className={`flex items-center space-x-2 text-accenture-purple-dark mb-3 ${isDarkMode ? 'bg-emerald-950/30' : 'bg-accenture-purple-lightest'} w-max px-3 py-1.5  font-bold text-sm cursor-help`}>
+            <div className={`flex items-center space-x-2 ${isDarkMode ? 'text-accenture-purple bg-accenture-purple-darkest/30' : 'text-accenture-purple-dark bg-accenture-purple-lightest'} mb-3 w-max px-3 py-1.5  font-bold text-sm cursor-help`}>
               <Clock size={16} /><span>Time Recaptured</span><Info size={14} className="opacity-70" />
             </div>
           </Tooltip>

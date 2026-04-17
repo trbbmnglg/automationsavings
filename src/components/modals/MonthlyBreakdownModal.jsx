@@ -1,7 +1,8 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { X, Download, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, BarChart3 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useToast } from '../Toast';
+import { sanitizeFilename, formatRoi, formatPayback } from '../../utils/helpers';
 
 const ROWS_PER_PAGE = 12;
 
@@ -19,10 +20,11 @@ export default function MonthlyBreakdownModal() {
   const totalPages = Math.ceil(data.length / ROWS_PER_PAGE);
   const pageData = data.slice(page * ROWS_PER_PAGE, (page + 1) * ROWS_PER_PAGE);
 
+  // Differentiate scenario semantically so readers glance the risk posture.
   const scenarioColor = {
-    optimistic: isDarkMode ? 'text-accenture-purple' : 'text-accenture-purple-dark',
-    realistic: isDarkMode ? 'text-accenture-purple' : 'text-accenture-purple-dark',
-    conservative: isDarkMode ? 'text-accenture-purple' : 'text-accenture-purple-dark',
+    optimistic:   isDarkMode ? 'text-accenture-purple-light' : 'text-accenture-purple',
+    realistic:    isDarkMode ? 'text-accenture-purple'       : 'text-accenture-purple-dark',
+    conservative: isDarkMode ? 'text-accenture-pink'         : 'text-accenture-pink',
   }[scenario] || 'text-accenture-purple';
 
   const totalGross = data.reduce((s, r) => s + r.grossSavings, 0);
@@ -86,10 +88,15 @@ export default function MonthlyBreakdownModal() {
 
       const wsData = [titleRow, blankRow, colHeaders];
 
+      // Detect payback on the first month where cumulativeNet crosses from
+      // negative to non-negative — matches the engine's threshold
+      // (useCalculationEngine.js) and the on-screen table detection below.
       let paybackFound = false;
-      data.forEach((row, i) => {
-        const isPayback = !paybackFound && row.cumulativeNet > 0;
+      let prevCum = -implCost;
+      data.forEach((row) => {
+        const isPayback = !paybackFound && row.cumulativeNet >= 0 && prevCum < 0;
         if (isPayback) paybackFound = true;
+        prevCum = row.cumulativeNet;
         wsData.push([
           row.month,
           `Y${row.year}`,
@@ -126,12 +133,14 @@ export default function MonthlyBreakdownModal() {
         if (ws[cellRef]) ws[cellRef].s = headerStyle;
       });
 
-      // Apply data row styles
+      // Apply data row styles — same threshold as the labelling loop above.
       paybackFound = false;
+      let stylePrevCum = -implCost;
       data.forEach((row, i) => {
         const r = i + 3; // offset: title + blank + header
-        const isPayback = !paybackFound && row.cumulativeNet > 0;
+        const isPayback = !paybackFound && row.cumulativeNet >= 0 && stylePrevCum < 0;
         if (isPayback) paybackFound = true;
+        stylePrevCum = row.cumulativeNet;
         const rowBg = i % 2 === 0 ? 'FFFFFF' : 'F8FAFC';
 
         const applyCell = (c, style) => {
@@ -192,8 +201,8 @@ export default function MonthlyBreakdownModal() {
         ['RETURNS', ''],
         ['Total Gross Savings', totalGross],
         ['Lifetime Net Savings', finalCumulative],
-        ['ROI', results.roi === Infinity ? '>1000%' : `${Math.round(results.roi)}%`],
-        ['Payback Period', results.paybackPeriod === Infinity ? 'Never' : `${results.paybackPeriod.toFixed(1)} months`],
+        ['ROI', formatRoi(results.roi)],
+        ['Payback Period', formatPayback(results.paybackPeriod).replace(' mo', ' months')],
         ['FTE Savings / Mo', results.fteSavings.toFixed(1)],
       ];
 
@@ -206,8 +215,7 @@ export default function MonthlyBreakdownModal() {
       };
       XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
 
-      const safeName = (toolName || 'Automation').replace(/[<>:"/\\|?*\x00-\x1F]/g, '_').trim();
-      XLSX.writeFile(wb, `${safeName} Monthly Breakdown.xlsx`);
+      XLSX.writeFile(wb, `${sanitizeFilename(toolName) || 'Automation'} Monthly Breakdown.xlsx`);
     } catch (e) {
       console.error('XLSX export failed:', e);
       addToast('Export failed. Please try again.', 'error');
@@ -244,13 +252,14 @@ export default function MonthlyBreakdownModal() {
             <button
               onClick={handleExportXLSX}
               disabled={isExporting}
-              className={`flex items-center gap-2 text-xs font-bold px-4 py-2.5  transition-all shadow-sm ${isDarkMode ? 'bg-accenture-purple-dark hover:bg-accenture-purple-dark text-white' : 'bg-accenture-purple-dark hover:bg-accenture-purple-dark text-white'} disabled:opacity-60`}
+              className="flex items-center gap-2 text-xs font-bold px-4 py-2.5 transition-all shadow-sm bg-accenture-purple-dark hover:bg-accenture-purple text-white disabled:opacity-60"
             >
               <Download size={14} />
               {isExporting ? 'Exporting...' : 'Export XLSX'}
             </button>
             <button
               onClick={() => setIsMonthlyBreakdownOpen(false)}
+              aria-label="Close monthly breakdown"
               className={`${isDarkMode ? 'text-accenture-gray-dark hover:text-white hover:bg-[#0a0a0a]' : 'text-accenture-gray-dark hover:text-black hover:bg-accenture-gray-off-white'} p-2 rounded-full transition-colors`}
             >
               <X size={20} />
@@ -302,7 +311,7 @@ export default function MonthlyBreakdownModal() {
                     key={row.month}
                     className={`transition-colors
                       ${isPaybackRow
-                        ? (isDarkMode ? 'bg-emerald-950/40' : 'bg-accenture-purple-lightest')
+                        ? (isDarkMode ? 'bg-accenture-purple-darkest/40' : 'bg-accenture-purple-lightest')
                         : i % 2 === 0
                           ? (isDarkMode ? 'bg-[#1E293B]' : 'bg-white')
                           : (isDarkMode ? 'bg-[#162032]' : 'bg-accenture-gray-off-white/60')
@@ -360,6 +369,7 @@ export default function MonthlyBreakdownModal() {
               <button
                 onClick={() => setPage(p => Math.max(0, p - 1))}
                 disabled={page === 0}
+                aria-label="Previous page"
                 className={`p-2  transition-colors disabled:opacity-30 ${isDarkMode ? 'hover:bg-[#0a0a0a] text-accenture-gray-light' : 'hover:bg-accenture-gray-off-white text-accenture-gray-dark'}`}
               >
                 <ChevronLeft size={16} />
@@ -380,6 +390,7 @@ export default function MonthlyBreakdownModal() {
               <button
                 onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
                 disabled={page === totalPages - 1}
+                aria-label="Next page"
                 className={`p-2  transition-colors disabled:opacity-30 ${isDarkMode ? 'hover:bg-[#0a0a0a] text-accenture-gray-light' : 'hover:bg-accenture-gray-off-white text-accenture-gray-dark'}`}
               >
                 <ChevronRight size={16} />

@@ -31,7 +31,6 @@ const safeRate = (value, fallback) =>
 
 export function AppProvider({ children }) {
   const [baseLcr, setBaseLcr] = useState(DEFAULT_LCR);
-  const [hasUserModifiedLcr, setHasUserModifiedLcr] = useState(false);
 
   // ─── Persistent preferences (localStorage via useStickyState) ───────────────
   // UI preferences and configuration — not project data.
@@ -101,7 +100,10 @@ export function AppProvider({ children }) {
 
     const fetchLiveRates = async () => {
       try {
-        const response = await fetch('https://api.frankfurter.app/latest?from=USD', { signal: ratesController.signal });
+        // Frankfurter rebranded from .app to .dev; the old host returns a 301
+        // that browsers cannot follow cross-origin (no CORS header on the
+        // redirect itself), so point directly at the current host.
+        const response = await fetch('https://api.frankfurter.dev/v1/latest?base=USD', { signal: ratesController.signal });
         const data = await response.json();
         if (data && data.rates) {
           setExchangeRates({
@@ -129,9 +131,14 @@ export function AppProvider({ children }) {
           const data = await response.json();
           if (isValidLcrData(data)) {
             setBaseLcr(data);
-            setHasUserModifiedLcr(current => {
-              if (!current) setLcrRates(data);
-              return current;
+            // Only seed lcrRates from remote when the user has never edited
+            // their own rates (i.e., the stored rates still equal DEFAULT_LCR).
+            // Comparing shape-serialized JSON keeps customizations sticky
+            // across page reloads — previously the effect unconditionally
+            // clobbered them on every successful remote fetch.
+            setLcrRates(prev => {
+              const isUntouched = JSON.stringify(prev) === JSON.stringify(DEFAULT_LCR);
+              return isUntouched ? data : prev;
             });
           }
         }
@@ -182,7 +189,8 @@ export function AppProvider({ children }) {
     monthlyRunCost, setMonthlyRunCost,
     setRunCostBreakdown, currencyConfig,
     sreCostY1, setSreCostY1,
-    sreCostY2, setSreCostY2
+    sreCostY2, setSreCostY2,
+    addToast
   });
 
   const { generateAIPitch, generateSuggestions, generateROIInsights, generateSreUseCase } = useAIHandlers({
@@ -263,6 +271,11 @@ export function AppProvider({ children }) {
 
   // ─── Mock data / clear ───────────────────────────────────────────────────────
   const handleGenerateMockData = useCallback(() => {
+    // Mock figures are denominated in USD — warn the user when overriding a
+    // non-USD selection so the currency flip isn't silent.
+    if (currency !== 'USD' && addToast) {
+      addToast(`Mock data is USD-denominated. Currency reset from ${currency} to USD.`, 'info');
+    }
     setCurrency('USD');
     setToolName('GenWizard Batch Automation');
     setUseCase('Automate manual monitoring of 5000 Control M jobs to resolve delays and missed SLAs.');
@@ -299,6 +312,7 @@ export function AppProvider({ children }) {
     setSecurityError(null);
     setAiGeneratedFields({ kpis: false, challenges: false, benefits: false });
   }, [
+    currency, addToast,
     setCurrency, setToolName, setUseCase, setChallenges, setQualitativeBenefits,
     setKpis, setLaborBreakdown, setWorkingDays, setHoursPerDay, setAutomationPercent,
     setDurationMonths, setImplementationCost, setIsAdvancedRunCost, setRunCostBreakdown,

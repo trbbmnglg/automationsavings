@@ -6,16 +6,38 @@
  * @returns {Promise<Response>} The successful response
  * @throws {Error} After all retries are exhausted or on non-retryable errors
  */
-export const fetchWithRetry = async (url, options) => {
+// Compose an internal timeout signal with any caller-supplied signal so both
+// the 30-second per-attempt timeout AND external cancellation (React cleanup)
+// can abort the fetch. Previously the options.signal was clobbered, leaving
+// callers unable to cancel pending retries.
+const composeSignals = (external, internal) => {
+  if (!external) return internal;
+  if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.any === 'function') {
+    return AbortSignal.any([external, internal]);
+  }
+  // Fallback: propagate external aborts into the internal controller manually.
+  const proxy = new AbortController();
+  const forward = () => proxy.abort();
+  if (external.aborted) proxy.abort();
+  else external.addEventListener('abort', forward, { once: true });
+  internal.addEventListener('abort', forward, { once: true });
+  return proxy.signal;
+};
+
+export const fetchWithRetry = async (url, options = {}) => {
   const delays = [1000, 2000, 4000, 8000, 16000];
+  const externalSignal = options.signal;
+  const { signal: _omit, ...fetchOpts } = options;
+
   for (let i = 0; i < delays.length; i++) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); 
-    
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const signal = composeSignals(externalSignal, controller.signal);
+
     try {
-      const response = await fetch(url, { ...options, signal: controller.signal });
+      const response = await fetch(url, { ...fetchOpts, signal });
       clearTimeout(timeoutId);
-      
+
       if (!response.ok) {
          const text = await response.text();
          const err = new Error(`HTTP ${response.status}: ${text}`);
@@ -25,6 +47,8 @@ export const fetchWithRetry = async (url, options) => {
       return response;
     } catch (error) {
       clearTimeout(timeoutId);
+      // External cancellation should propagate immediately, not retry.
+      if (externalSignal && externalSignal.aborted) throw error;
       if (error.name === 'AbortError') {
          if (i === delays.length - 1) throw new Error("Request timed out after multiple retries.");
       } else if (i === delays.length - 1 || (error.status >= 400 && error.status < 500 && error.status !== 429)) {
@@ -77,14 +101,18 @@ const PII_PATTERNS = [
   { pattern: /\b\d{3}-\d{2}-\d{4}\b/, label: 'Social Security Number (SSN)' },
   // Credit/debit card: 16 digits with separators (requires at least one separator to avoid matching plain numbers)
   { pattern: /\b\d{4}[-\s]\d{4}[-\s]\d{4}[-\s]\d{4}\b/, label: 'Credit/Debit Card Number' },
-  // Passport: 1-2 letters + 6-9 digits
-  { pattern: /\b[A-Z]{1,2}\d{6,9}\b/, label: 'Passport Number' },
+  // Passport: 1-2 letters + 6-9 digits, with "passport" keyword nearby to
+  // reduce false positives on SKUs and product codes that share the shape.
+  { pattern: /\bpassport[^\n]{0,30}\b[A-Z]{1,2}\d{6,9}\b/i, label: 'Passport Number' },
   // Philippine TIN: strict 000-000-000 or 000-000-000-000 (requires dashes)
   { pattern: /\b\d{3}-\d{3}-\d{3}(-\d{3})?\b/, label: 'Tax Identification Number (TIN)' },
   // Email addresses
   { pattern: /\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b/, label: 'Email Address' },
-  // Phone numbers (PH format +63 or 09xx, or generic international — requires country code prefix)
-  { pattern: /(\+63|0)[\s-]?\d{3}[\s-]?\d{3}[\s-]?\d{4}\b/, label: 'Phone Number' },
+  // Phone numbers — PH mobile (+63 or leading 09) and generic international
+  // (+country-code). Require a '+' or the mobile '09' prefix so plain business
+  // IDs starting with 0 don't trigger the gate.
+  { pattern: /\+63[\s-]?\d{3}[\s-]?\d{3}[\s-]?\d{4}\b/, label: 'Phone Number' },
+  { pattern: /\b09\d{2}[\s-]?\d{3}[\s-]?\d{4}\b/, label: 'Phone Number' },
   { pattern: /\+\d{1,3}[\s-]?\(?\d{1,4}\)?[\s-]?\d{3,4}[\s-]?\d{4}\b/, label: 'Phone Number' },
   // Bank account: requires keyword context
   { pattern: /\bbank\s+account\s*(number|no\.?)?\s*:?\s*\d{8,16}\b/i, label: 'Bank Account Number' },

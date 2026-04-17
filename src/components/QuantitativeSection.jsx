@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, Briefcase, Info, Plus, Trash2, Wrench, Coins, TrendingUp, Check, Calculator } from 'lucide-react';
+import { Activity, Briefcase, Info, Plus, Trash2, Wrench, Coins, TrendingUp, Check, Calculator, AlertTriangle } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import Tooltip from './Tooltip';
 
@@ -33,7 +33,7 @@ function QuantitativeSection() {
                      </select>
                   </div>
                   {laborBreakdown.length > 1 && (
-                    <button onClick={() => removeLabor(entry.id)} className={`text-accenture-gray-dark hover:text-accenture-pink ${isDarkMode ? 'hover:bg-accenture-pink/30' : 'hover:bg-[#fff0f6]'} p-1.5  transition-colors`} title="Remove Role">
+                    <button onClick={() => removeLabor(entry.id)} aria-label={`Remove resource ${index + 1}`} className={`text-accenture-gray-dark hover:text-accenture-pink ${isDarkMode ? 'hover:bg-accenture-pink/30' : 'hover:bg-[#fff0f6]'} p-1.5  transition-colors`} title="Remove Role">
                       <Trash2 size={16}/>
                     </button>
                   )}
@@ -59,9 +59,16 @@ function QuantitativeSection() {
                   </div>
                   <div>
                      <label className="text-[11px] font-bold text-accenture-gray-dark mb-1.5 block">Mapped LCR Rate</label>
-                     <div className={`w-full px-4 py-2.5 text-sm font-mono font-bold  border ${isDarkMode ? 'bg-accenture-purple-darkest/20 border-accenture-purple-dark/30 text-accenture-purple' : 'bg-accenture-purple-lightest border-accenture-purple-light text-accenture-purple-dark'}`}>
-                        {formatCurrency(lcrRates[entry.cl] * results.currencyMultiplier)}<span className="text-[10px] text-accenture-purple/70 ml-1">/hr</span>
-                     </div>
+                     {Object.prototype.hasOwnProperty.call(lcrRates, entry.cl) ? (
+                       <div className={`w-full px-4 py-2.5 text-sm font-mono font-bold  border ${isDarkMode ? 'bg-accenture-purple-darkest/20 border-accenture-purple-dark/30 text-accenture-purple' : 'bg-accenture-purple-lightest border-accenture-purple-light text-accenture-purple-dark'}`}>
+                          {formatCurrency(Number(lcrRates[entry.cl]) * results.currencyMultiplier)}<span className="text-[10px] text-accenture-purple/70 ml-1">/hr</span>
+                       </div>
+                     ) : (
+                       <div className={`w-full px-4 py-2.5 text-xs font-bold border flex items-center gap-2 ${isDarkMode ? 'bg-accenture-pink/10 border-accenture-pink/40 text-accenture-pink' : 'bg-accenture-pink/10 border-accenture-pink text-accenture-pink'}`}>
+                          <AlertTriangle size={14} aria-hidden="true" />
+                          <span>No rate for {entry.cl} — set in Settings</span>
+                       </div>
+                     )}
                   </div>
                </div>
             </div>
@@ -95,7 +102,7 @@ function QuantitativeSection() {
               <label htmlFor="automation-pct" className={`flex items-center text-sm font-bold ${textMain}`}>Percentage Automated <Tooltip text='What percentage of the manual work is being completely eliminated by the bot?'><Info size={14} className={`${textSub} hover:text-accenture-purple transition-colors cursor-help`}/></Tooltip></label>
               <span id="automation-pct-value" className={`font-extrabold ${isDarkMode ? 'text-accenture-purple bg-accenture-purple-darkest/50' : 'text-accenture-purple-dark bg-accenture-purple-lightest'} px-4 py-1.5  text-sm shadow-sm`}>{automationPercent}%</span>
             </div>
-            <input id="automation-pct" type="range" aria-label="Percentage Automated" aria-describedby="automation-pct-value" min="0" max="100" value={automationPercent} onChange={(e) => setAutomationPercent(e.target.value)} className={`w-full h-3 ${isDarkMode ? 'bg-[#1a1a1a]' : 'bg-accenture-gray-off-white'} rounded-full appearance-none cursor-pointer accent-blue-500 focus:outline-none focus:ring-4 focus:ring-accenture-purple/30`} />
+            <input id="automation-pct" type="range" aria-label="Percentage Automated" aria-describedby="automation-pct-value" min="0" max="100" value={automationPercent} onChange={(e) => setAutomationPercent(e.target.value)} className={`w-full h-3 ${isDarkMode ? 'bg-[#1a1a1a]' : 'bg-accenture-gray-off-white'} rounded-full appearance-none cursor-pointer accent-accenture-purple focus:outline-none focus:ring-4 focus:ring-accenture-purple/30`} />
             <div className={`flex justify-between text-[10px] font-bold ${textSub} mt-2 px-1`}><span>0%</span><span>50%</span><span>100%</span></div>
           </div>
         </div>
@@ -179,7 +186,7 @@ function QuantitativeSection() {
             </div>
 
             {/* SRE Configuration Card */}
-            <div className={`${isDarkMode ? (hasSre ? 'bg-accenture-purple-lightest border-accenture-purple' : 'bg-[#0F172A] border-accenture-gray-dark') : (hasSre ? 'bg-accenture-purple-lightest border-accenture-purple' : 'bg-accenture-gray-off-white border-accenture-gray-light')} p-4  border shadow-sm flex flex-col col-span-1 sm:col-span-2 transition-colors`}>
+            <div className={`${isDarkMode ? (hasSre ? 'bg-accenture-purple-darkest/30 border-accenture-purple' : 'bg-[#0F172A] border-accenture-gray-dark') : (hasSre ? 'bg-accenture-purple-lightest border-accenture-purple' : 'bg-accenture-gray-off-white border-accenture-gray-light')} p-4  border shadow-sm flex flex-col col-span-1 sm:col-span-2 transition-colors`}>
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <label className={`flex items-center text-xs font-bold ${hasSre ? 'text-accenture-purple-dark dark:text-accenture-purple' : textMain} mb-1 transition-colors`}>
@@ -219,7 +226,7 @@ function QuantitativeSection() {
                               <span className={`text-[10px] font-medium ${textSub}`}>Manual entry active</span>
                            )}
                         </div>
-                        <button onClick={() => setIsSreModalOpen(true)} className={`text-[10px] font-bold px-3 py-1.5  shadow-sm transition-colors ${isAdvancedSre ? 'bg-accenture-gray-off-white text-accenture-gray-dark hover:bg-accenture-gray-light dark:bg-[#1a1a1a] dark:text-accenture-gray-light dark:hover:bg-accenture-gray-dark' : 'bg-accenture-purple-dark hover:bg-accenture-purple-dark text-white'}`}>
+                        <button onClick={() => setIsSreModalOpen(true)} className={`text-[10px] font-bold px-3 py-1.5  shadow-sm transition-colors ${isAdvancedSre ? 'bg-accenture-gray-off-white text-accenture-gray-dark hover:bg-accenture-gray-light dark:bg-[#1a1a1a] dark:text-accenture-gray-light dark:hover:bg-accenture-gray-dark' : 'bg-accenture-purple-dark hover:bg-accenture-purple text-white'}`}>
                           {isAdvancedSre ? 'Edit Advanced' : 'Switch to Advanced'}
                         </button>
                     </div>

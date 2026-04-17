@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { fetchWithRetry, sanitizeStr, checkAllFieldsSecurity } from '../utils/aiUtils';
+import { formatRoi, formatPayback } from '../utils/helpers';
 
 const sanitizeAIArrayItems = (items) =>
   items.filter(item => typeof item === 'string').map(item => item.substring(0, 500));
@@ -68,11 +69,12 @@ export function useAIHandlers({
     if (!ok) return;
 
     setIsGenerating(true);
-    const prompt = `Act as a professional business analyst. Write a persuasive, general business case pitch for an automation project. Details: Tool Name: """${sanitizeStr(toolName)}""" | Use Case: """${sanitizeStr(useCase)}""" | Scenario: ${scenario.charAt(0).toUpperCase() + scenario.slice(1)} Forecast. Financials: Lifetime Net Savings: ${formatCurrency(results.netSavings)} over ${durationMonths} months | ROI: ${results.roi === Infinity ? '>1000' : Math.round(results.roi)}%. Write a compelling executive summary (2-3 paragraphs). Do NOT include greetings.`;
+    const prompt = `Act as a professional business analyst. Write a persuasive, general business case pitch for an automation project. Details: Tool Name: """${sanitizeStr(toolName)}""" | Use Case: """${sanitizeStr(useCase)}""" | Scenario: ${scenario.charAt(0).toUpperCase() + scenario.slice(1)} Forecast. Financials: Lifetime Net Savings: ${formatCurrency(results.netSavings)} over ${durationMonths} months | ROI: ${formatRoi(results.roi)}. Write a compelling executive summary (2-3 paragraphs). Do NOT include greetings.`;
     try {
       const text = await callAIWrapper(prompt);
       if (text) setAiPitch(text.trim());
     } catch (error) {
+      console.error('AI pitch generation failed:', error);
       if (addToast) addToast('Failed to generate pitch. Please try again.', 'error');
     } finally {
       setIsGenerating(false);
@@ -102,6 +104,7 @@ export function useAIHandlers({
         setAiGeneratedFields({ kpis: true, challenges: true, benefits: true });
       }
     } catch (error) {
+      console.error('AI suggestion parse failed:', error);
       if (addToast) addToast('AI suggestions failed to parse. Try again.', 'warning');
     } finally {
       setIsGeneratingSuggestions(false);
@@ -114,20 +117,20 @@ export function useAIHandlers({
 
     setIsGeneratingInsights(true);
 
-    // FIX: Guard against Infinity before calling .toFixed() or interpolating
-    // into the prompt string. paybackPeriod is Infinity when the automation
-    // never recoups its costs within the project duration (e.g. no savings
-    // configured yet). Passing "Infinity" literally into an AI prompt produces
-    // confusing or hallucinated output. We substitute a human-readable string
-    // instead. Same guard applied to roi for consistency.
-    const roiDisplay = results.roi === Infinity ? '>1000%' : `${Math.round(results.roi)}%`;
-    const paybackDisplay = results.paybackPeriod === Infinity ? 'N/A (does not pay back within project duration)' : `${results.paybackPeriod.toFixed(1)} months`;
+    // Infinity-safe formatters live in helpers.js so UI, exports, and prompts
+    // agree on one string shape. Payback gets a fuller explanation here since
+    // the AI prompt benefits from the context that the project never breaks even.
+    const roiDisplay = formatRoi(results.roi);
+    const paybackDisplay = isFinite(results.paybackPeriod)
+      ? `${results.paybackPeriod.toFixed(1)} months`
+      : 'N/A (does not pay back within project duration)';
 
     const prompt = `Act as a financial strategist. Analyze these metrics: Net Savings: ${formatCurrency(results.netSavings)}, ROI: ${roiDisplay}, Payback: ${paybackDisplay}. Provide 2-3 brief, actionable bullet points to improve ROI. Use simple dashes for bullets, no bold markdown.`;
     try {
       const text = await callAIWrapper(prompt);
       if (text) setRoiInsights(text.trim());
     } catch (error) {
+      console.error('AI insights generation failed:', error);
       if (addToast) addToast('Failed to generate insights. Please try again.', 'error');
     } finally {
       setIsGeneratingInsights(false);
@@ -146,6 +149,7 @@ export function useAIHandlers({
       const text = await callAIWrapper(prompt);
       if (text) setSreUseCase(sanitizeStr(text));
     } catch (error) {
+      console.error('AI SRE use case generation failed:', error);
       if (addToast) addToast('Failed to generate SRE use case. Try again.', 'warning');
     } finally {
       setIsGeneratingSreUseCase(false);

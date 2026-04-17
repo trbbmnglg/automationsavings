@@ -23,17 +23,27 @@ export function calculateEngine({
     let totalEffectiveExecutions = 0;
     let hoursMonthlyCurrent = 0;
     let currentMonthlyCost = 0;
+    const unpricedRows = [];
 
     laborBreakdown.forEach(item => {
       const rawExecutions = Math.max(0, Number(item.executions));
       const effectiveExecutions = item.volumePeriod === 'daily' ? rawExecutions * Math.max(1, Number(workingDays)) : rawExecutions;
       const exactEffort = Math.max(0, Number(item.effortHours));
-      
+
       const itemHours = effectiveExecutions * exactEffort;
       totalEffectiveExecutions += effectiveExecutions;
       hoursMonthlyCurrent += itemHours;
-      
-      const rateUSD = lcrRates[item.cl] || 0;
+
+      // Flag rows referencing a CL that no longer exists in lcrRates
+      // (e.g., remote LCR update dropped the CL, or user deleted it in
+      // Settings). Still evaluate at rate 0 so downstream math is stable,
+      // but surface the discrepancy so the UI can warn the user that
+      // current cost / ROI is understated for this row.
+      const hasRate = Object.prototype.hasOwnProperty.call(lcrRates, item.cl);
+      if (!hasRate && itemHours > 0) {
+        unpricedRows.push({ type: 'labor', id: item.id, cl: item.cl });
+      }
+      const rateUSD = hasRate ? Number(lcrRates[item.cl]) || 0 : 0;
       const rateLocal = rateUSD * currencyMultiplier;
       currentMonthlyCost += itemHours * rateLocal;
     });
@@ -61,7 +71,11 @@ export function calculateEngine({
                const rawSreTasks = Math.max(0, Number(item.tasksPerMonth));
                const rawSreHours = Math.max(0, Number(item.effortHours));
                const sreHoursMo = rawSreTasks * rawSreHours;
-               const sreRateLocal = (lcrRates[item.cl] || 0) * currencyMultiplier;
+               const hasSreRate = Object.prototype.hasOwnProperty.call(lcrRates, item.cl);
+               if (!hasSreRate && sreHoursMo > 0) {
+                 unpricedRows.push({ type: 'sre', id: item.id, cl: item.cl });
+               }
+               const sreRateLocal = (hasSreRate ? Number(lcrRates[item.cl]) || 0 : 0) * currencyMultiplier;
                const costY1 = (sreHoursMo * sreRateLocal);
                const costY2 = (costY1 * (1 - (Math.max(0, Math.min(100, Number(item.y2Reduction))) / 100)));
                uiSreY1 += costY1; uiSreY2 += costY2;
@@ -101,6 +115,11 @@ export function calculateEngine({
          currentRunCost = baseRunCost * Math.pow(1 + inflationRate, currentYear - 1);
       }
 
+      // SRE cost schedule: Year 1 = sreY1, Year 2+ = sreY2 (steady state).
+      // The UI label "Y2+ Cost / Mo" reflects this intentional simplification:
+      // once the automation stabilizes, maintenance cost is assumed constant.
+      // If future projects need a Y3 taper, add a sreY3Reduction field rather
+      // than changing this behavior silently.
       let currentSreCost = currentYear === 1 ? sreY1 : sreY2;
       
       totalRunCost += currentRunCost;
@@ -177,7 +196,7 @@ export function calculateEngine({
       hoursSavedTotal: hoursSavedTotal, fteSavings, currentFte: hoursMonthlyCurrent / fteHoursPerMonth, toBeFte: Math.max(0, hoursMonthlyCurrent - hoursMonthlySaved) / fteHoursPerMonth,
       totalManualHoursMonthly: hoursMonthlyCurrent, remainingManualHoursMonthly: Math.max(0, hoursMonthlyCurrent - hoursMonthlySaved),
       monthlyData, automationScore: score, scoreLabel, scoreColor, fteHoursPerMonth, currencyMultiplier, blendedEffortPerHour, blendedResourceCostPerHour,
-      uiSreY1, uiSreY2, uiRunCostY1
+      uiSreY1, uiSreY2, uiRunCostY1, unpricedRows
     };
 }
 
