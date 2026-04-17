@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calculator, Sun, FlaskConical, Trash2, Settings, Loader2, Download, Presentation } from 'lucide-react';
+import { PiggyBank, Sun, FlaskConical, Trash2, Settings, Loader2, Download, Presentation } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import Tooltip from './Tooltip';
 
@@ -18,7 +18,7 @@ export default function Header() {
     <header className={`${cardStyle} p-4 pr-6 flex items-center justify-between z-20`}>
       <div className="flex items-center space-x-4">
         <div className={`${calcIconClass} p-3.5 rounded-none text-white shadow-lg`}>
-          <Calculator size={26} strokeWidth={2.5} aria-hidden="true" />
+          <PiggyBank size={26} strokeWidth={2.5} aria-hidden="true" />
         </div>
         <div>
           <h1 className={`font-sectra text-2xl md:text-3xl font-normal ${textHeading} tracking-tight`}>Automation Savings</h1>
